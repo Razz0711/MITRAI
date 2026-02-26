@@ -19,6 +19,7 @@ export default function Navbar() {
     { href: '/matches', label: 'Matches', icon: '🤝' },
     { href: '/study-plan', label: 'Study Plan', icon: '📚' },
     { href: '/session', label: 'Session', icon: '💬' },
+    { href: '/call', label: 'Call', icon: '📞' },
   ];
 
   return (

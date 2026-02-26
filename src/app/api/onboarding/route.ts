@@ -6,23 +6,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOnboardingResponse } from '@/lib/gemini';
 
 export async function POST(req: NextRequest) {
+  // Parse body ONCE before try/catch so it's available in the catch block
+  let step = 0;
+  let message = '';
+  let collectedData: Record<string, string> = {};
+  let conversationHistory: { role: string; content: string }[] = [];
+
   try {
-    const { step, message, collectedData, conversationHistory } = await req.json();
+    const body = await req.json();
+    step = body.step ?? 0;
+    message = body.message ?? '';
+    collectedData = body.collectedData ?? {};
+    conversationHistory = body.conversationHistory ?? [];
 
     if (!process.env.GEMINI_API_KEY) {
       // Fallback responses when no API key
-      const fallbackResponses = getFallbackResponse(step, message, collectedData);
-      return NextResponse.json({ success: true, data: { response: fallbackResponses } });
+      const fallbackResponse = getFallbackResponse(step, message, collectedData);
+      return NextResponse.json({ success: true, data: { response: fallbackResponse } });
     }
 
-    const response = await getOnboardingResponse(step, message, collectedData, conversationHistory || []);
+    const response = await getOnboardingResponse(step, message, collectedData, conversationHistory);
 
     return NextResponse.json({ success: true, data: { response } });
   } catch (error) {
     console.error('Onboarding chat error:', error);
 
-    // Fallback to template response on error
-    const { step, message, collectedData } = await req.json().catch(() => ({ step: 0, message: '', collectedData: {} }));
+    // Use already-parsed values from above (won't lose them even if Gemini fails)
     const fallback = getFallbackResponse(step, message, collectedData);
 
     return NextResponse.json({ success: true, data: { response: fallback } });

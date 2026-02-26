@@ -6,8 +6,11 @@
 
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import dynamic from 'next/dynamic';
 import ChatInterface from '@/components/ChatInterface';
 import { ChatMessage, StudentProfile } from '@/lib/types';
+
+const CallRoom = dynamic(() => import('@/components/CallRoom'), { ssr: false });
 
 export default function SessionPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -19,6 +22,8 @@ export default function SessionPage() {
   const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
   const [student1Id, setStudent1Id] = useState('');
   const [student2Id, setStudent2Id] = useState('');
+  const [callMode, setCallMode] = useState<'voice' | 'video' | null>(null);
+  const [studentName, setStudentName] = useState('');
 
   useEffect(() => {
     loadStudents();
@@ -40,8 +45,10 @@ export default function SessionPage() {
         setAllStudents(data.data);
         const savedStudent = localStorage.getItem('mitrai_student_id');
         const savedBuddy = localStorage.getItem('mitrai_buddy_id');
+        const savedName = localStorage.getItem('mitrai_student_name');
         if (savedStudent) setStudent1Id(savedStudent);
         if (savedBuddy) setStudent2Id(savedBuddy);
+        if (savedName) setStudentName(savedName);
       }
     } catch (err) {
       console.error('Error:', err);
@@ -227,22 +234,64 @@ export default function SessionPage() {
             <p className="text-xs text-[var(--muted)]">{goal || 'Study session in progress'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-sm font-mono text-[var(--primary-light)]">⏱ {formatTime(sessionTime)}</span>
+          
+          {/* Call Buttons */}
+          <button
+            onClick={() => setCallMode(callMode === 'voice' ? null : 'voice')}
+            className={`p-2 rounded-lg text-sm transition-all ${
+              callMode === 'voice'
+                ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/50'
+                : 'bg-white/5 hover:bg-white/10 text-[var(--muted)] hover:text-green-400'
+            }`}
+            title="Voice Call"
+          >
+            🎙️
+          </button>
+          <button
+            onClick={() => setCallMode(callMode === 'video' ? null : 'video')}
+            className={`p-2 rounded-lg text-sm transition-all ${
+              callMode === 'video'
+                ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
+                : 'bg-white/5 hover:bg-white/10 text-[var(--muted)] hover:text-blue-400'
+            }`}
+            title="Video Call"
+          >
+            📹
+          </button>
+
           <button onClick={endSession} className="px-4 py-2 rounded-xl bg-[var(--error)]/20 text-[var(--error)] text-sm font-medium hover:bg-[var(--error)]/30 transition-all">
             End Session
           </button>
         </div>
       </div>
 
-      {/* Chat */}
-      <div className="flex-1 overflow-hidden">
-        <ChatInterface
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          placeholder={`Ask about ${topic}...`}
-        />
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden flex">
+        {/* Chat Panel */}
+        <div className={`${
+          callMode ? 'w-1/2 border-r border-[var(--border)]' : 'w-full'
+        } overflow-hidden transition-all duration-300`}>
+          <ChatInterface
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            placeholder={`Ask about ${topic}...`}
+          />
+        </div>
+
+        {/* Call Panel */}
+        {callMode && (
+          <div className="w-1/2 overflow-hidden fade-in">
+            <CallRoom
+              roomName={`session_${topic.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now().toString(36)}`}
+              displayName={studentName || 'Student'}
+              audioOnly={callMode === 'voice'}
+              onLeave={() => setCallMode(null)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

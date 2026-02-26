@@ -4,6 +4,7 @@
 
 'use client';
 
+import Link from 'next/link';
 import { MatchResult } from '@/lib/types';
 
 interface MatchCardProps {
@@ -100,13 +101,27 @@ export default function MatchCard({ match, rank, onViewProfile, onConnect }: Mat
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3">
+      <div className="flex gap-2 flex-wrap">
         <button onClick={onConnect} className="btn-primary flex-1 text-sm">
           🤝 Connect
         </button>
         <button onClick={onViewProfile} className="btn-secondary flex-1 text-sm">
-          👤 View Profile
+          👤 Profile
         </button>
+      </div>
+      <div className="flex gap-2 mt-2">
+        <Link
+          href={`/call?mode=voice&buddy=${encodeURIComponent(student.name)}`}
+          className="flex-1 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm text-center font-medium hover:bg-green-500/20 transition-all"
+        >
+          🎙️ Voice Call
+        </Link>
+        <Link
+          href={`/call?mode=video&buddy=${encodeURIComponent(student.name)}`}
+          className="flex-1 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm text-center font-medium hover:bg-blue-500/20 transition-all"
+        >
+          📹 Video Call
+        </Link>
       </div>
     </div>
   );
