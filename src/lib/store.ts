@@ -1,13 +1,48 @@
 // ============================================
-// MitrAI - In-Memory Data Store
-// (Replace with database in production)
+// MitrAI - Data Store with File Persistence
+// (Data survives server restarts in dev mode)
 // ============================================
 
 import { StudentProfile, StudySession, Notification } from './types';
+import fs from 'fs';
+import path from 'path';
 
-// In-memory store (resets on server restart)
-// In production, replace with Supabase/PostgreSQL
-const students: Map<string, StudentProfile> = new Map();
+// File-based persistence for dev mode
+const DATA_DIR = path.join(process.cwd(), '.data');
+const STUDENTS_FILE = path.join(DATA_DIR, 'students.json');
+
+function ensureDataDir() {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+}
+
+function loadStudentsFromFile(): Map<string, StudentProfile> {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(STUDENTS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(STUDENTS_FILE, 'utf-8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    console.error('Failed to load students from file:', e);
+  }
+  return new Map();
+}
+
+function saveStudentsToFile() {
+  try {
+    ensureDataDir();
+    const obj: Record<string, StudentProfile> = {};
+    students.forEach((v, k) => { obj[k] = v; });
+    fs.writeFileSync(STUDENTS_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error('Failed to save students to file:', e);
+  }
+}
+
+// Load persisted data on startup
+const students: Map<string, StudentProfile> = loadStudentsFromFile();
 const sessions: Map<string, StudySession> = new Map();
 const notifications: Map<string, Notification[]> = new Map();
 
@@ -379,6 +414,7 @@ export function getStudentById(id: string): StudentProfile | undefined {
 
 export function createStudent(student: StudentProfile): StudentProfile {
   students.set(student.id, student);
+  saveStudentsToFile();
   return student;
 }
 
@@ -388,11 +424,14 @@ export function updateStudent(id: string, updates: Partial<StudentProfile>): Stu
 
   const updated = { ...existing, ...updates };
   students.set(id, updated);
+  saveStudentsToFile();
   return updated;
 }
 
 export function deleteStudent(id: string): boolean {
-  return students.delete(id);
+  const result = students.delete(id);
+  if (result) saveStudentsToFile();
+  return result;
 }
 
 // ============================================

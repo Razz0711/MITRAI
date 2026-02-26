@@ -15,14 +15,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     id: 1,
-    phase: 'Basic Info',
-    question: '',
-    field: 'age',
-    type: 'number',
-    placeholder: 'Your age...',
-  },
-  {
-    id: 2,
     phase: 'Academic',
     question: '',
     field: 'department',
@@ -30,7 +22,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     options: ['CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics', 'Chemical', 'Integrated M.Sc. Mathematics', 'Integrated M.Sc. Physics', 'Integrated M.Sc. Chemistry', 'B.Tech Physics', 'Mathematics & Computing'],
   },
   {
-    id: 3,
+    id: 2,
     phase: 'Academic',
     question: '',
     field: 'yearLevel',
@@ -38,7 +30,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     options: ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'],
   },
   {
-    id: 4,
+    id: 3,
     phase: 'Academic',
     question: '',
     field: 'targetExam',
@@ -46,7 +38,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     options: ['Semester Exams', 'GATE', 'Placements', 'GRE', 'CAT', 'Projects', 'Other'],
   },
   {
-    id: 5,
+    id: 4,
     phase: 'Subjects',
     question: '',
     field: 'strongSubjects',
@@ -54,7 +46,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'e.g. DSA, Thermodynamics, Circuit Theory...',
   },
   {
-    id: 6,
+    id: 5,
     phase: 'Subjects',
     question: '',
     field: 'weakSubjects',
@@ -62,7 +54,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'e.g. OS, Fluid Mechanics, Control Systems...',
   },
   {
-    id: 7,
+    id: 6,
     phase: 'Study Style',
     question: '',
     field: 'studyMethod',
@@ -70,7 +62,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     options: ['Reading notes', 'Watching videos', 'Solving problems', 'Group discussion'],
   },
   {
-    id: 8,
+    id: 7,
     phase: 'Study Style',
     question: '',
     field: 'sessionLength',
@@ -78,7 +70,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     options: ['30 minutes', '1 hour', '2 hours'],
   },
   {
-    id: 9,
+    id: 8,
     phase: 'Schedule',
     question: '',
     field: 'schedule',
@@ -86,7 +78,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'e.g. Mon, Wed, Fri evenings 7-10 PM',
   },
   {
-    id: 10,
+    id: 9,
     phase: 'Goals',
     question: '',
     field: 'shortTermGoal',
@@ -94,7 +86,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'e.g. Score 9+ SGPA, clear GATE, etc.',
   },
   {
-    id: 11,
+    id: 10,
     phase: 'Personality',
     question: '',
     field: 'personality',
@@ -102,7 +94,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'Strict or flexible? Need accountability partner?',
   },
   {
-    id: 12,
+    id: 11,
     phase: 'Complete',
     question: '',
     field: 'complete',
@@ -117,7 +109,7 @@ export function parseOnboardingData(
   const parsed: Record<string, unknown> = {};
 
   if (rawData.name) parsed.name = rawData.name.trim();
-  if (rawData.age) parsed.age = parseInt(rawData.age) || 19;
+  parsed.age = 19; // default age
 
   // SVNIT defaults
   parsed.city = 'Surat';

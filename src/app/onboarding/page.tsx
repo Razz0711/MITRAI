@@ -11,25 +11,22 @@ import ChatInterface from '@/components/ChatInterface';
 import { ChatMessage } from '@/lib/types';
 import { parseOnboardingData } from '@/lib/onboarding';
 
-const TOTAL_STEPS = 15;
+const TOTAL_STEPS = 12;
 
 // Map step numbers to field names for data collection
 const STEP_FIELDS: Record<number, string> = {
-  0: '',       // welcome - no data yet
-  1: 'name',
-  2: 'age',
-  3: 'location',
-  4: 'preferredLanguage',
-  5: 'currentStudy',
-  6: 'targetExam',
-  7: 'yearLevel',
-  8: 'strongSubjects',
-  9: 'weakSubjects',
-  10: 'studyMethod',
-  11: 'sessionLength',
-  12: 'schedule',
-  13: 'shortTermGoal',
-  14: 'personality',
+  0: '',           // welcome - no data yet
+  1: 'name',       // ask name
+  2: 'department',  // department/branch
+  3: 'yearLevel',   // year
+  4: 'targetExam',  // what they're preparing for
+  5: 'strongSubjects', // strong subjects
+  6: 'weakSubjects',   // weak subjects
+  7: 'studyMethod',    // study method
+  8: 'sessionLength',  // session length
+  9: 'schedule',       // days and times
+  10: 'shortTermGoal', // main goal
+  11: 'personality',   // study style + accountability
 };
 
 export default function OnboardingPage() {
