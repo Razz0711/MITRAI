@@ -12,7 +12,7 @@ const sessions: Map<string, StudySession> = new Map();
 const notifications: Map<string, Notification[]> = new Map();
 
 // ============================================
-// Seed Data - Demo Students for Matching
+// Demo Seed Data (only loaded when DEMO_MODE=true)
 // ============================================
 
 const seedStudents: StudentProfile[] = [
@@ -360,8 +360,10 @@ const seedStudents: StudentProfile[] = [
   },
 ];
 
-// Initialize with seed data
-seedStudents.forEach(s => students.set(s.id, s));
+// Initialize with seed data only in demo mode
+if (process.env.DEMO_MODE === 'true') {
+  seedStudents.forEach(s => students.set(s.id, s));
+}
 
 // ============================================
 // Student CRUD Operations
