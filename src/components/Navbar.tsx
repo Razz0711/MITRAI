@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Navigation Bar Component
+// MitrAI - Navigation Bar
 // ============================================
 
 'use client';
@@ -7,78 +7,120 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useAuth } from '@/lib/auth';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const links = [
-    { href: '/', label: 'Home', icon: '🏠' },
-    { href: '/onboarding', label: 'Get Started', icon: '🚀' },
-    { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { href: '/matches', label: 'Matches', icon: '🤝' },
-    { href: '/study-plan', label: 'Study Plan', icon: '📚' },
-    { href: '/session', label: 'Session', icon: '💬' },
-    { href: '/call', label: 'Call', icon: '📞' },
-  ];
+  const navLinks = user
+    ? [
+        { href: '/dashboard', label: 'Dashboard' },
+        { href: '/matches', label: 'Matches' },
+        { href: '/study-plan', label: 'Study Plan' },
+        { href: '/session', label: 'Session' },
+        { href: '/call', label: 'Call' },
+      ]
+    : [];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-t-0 border-l-0 border-r-0 rounded-none">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white font-bold text-sm">
+            <div className="w-7 h-7 rounded-md bg-[var(--primary)] flex items-center justify-center text-white font-bold text-xs">
               M
             </div>
-            <span className="text-xl font-bold gradient-text">MitrAI</span>
+            <span className="text-sm font-semibold text-[var(--foreground)]">MitrAI</span>
           </Link>
 
-          {/* Desktop Links */}
+          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-1">
-            {links.map(link => (
+            {navLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   pathname === link.href
-                    ? 'bg-[var(--primary)]/20 text-[var(--primary-light)]'
-                    : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-white/5'
+                    ? 'bg-[var(--surface-light)] text-[var(--foreground)]'
+                    : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <span className="mr-1.5">{link.icon}</span>
                 {link.label}
               </Link>
             ))}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Right Side */}
+          <div className="hidden md:flex items-center gap-2">
+            {user ? (
+              <>
+                <Link href="/feedback" className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors px-2">
+                  Feedback
+                </Link>
+                <div className="h-4 w-px bg-[var(--border)]" />
+                <span className="text-xs text-[var(--muted)]">{user.name}</span>
+                <button
+                  onClick={logout}
+                  className="text-xs text-[var(--muted)] hover:text-[var(--error)] transition-colors px-2"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="btn-ghost text-xs py-1.5 px-3">
+                  Sign in
+                </Link>
+                <Link href="/login" className="btn-primary text-xs py-1.5 px-3">
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Menu */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-white/5 text-[var(--muted)]"
+            className="md:hidden p-1.5 rounded-md hover:bg-[var(--surface-light)] text-[var(--muted)] text-sm"
           >
-            {mobileOpen ? '✕' : '☰'}
+            {mobileOpen ? '\u2715' : '\u2630'}
           </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Dropdown */}
         {mobileOpen && (
-          <div className="md:hidden pb-4 fade-in">
-            {links.map(link => (
+          <div className="md:hidden pb-3 border-t border-[var(--border)] mt-1 pt-2 fade-in">
+            {navLinks.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                className={`block px-3 py-2 rounded-md text-xs font-medium ${
                   pathname === link.href
-                    ? 'bg-[var(--primary)]/20 text-[var(--primary-light)]'
-                    : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-white/5'
+                    ? 'bg-[var(--surface-light)] text-[var(--foreground)]'
+                    : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <span className="mr-2">{link.icon}</span>
                 {link.label}
               </Link>
             ))}
+            {user ? (
+              <>
+                <Link href="/feedback" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-xs text-[var(--muted)]">
+                  Feedback
+                </Link>
+                <button onClick={() => { logout(); setMobileOpen(false); }} className="block w-full text-left px-3 py-2 text-xs text-[var(--error)]">
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-xs text-[var(--primary-light)]">
+                Sign in
+              </Link>
+            )}
           </div>
         )}
       </div>

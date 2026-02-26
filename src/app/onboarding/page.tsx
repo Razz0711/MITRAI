@@ -38,7 +38,7 @@ export default function OnboardingPage() {
     {
       id: uuidv4(),
       role: 'assistant',
-      content: "Hey! Welcome to MitrAI 👋\nI'm your personal study agent. I'll help you find your perfect study buddy!\n\nLet's start — what's your name?",
+      content: "Hey, welcome to MitrAI. I'll help you find your ideal study partner.\n\nLet's start — what's your name?",
       timestamp: Date.now(),
     },
   ]);
@@ -112,7 +112,7 @@ export default function OnboardingPage() {
       const errorMsg: ChatMessage = {
         id: uuidv4(),
         role: 'assistant',
-        content: "Oops! Something went wrong on my end. Could you try saying that again? 😅",
+        content: "Something went wrong on my end. Could you try saying that again?",
         timestamp: Date.now(),
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -166,7 +166,7 @@ export default function OnboardingPage() {
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
           placeholder={isComplete ? '' : 'Type your answer...'}
-          title="🤖 MitrAI Onboarding"
+          title="MitrAI Onboarding"
           subtitle="Let's set up your study profile"
         />
       </div>
@@ -174,20 +174,20 @@ export default function OnboardingPage() {
       {/* Complete Banner */}
       {isComplete && (
         <div className="p-4 border-t border-[var(--border)] fade-in">
-          <div className="glass-card p-4 text-center">
-            <p className="text-[var(--success)] font-semibold mb-3">✅ Profile created successfully!</p>
-            <div className="flex gap-3 justify-center">
+          <div className="card p-3 text-center">
+            <p className="text-[var(--success)] text-xs font-semibold mb-2">Profile created successfully</p>
+            <div className="flex gap-2 justify-center">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="btn-primary text-sm"
+                className="btn-primary text-xs"
               >
-                📊 Go to Dashboard
+                Dashboard
               </button>
               <button
                 onClick={() => router.push('/matches')}
-                className="btn-secondary text-sm"
+                className="btn-secondary text-xs"
               >
-                🤝 Find Matches
+                Find Matches
               </button>
             </div>
           </div>

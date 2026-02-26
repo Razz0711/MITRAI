@@ -74,20 +74,20 @@ export default function StudyPlanPage() {
   const buddyName = allStudents.find(s => s.id === buddyId)?.name || '';
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-2">
-          <span className="gradient-text">AI Study Plan</span> Generator 📚
+      <div className="text-center mb-6">
+        <h1 className="text-xl font-bold mb-1">
+          <span className="gradient-text">AI Study Plan</span> Generator
         </h1>
-        <p className="text-[var(--muted)]">Personalized weekly study plans powered by Gemini AI</p>
+        <p className="text-xs text-[var(--muted)]">Personalized weekly plans powered by Gemini AI</p>
       </div>
 
       {/* Controls */}
-      <div className="glass-card p-6 mb-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+      <div className="card p-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-sm text-[var(--muted)] mb-1 block">Your Profile</label>
+            <label className="label">Your Profile</label>
             <select
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}
@@ -100,7 +100,7 @@ export default function StudyPlanPage() {
             </select>
           </div>
           <div>
-            <label className="text-sm text-[var(--muted)] mb-1 block">Study Buddy</label>
+            <label className="label">Study Buddy</label>
             <select
               value={buddyId}
               onChange={(e) => setBuddyId(e.target.value)}
@@ -117,9 +117,9 @@ export default function StudyPlanPage() {
         <button
           onClick={generatePlan}
           disabled={!studentId || !buddyId || loading}
-          className="btn-primary w-full"
+          className="btn-primary w-full text-xs"
         >
-          {loading ? '🧠 Generating with AI...' : '📚 Generate Weekly Study Plan'}
+          {loading ? 'Generating...' : 'Generate Weekly Study Plan'}
         </button>
 
         {studentName && buddyName && (
@@ -131,28 +131,28 @@ export default function StudyPlanPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="text-center py-16 glass-card">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-3xl animate-pulse">
-            📚
+        <div className="text-center py-12 card">
+          <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-[var(--primary)]/20 flex items-center justify-center animate-pulse">
+            <span className="w-3 h-3 rounded-full bg-[var(--primary)]" />
           </div>
-          <p className="text-[var(--muted)]">AI is creating your personalized study plan...</p>
-          <p className="text-xs text-[var(--muted)] mt-2">This may take a few seconds</p>
+          <p className="text-xs text-[var(--muted)]">AI is creating your study plan...</p>
+          <p className="text-[10px] text-[var(--muted)] mt-1">This may take a few seconds</p>
         </div>
       )}
 
       {/* Plan Display */}
       {plan && !loading && (
-        <div className="glass-card p-6 slide-up">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold gradient-text">Your Study Plan</h2>
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold gradient-text">Your Study Plan</h2>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(plan);
-                alert('Plan copied to clipboard!');
+                alert('Plan copied to clipboard');
               }}
-              className="btn-secondary text-sm px-4 py-2"
+              className="btn-secondary text-xs px-3 py-1"
             >
-              📋 Copy
+              Copy
             </button>
           </div>
           <div className="prose prose-invert max-w-none">
@@ -165,11 +165,10 @@ export default function StudyPlanPage() {
 
       {/* Empty State */}
       {!plan && !loading && (
-        <div className="text-center py-16 glass-card">
-          <div className="text-6xl mb-4">📅</div>
-          <h2 className="text-2xl font-bold mb-2">Ready to Plan Your Week?</h2>
-          <p className="text-[var(--muted)] max-w-md mx-auto">
-            Select yourself and a study buddy above, then generate an AI-powered study plan with solo and buddy sessions.
+        <div className="text-center py-12 card">
+          <h2 className="text-sm font-bold mb-1">Ready to Plan Your Week?</h2>
+          <p className="text-xs text-[var(--muted)] max-w-sm mx-auto">
+            Select yourself and a study buddy, then generate an AI-powered plan.
           </p>
         </div>
       )}

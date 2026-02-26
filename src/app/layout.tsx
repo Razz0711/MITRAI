@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import { AuthProvider } from "@/lib/auth";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -15,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "MitrAI - Find Your Perfect Study Buddy",
-  description: "AI-powered study buddy matching platform. Find compatible study partners, create study plans, and ace your exams together.",
+  title: "MitrAI — AI Study Partner Matching",
+  description: "Find your ideal study partner with AI-powered matching across subjects, schedule, and learning style.",
 };
 
 export default function RootLayout({
@@ -29,10 +30,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar />
-        <main className="pt-16 min-h-screen">
-          {children}
-        </main>
+        <AuthProvider>
+          <Navbar />
+          <main className="pt-14 min-h-screen">
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );

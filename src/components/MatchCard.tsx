@@ -17,35 +17,29 @@ interface MatchCardProps {
 export default function MatchCard({ match, rank, onViewProfile, onConnect }: MatchCardProps) {
   const { student, score, whyItWorks, potentialChallenges, recommendedFirstTopic, bestFormat, complementaryFactors } = match;
 
-  const rankColors: Record<number, string> = {
-    1: 'from-yellow-500 to-amber-400',
-    2: 'from-gray-300 to-gray-400',
-    3: 'from-amber-600 to-amber-700',
-  };
-
-  const rankEmoji: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  const rankLabel: Record<number, string> = { 1: '#1', 2: '#2', 3: '#3' };
 
   return (
-    <div className="glass-card-hover p-6 slide-up" style={{ animationDelay: `${rank * 150}ms` }}>
+    <div className="card-hover p-4" style={{ animationDelay: `${rank * 100}ms` }}>
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${rankColors[rank] || 'from-purple-500 to-blue-500'} flex items-center justify-center text-2xl`}>
-            {rankEmoji[rank] || '⭐'}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-lg bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-xs font-bold text-[var(--primary-light)]">
+            {rankLabel[rank] || `#${rank}`}
           </div>
           <div>
-            <h3 className="text-lg font-bold text-[var(--foreground)]">{student.name}</h3>
-            <p className="text-sm text-[var(--muted)]">{student.city}, {student.country} · {student.targetExam}</p>
+            <h3 className="text-sm font-semibold text-[var(--foreground)]">{student.name}</h3>
+            <p className="text-[10px] text-[var(--muted)]">{student.city}, {student.country} · {student.targetExam}</p>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold gradient-text">{score.overall}%</div>
-          <p className="text-xs text-[var(--muted)]">Match Score</p>
+          <div className="text-lg font-bold gradient-text">{score.overall}%</div>
+          <p className="text-[10px] text-[var(--muted)]">Match</p>
         </div>
       </div>
 
       {/* Score Breakdown */}
-      <div className="grid grid-cols-5 gap-2 mb-4">
+      <div className="grid grid-cols-5 gap-1.5 mb-3">
         <ScoreBar label="Subject" score={score.subject} max={30} />
         <ScoreBar label="Schedule" score={score.schedule} max={25} />
         <ScoreBar label="Style" score={score.style} max={20} />
@@ -54,16 +48,16 @@ export default function MatchCard({ match, rank, onViewProfile, onConnect }: Mat
       </div>
 
       {/* Info Sections */}
-      <div className="space-y-3 mb-4">
-        <div className="p-3 rounded-xl bg-[var(--success)]/10 border border-[var(--success)]/20">
-          <p className="text-xs font-semibold text-[var(--success)] mb-1">💡 Why This Works</p>
-          <p className="text-sm text-[var(--foreground)]">{whyItWorks}</p>
+      <div className="space-y-2 mb-3">
+        <div className="p-2.5 rounded-lg bg-[var(--success)]/10 border border-[var(--success)]/20">
+          <p className="text-[10px] font-semibold text-[var(--success)] mb-0.5">Why This Works</p>
+          <p className="text-xs text-[var(--foreground)]">{whyItWorks}</p>
         </div>
 
         {complementaryFactors.length > 0 && (
-          <div className="p-3 rounded-xl bg-[var(--secondary)]/10 border border-[var(--secondary)]/20">
-            <p className="text-xs font-semibold text-[var(--secondary)] mb-1">🔄 Complementary Strengths</p>
-            <ul className="text-sm text-[var(--foreground)] space-y-1">
+          <div className="p-2.5 rounded-lg bg-[var(--secondary)]/10 border border-[var(--secondary)]/20">
+            <p className="text-[10px] font-semibold text-[var(--secondary)] mb-0.5">Complementary Strengths</p>
+            <ul className="text-xs text-[var(--foreground)] space-y-0.5">
               {complementaryFactors.map((f, i) => (
                 <li key={i}>• {f}</li>
               ))}
@@ -71,28 +65,28 @@ export default function MatchCard({ match, rank, onViewProfile, onConnect }: Mat
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 rounded-xl bg-white/5">
-            <p className="text-xs text-[var(--muted)] mb-1">📚 First Session Topic</p>
-            <p className="text-sm font-medium">{recommendedFirstTopic}</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="p-2.5 rounded-lg bg-white/5">
+            <p className="text-[10px] text-[var(--muted)] mb-0.5">First Topic</p>
+            <p className="text-xs font-medium">{recommendedFirstTopic}</p>
           </div>
-          <div className="p-3 rounded-xl bg-white/5">
-            <p className="text-xs text-[var(--muted)] mb-1">📋 Best Format</p>
-            <p className="text-sm font-medium">{bestFormat}</p>
+          <div className="p-2.5 rounded-lg bg-white/5">
+            <p className="text-[10px] text-[var(--muted)] mb-0.5">Best Format</p>
+            <p className="text-xs font-medium">{bestFormat}</p>
           </div>
         </div>
 
         {potentialChallenges && (
-          <div className="p-3 rounded-xl bg-[var(--warning)]/10 border border-[var(--warning)]/20">
-            <p className="text-xs font-semibold text-[var(--warning)] mb-1">⚠️ Potential Challenges</p>
-            <p className="text-sm text-[var(--foreground)]">{potentialChallenges}</p>
+          <div className="p-2.5 rounded-lg bg-[var(--warning)]/10 border border-[var(--warning)]/20">
+            <p className="text-[10px] font-semibold text-[var(--warning)] mb-0.5">Potential Challenges</p>
+            <p className="text-xs text-[var(--foreground)]">{potentialChallenges}</p>
           </div>
         )}
       </div>
 
       {/* Student Details */}
-      <div className="p-3 rounded-xl bg-white/5 mb-4">
-        <div className="grid grid-cols-2 gap-2 text-sm">
+      <div className="p-2.5 rounded-lg bg-white/5 mb-3">
+        <div className="grid grid-cols-2 gap-1.5 text-xs">
           <div><span className="text-[var(--muted)]">Strong:</span> <span className="text-[var(--success)]">{student.strongSubjects.join(', ')}</span></div>
           <div><span className="text-[var(--muted)]">Weak:</span> <span className="text-[var(--accent)]">{student.weakSubjects.join(', ')}</span></div>
           <div><span className="text-[var(--muted)]">Available:</span> {student.availableDays.slice(0, 3).join(', ')}</div>
@@ -101,26 +95,26 @@ export default function MatchCard({ match, rank, onViewProfile, onConnect }: Mat
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 flex-wrap">
-        <button onClick={onConnect} className="btn-primary flex-1 text-sm">
-          🤝 Connect
+      <div className="flex gap-1.5 flex-wrap">
+        <button onClick={onConnect} className="btn-primary flex-1 text-xs">
+          Connect
         </button>
-        <button onClick={onViewProfile} className="btn-secondary flex-1 text-sm">
-          👤 Profile
+        <button onClick={onViewProfile} className="btn-secondary flex-1 text-xs">
+          Profile
         </button>
       </div>
-      <div className="flex gap-2 mt-2">
+      <div className="flex gap-1.5 mt-1.5">
         <Link
           href={`/call?mode=voice&buddy=${encodeURIComponent(student.name)}`}
-          className="flex-1 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm text-center font-medium hover:bg-green-500/20 transition-all"
+          className="flex-1 px-2 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs text-center font-medium hover:bg-green-500/20 transition-all"
         >
-          🎙️ Voice Call
+          Voice Call
         </Link>
         <Link
           href={`/call?mode=video&buddy=${encodeURIComponent(student.name)}`}
-          className="flex-1 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm text-center font-medium hover:bg-blue-500/20 transition-all"
+          className="flex-1 px-2 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs text-center font-medium hover:bg-blue-500/20 transition-all"
         >
-          📹 Video Call
+          Video Call
         </Link>
       </div>
     </div>

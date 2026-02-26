@@ -63,7 +63,7 @@ export default function SessionPage() {
     const welcomeMsg: ChatMessage = {
       id: uuidv4(),
       role: 'assistant',
-      content: `🎯 Study Session Started!\n\n📚 Topic: ${topic}\n🎯 Goal: ${goal || 'Learn and practice together'}\n\nI'm your AI study assistant for this session. I'm here to:\n• Help explain concepts when you're stuck\n• Generate practice questions\n• Keep you on track\n\nAsk me anything about ${topic}! Let's make this session count! 💪`,
+      content: `Study Session Started\n\nTopic: ${topic}\nGoal: ${goal || 'Learn and practice together'}\n\nI'm your AI study assistant. I can:\n- Explain concepts when you're stuck\n- Generate practice questions\n- Keep you on track\n\nAsk me anything about ${topic}.`,
       timestamp: Date.now(),
     };
     setMessages([welcomeMsg]);
@@ -74,7 +74,7 @@ export default function SessionPage() {
     const summaryMsg: ChatMessage = {
       id: uuidv4(),
       role: 'assistant',
-      content: `📊 Session Summary\n━━━━━━━━━━━━━━━━\n\n⏱️ Duration: ${minutes} minutes\n📚 Topic: ${topic}\n🎯 Goal: ${goal || 'Learn and practice'}\n💬 Messages: ${messages.length}\n\n🌟 Great session! Keep up the momentum.\n\nRemember to:\n• Review what you learned today\n• Note down any remaining doubts\n• Plan your next session topic\n\nSee you next time! 👋`,
+      content: `Session Summary\n\nDuration: ${minutes} minutes\nTopic: ${topic}\nGoal: ${goal || 'Learn and practice'}\nMessages: ${messages.length}\n\nGreat session. Remember to:\n- Review what you learned today\n- Note remaining questions\n- Plan your next session topic`,
       timestamp: Date.now(),
     };
     setMessages(prev => [...prev, summaryMsg]);
@@ -126,7 +126,7 @@ export default function SessionPage() {
       const errorMsg: ChatMessage = {
         id: uuidv4(),
         role: 'assistant',
-        content: "Oops! Something went wrong. Try asking again? 😅",
+        content: "Something went wrong. Try asking again.",
         timestamp: Date.now(),
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -143,41 +143,41 @@ export default function SessionPage() {
 
   if (!sessionStarted) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">
-            <span className="gradient-text">Study Session</span> 💬
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-bold mb-1">
+            <span className="gradient-text">Study Session</span>
           </h1>
-          <p className="text-[var(--muted)]">Start a study session with AI assistance</p>
+          <p className="text-xs text-[var(--muted)]">Start a study session with AI assistance</p>
         </div>
 
-        <div className="glass-card p-6 space-y-4">
+        <div className="card p-4 space-y-3">
           <div>
-            <label className="text-sm text-[var(--muted)] mb-1 block">What topic are you studying? *</label>
+            <label className="label">Topic *</label>
             <input
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g. Calculus - Integration, Organic Chemistry, Newton's Laws..."
+              placeholder="e.g. Calculus - Integration, Organic Chemistry..."
               className="input-field"
             />
           </div>
 
           <div>
-            <label className="text-sm text-[var(--muted)] mb-1 block">Session Goal (optional)</label>
+            <label className="label">Goal (optional)</label>
             <input
               type="text"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
-              placeholder="e.g. Understand integration by parts, solve 10 problems..."
+              placeholder="e.g. Understand integration by parts..."
               className="input-field"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm text-[var(--muted)] mb-1 block">Student 1 (optional)</label>
-              <select value={student1Id} onChange={(e) => setStudent1Id(e.target.value)} className="input-field text-sm">
+              <label className="label">Student 1</label>
+              <select value={student1Id} onChange={(e) => setStudent1Id(e.target.value)} className="input-field text-xs">
                 <option value="">Select...</option>
                 {allStudents.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
@@ -185,8 +185,8 @@ export default function SessionPage() {
               </select>
             </div>
             <div>
-              <label className="text-sm text-[var(--muted)] mb-1 block">Student 2 (optional)</label>
-              <select value={student2Id} onChange={(e) => setStudent2Id(e.target.value)} className="input-field text-sm">
+              <label className="label">Student 2</label>
+              <select value={student2Id} onChange={(e) => setStudent2Id(e.target.value)} className="input-field text-xs">
                 <option value="">Select...</option>
                 {allStudents.filter(s => s.id !== student1Id).map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
@@ -198,21 +198,21 @@ export default function SessionPage() {
           <button
             onClick={startSession}
             disabled={!topic}
-            className="btn-primary w-full text-lg py-4"
+            className="btn-primary w-full"
           >
-            🚀 Start Study Session
+            Start Session
           </button>
         </div>
 
         {/* Quick Topics */}
-        <div className="mt-6">
-          <p className="text-sm text-[var(--muted)] mb-3">Quick start topics:</p>
-          <div className="flex flex-wrap gap-2">
+        <div className="mt-4">
+          <p className="text-xs text-[var(--muted)] mb-2">Quick start:</p>
+          <div className="flex flex-wrap gap-1.5">
             {['Calculus', 'Organic Chemistry', 'Physics - Mechanics', 'Trigonometry', 'Thermodynamics', 'Genetics'].map(t => (
               <button
                 key={t}
                 onClick={() => setTopic(t)}
-                className="px-4 py-2 rounded-xl bg-white/5 border border-[var(--border)] text-sm hover:bg-white/10 hover:border-[var(--primary)] transition-all"
+                className="px-3 py-1.5 rounded-lg bg-white/5 border border-[var(--border)] text-xs hover:bg-white/10 hover:border-[var(--primary)] transition-all"
               >
                 {t}
               </button>
@@ -228,14 +228,14 @@ export default function SessionPage() {
       {/* Session Header */}
       <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
         <div className="flex items-center gap-4">
-          <div className="w-3 h-3 rounded-full bg-[var(--success)] animate-pulse" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[var(--success)] animate-pulse" />
           <div>
-            <p className="text-sm font-medium">📚 {topic}</p>
-            <p className="text-xs text-[var(--muted)]">{goal || 'Study session in progress'}</p>
+            <p className="text-xs font-medium">{topic}</p>
+            <p className="text-[10px] text-[var(--muted)]">{goal || 'Session in progress'}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm font-mono text-[var(--primary-light)]">⏱ {formatTime(sessionTime)}</span>
+          <span className="text-xs font-mono text-[var(--primary-light)]">{formatTime(sessionTime)}</span>
           
           {/* Call Buttons */}
           <button
@@ -245,23 +245,23 @@ export default function SessionPage() {
                 ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/50'
                 : 'bg-white/5 hover:bg-white/10 text-[var(--muted)] hover:text-green-400'
             }`}
-            title="Voice Call"
+            title="Voice"
           >
-            🎙️
+            Voice
           </button>
           <button
             onClick={() => setCallMode(callMode === 'video' ? null : 'video')}
-            className={`p-2 rounded-lg text-sm transition-all ${
+            className={`p-1.5 rounded-lg text-xs transition-all ${
               callMode === 'video'
                 ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
                 : 'bg-white/5 hover:bg-white/10 text-[var(--muted)] hover:text-blue-400'
             }`}
-            title="Video Call"
+            title="Video"
           >
-            📹
+            Video
           </button>
 
-          <button onClick={endSession} className="px-4 py-2 rounded-xl bg-[var(--error)]/20 text-[var(--error)] text-sm font-medium hover:bg-[var(--error)]/30 transition-all">
+          <button onClick={endSession} className="px-3 py-1.5 rounded-lg bg-[var(--error)]/20 text-[var(--error)] text-xs font-medium hover:bg-[var(--error)]/30 transition-all">
             End Session
           </button>
         </div>

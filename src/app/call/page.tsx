@@ -75,49 +75,49 @@ export default function CallPage() {
 
   // Call setup view
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-2">
-          <span className="gradient-text">Call Your Buddy</span> 📞
+      <div className="text-center mb-6">
+        <h1 className="text-xl font-bold mb-1">
+          <span className="gradient-text">Call Your Buddy</span>
         </h1>
-        <p className="text-[var(--muted)]">Start a voice or video call with your study partner</p>
+        <p className="text-xs text-[var(--muted)]">Start a voice or video call with your study partner</p>
       </div>
 
       {/* Call Mode Selection */}
       {!callMode && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <button
             onClick={() => setCallMode('voice')}
-            className="glass-card-hover p-8 text-center group"
+            className="card-hover p-6 text-center group"
           >
-            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-              🎙️
+            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-green-500/15 border border-green-500/25 flex items-center justify-center text-sm font-bold text-green-400 group-hover:scale-110 transition-transform">
+              MIC
             </div>
-            <h3 className="text-xl font-bold mb-2">Voice Call</h3>
-            <p className="text-sm text-[var(--muted)]">
-              Audio-only call — great for discussing concepts, quick doubts, or revision sessions
+            <h3 className="text-sm font-semibold mb-1">Voice Call</h3>
+            <p className="text-xs text-[var(--muted)]">
+              Audio-only. Great for discussing concepts and revision.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2 justify-center">
-              <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs">Low bandwidth</span>
-              <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-xs">No camera needed</span>
+            <div className="mt-3 flex flex-wrap gap-1.5 justify-center">
+              <span className="badge-success text-[10px]">Low bandwidth</span>
+              <span className="badge-success text-[10px]">No camera</span>
             </div>
           </button>
 
           <button
             onClick={() => setCallMode('video')}
-            className="glass-card-hover p-8 text-center group"
+            className="card-hover p-6 text-center group"
           >
-            <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform">
-              📹
+            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-sm font-bold text-blue-400 group-hover:scale-110 transition-transform">
+              CAM
             </div>
-            <h3 className="text-xl font-bold mb-2">Video Call</h3>
-            <p className="text-sm text-[var(--muted)]">
-              Face-to-face video call — ideal for teaching, whiteboard sessions, and problem solving
+            <h3 className="text-sm font-semibold mb-1">Video Call</h3>
+            <p className="text-xs text-[var(--muted)]">
+              Face-to-face. Ideal for teaching and problem solving.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2 justify-center">
-              <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs">Screen sharing</span>
-              <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs">Face-to-face</span>
+            <div className="mt-3 flex flex-wrap gap-1.5 justify-center">
+              <span className="badge-primary text-[10px]">Screen sharing</span>
+              <span className="badge-primary text-[10px]">Face-to-face</span>
             </div>
           </button>
         </div>
@@ -125,22 +125,22 @@ export default function CallPage() {
 
       {/* Call Setup Form */}
       {callMode && (
-        <div className="glass-card p-6 space-y-5 slide-up">
+        <div className="card p-4 space-y-4 slide-up">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">
-              {callMode === 'voice' ? '🎙️ Voice Call' : '📹 Video Call'} Setup
+            <h2 className="text-sm font-semibold">
+              {callMode === 'voice' ? 'Voice Call' : 'Video Call'} Setup
             </h2>
             <button
               onClick={() => setCallMode(null)}
-              className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+              className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
             >
-              ← Change mode
+              Change mode
             </button>
           </div>
 
           {/* Display Name */}
           <div>
-            <label className="text-sm text-[var(--muted)] mb-1 block">Your Name *</label>
+            <label className="label">Your Name *</label>
             <input
               type="text"
               value={displayName}
@@ -152,7 +152,7 @@ export default function CallPage() {
 
           {/* Room Code */}
           <div>
-            <label className="text-sm text-[var(--muted)] mb-1 block">Room Code *</label>
+            <label className="label">Room Code *</label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -164,9 +164,9 @@ export default function CallPage() {
               />
               <button
                 onClick={generateRoomCode}
-                className="btn-secondary whitespace-nowrap"
+                className="btn-secondary whitespace-nowrap text-xs"
               >
-                🎲 Generate
+                Generate
               </button>
             </div>
             <p className="text-xs text-[var(--muted)] mt-1">
@@ -176,23 +176,22 @@ export default function CallPage() {
 
           {/* Buddy Info */}
           {buddyName && (
-            <div className="p-3 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/20">
-              <p className="text-sm">
-                🤝 Calling <strong className="text-[var(--primary-light)]">{buddyName}</strong> — 
-                share the room code <strong className="font-mono text-[var(--secondary)]">{roomCode || '...'}</strong> with them
+            <div className="p-2.5 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20">
+              <p className="text-xs">
+                Calling <strong className="text-[var(--primary-light)]">{buddyName}</strong> — 
+                share code <strong className="font-mono text-[var(--secondary)]">{roomCode || '...'}</strong>
               </p>
             </div>
           )}
 
           {/* Tips */}
-          <div className="p-4 rounded-xl bg-white/5 space-y-2">
-            <p className="text-sm font-semibold text-[var(--foreground)]">💡 Quick Tips</p>
-            <ul className="text-sm text-[var(--muted)] space-y-1">
-              <li>• Use headphones for better audio quality</li>
-              <li>• Find a quiet spot for your study session</li>
-              {callMode === 'video' && <li>• Good lighting helps your buddy see you clearly</li>}
-              <li>• You can share your screen to show problems/solutions</li>
-              <li>• Both buddies need the same room code to connect</li>
+          <div className="p-3 rounded-lg bg-white/5 space-y-1">
+            <p className="text-xs font-semibold text-[var(--foreground)]">Tips</p>
+            <ul className="text-xs text-[var(--muted)] space-y-0.5">
+              <li>Use headphones for better audio</li>
+              <li>Find a quiet spot</li>
+              {callMode === 'video' && <li>Good lighting helps</li>}
+              <li>Both buddies need the same room code</li>
             </ul>
           </div>
 
@@ -200,55 +199,54 @@ export default function CallPage() {
           <button
             onClick={startCall}
             disabled={!roomCode || !displayName}
-            className={`w-full py-4 rounded-xl text-lg font-bold transition-all duration-300 ${
+            className={`w-full py-3 rounded-lg text-sm font-semibold transition-all duration-300 ${
               callMode === 'voice'
-                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg hover:shadow-green-500/30'
-                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-lg hover:shadow-blue-500/30'
-            } text-white hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg hover:shadow-green-500/20'
+                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-lg hover:shadow-blue-500/20'
+            } text-white hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
           >
-            {callMode === 'voice' ? '🎙️ Start Voice Call' : '📹 Start Video Call'}
+            {callMode === 'voice' ? 'Start Voice Call' : 'Start Video Call'}
           </button>
         </div>
       )}
 
       {/* How It Works */}
-      <div className="mt-8 glass-card p-6">
-        <h3 className="text-lg font-bold mb-4 text-center">How Calling Works</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="text-center p-4">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-2xl">
-              1️⃣
+      <div className="mt-6 card p-4">
+        <h3 className="text-sm font-semibold mb-3 text-center">How Calling Works</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="text-center p-3">
+            <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-[var(--primary)]/15 flex items-center justify-center text-xs font-bold text-[var(--primary-light)]">
+              1
             </div>
-            <p className="text-sm font-medium mb-1">Generate a Room Code</p>
-            <p className="text-xs text-[var(--muted)]">Create a unique code for your study session</p>
+            <p className="text-xs font-medium mb-0.5">Generate a Room Code</p>
+            <p className="text-[10px] text-[var(--muted)]">Create a unique code for your session</p>
           </div>
-          <div className="text-center p-4">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-2xl">
-              2️⃣
+          <div className="text-center p-3">
+            <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-[var(--primary)]/15 flex items-center justify-center text-xs font-bold text-[var(--primary-light)]">
+              2
             </div>
-            <p className="text-sm font-medium mb-1">Share with Your Buddy</p>
-            <p className="text-xs text-[var(--muted)]">Send the room code to your matched study partner</p>
+            <p className="text-xs font-medium mb-0.5">Share with Buddy</p>
+            <p className="text-[10px] text-[var(--muted)]">Send the code to your study partner</p>
           </div>
-          <div className="text-center p-4">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-2xl">
-              3️⃣
+          <div className="text-center p-3">
+            <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-[var(--primary)]/15 flex items-center justify-center text-xs font-bold text-[var(--primary-light)]">
+              3
             </div>
-            <p className="text-sm font-medium mb-1">Study Together!</p>
-            <p className="text-xs text-[var(--muted)]">Both enter the same code and start learning</p>
+            <p className="text-xs font-medium mb-0.5">Study Together</p>
+            <p className="text-[10px] text-[var(--muted)]">Both enter the same code and start</p>
           </div>
         </div>
       </div>
 
       {/* Features */}
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[
-          { icon: '🖥️', label: 'Screen Share', desc: 'Show your work' },
-          { icon: '💬', label: 'In-call Chat', desc: 'Text alongside' },
-          { icon: '🔇', label: 'Mute/Unmute', desc: 'Quick controls' },
-          { icon: '🌐', label: 'No Install', desc: 'Works in browser' },
+          { label: 'Screen Share', desc: 'Show your work' },
+          { label: 'In-call Chat', desc: 'Text alongside' },
+          { label: 'Mute/Unmute', desc: 'Quick controls' },
+          { label: 'No Install', desc: 'Works in browser' },
         ].map((f) => (
-          <div key={f.label} className="glass-card p-3 text-center">
-            <div className="text-2xl mb-1">{f.icon}</div>
+          <div key={f.label} className="card p-2.5 text-center">
             <p className="text-xs font-medium">{f.label}</p>
             <p className="text-[10px] text-[var(--muted)]">{f.desc}</p>
           </div>

@@ -49,9 +49,9 @@ export default function ChatInterface({
     <div className="flex flex-col h-full">
       {/* Header */}
       {(title || subtitle) && (
-        <div className="p-4 border-b border-[var(--border)]">
-          {title && <h2 className="text-lg font-bold gradient-text">{title}</h2>}
-          {subtitle && <p className="text-sm text-[var(--muted)]">{subtitle}</p>}
+        <div className="px-4 py-3 border-b border-[var(--border)]">
+          {title && <h2 className="text-sm font-semibold gradient-text">{title}</h2>}
+          {subtitle && <p className="text-[10px] text-[var(--muted)]">{subtitle}</p>}
         </div>
       )}
 
