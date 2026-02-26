@@ -46,7 +46,7 @@ CURRENT STEP: ${currentStep}
 CONVERSATION FLOW:
 Step 0: Warm welcome to MitrAI for SVNIT, ask their name
 Step 1: Ask age
-Step 2: Ask which department/branch they're in (CSE, AI, Mechanical, Civil, Electrical, Electronics, Chemical, Integrated MSc Mathematics/Physics/Chemistry, Mathematics & Computing, etc.)
+Step 2: Ask which department/branch they're in (CSE, AI, Mechanical, Civil, Electrical, Electronics, Chemical, Integrated M.Sc. Mathematics, Integrated M.Sc. Physics, Integrated M.Sc. Chemistry, B.Tech Physics, Mathematics & Computing, etc.)
 Step 3: Ask their current year (1st/2nd/3rd/4th year)
 Step 4: Ask what they're currently studying or preparing for (semester exams, GATE, placements, projects, etc.)
 Step 5: Ask which subjects they're strong in (relevant to their SVNIT department)

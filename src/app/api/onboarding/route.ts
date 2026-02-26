@@ -44,7 +44,7 @@ function getFallbackResponse(step: number, _message: string, data: Record<string
   const responses: Record<number, string> = {
     0: `Hey! Welcome to MitrAI for SVNIT!\nI'm your study buddy matching agent. Let's find you the perfect partner.\nWhat's your name?`,
     1: `Nice to meet you, ${name}!\nHow old are you?`,
-    2: `Which department/branch are you in at SVNIT?\n(CSE, AI, Mechanical, Civil, Electrical, Electronics, Chemical, Integrated MSc, Mathematics & Computing, etc.)`,
+    2: `Which department/branch are you in at SVNIT?\n(CSE, AI, Mechanical, Civil, Electrical, Electronics, Chemical, Integrated M.Sc. Mathematics, Integrated M.Sc. Physics, Integrated M.Sc. Chemistry, B.Tech Physics, Mathematics & Computing)`,
     3: `Got it! What year are you in? (1st / 2nd / 3rd / 4th)`,
     4: `What are you currently studying or preparing for?\n(Semester exams, GATE, placements, projects, etc.)`,
     5: `Which subjects are you strong in?\n(List them separated by commas)`,

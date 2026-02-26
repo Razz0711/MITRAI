@@ -27,7 +27,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     question: '',
     field: 'department',
     type: 'select',
-    options: ['CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics', 'Chemical', 'Integrated MSc Mathematics', 'Integrated MSc Physics', 'Integrated MSc Chemistry', 'Mathematics & Computing'],
+    options: ['CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics', 'Chemical', 'Integrated M.Sc. Mathematics', 'Integrated M.Sc. Physics', 'Integrated M.Sc. Chemistry', 'B.Tech Physics', 'Mathematics & Computing'],
   },
   {
     id: 3,
@@ -133,6 +133,8 @@ export function parseOnboardingData(
     const dept = rawData.department.trim();
     if (dept.startsWith('Integrated')) {
       parsed.currentStudy = dept;
+    } else if (dept === 'Mathematics & Computing') {
+      parsed.currentStudy = 'B.Tech Mathematics & Computing';
     } else {
       parsed.currentStudy = `B.Tech ${dept}`;
     }
