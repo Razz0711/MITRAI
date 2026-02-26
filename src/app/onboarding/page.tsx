@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 import ChatInterface from '@/components/ChatInterface';
 import { ChatMessage } from '@/lib/types';
-import { parseOnboardingData } from '@/lib/onboarding';
+import { ONBOARDING_STEPS, parseOnboardingData } from '@/lib/onboarding';
 
 const TOTAL_STEPS = 12;
 
@@ -44,6 +44,30 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [collectedData, setCollectedData] = useState<Record<string, string>>({});
   const [isComplete, setIsComplete] = useState(false);
+  const [multiSelectChoices, setMultiSelectChoices] = useState<string[]>([]);
+
+  // Get current step config for showing option buttons
+  const currentStepConfig = ONBOARDING_STEPS.find(s => s.id === currentStep);
+  const hasOptions = currentStepConfig && (currentStepConfig.type === 'select' || currentStepConfig.type === 'multiselect');
+  const isMultiSelect = currentStepConfig?.type === 'multiselect';
+
+  const handleOptionSelect = (option: string) => {
+    if (isMultiSelect) {
+      setMultiSelectChoices(prev =>
+        prev.includes(option) ? prev.filter(o => o !== option) : [...prev, option]
+      );
+    } else {
+      // Single select - send immediately
+      handleSendMessage(option);
+    }
+  };
+
+  const handleMultiSelectConfirm = () => {
+    if (multiSelectChoices.length > 0) {
+      handleSendMessage(multiSelectChoices.join(', '));
+      setMultiSelectChoices([]);
+    }
+  };
 
   const handleSendMessage = useCallback(async (userMessage: string) => {
     // Add user message
@@ -160,11 +184,45 @@ export default function OnboardingPage() {
           messages={messages}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
-          placeholder={isComplete ? '' : 'Type your answer...'}
+          placeholder={isComplete ? '' : (hasOptions ? 'Or type your answer...' : 'Type your answer...')}
           title="MitrAI Onboarding"
           subtitle="Let's set up your study profile"
         />
       </div>
+
+      {/* Option Buttons */}
+      {hasOptions && !isComplete && !isLoading && (
+        <div className="px-4 pb-2 border-t border-[var(--border)] fade-in">
+          <div className="flex flex-wrap gap-2 pt-3">
+            {currentStepConfig.options?.map((option) => (
+              <button
+                key={option}
+                onClick={() => handleOptionSelect(option)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  isMultiSelect && multiSelectChoices.includes(option)
+                    ? 'bg-[var(--primary)] text-white border border-[var(--primary)]'
+                    : 'bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary-light)]'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          {isMultiSelect && multiSelectChoices.length > 0 && (
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-[10px] text-[var(--muted)]">
+                Selected: {multiSelectChoices.join(', ')}
+              </span>
+              <button
+                onClick={handleMultiSelectConfirm}
+                className="btn-primary text-xs px-4 py-1.5"
+              >
+                Confirm
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Complete Banner */}
       {isComplete && (
