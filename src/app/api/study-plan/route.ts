@@ -1,0 +1,83 @@
+// ============================================
+// MitrAI - Study Plan API
+// ============================================
+
+import { NextRequest, NextResponse } from 'next/server';
+import { getStudentById } from '@/lib/store';
+import { generateStudyPlan } from '@/lib/gemini';
+
+export async function POST(req: NextRequest) {
+  try {
+    const { studentId, buddyId, weekDates } = await req.json();
+
+    if (!studentId || !buddyId) {
+      return NextResponse.json({ success: false, error: 'studentId and buddyId required' }, { status: 400 });
+    }
+
+    const student = getStudentById(studentId);
+    const buddy = getStudentById(buddyId);
+
+    if (!student || !buddy) {
+      return NextResponse.json({ success: false, error: 'Student or buddy not found' }, { status: 404 });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      // Fallback study plan
+      const fallbackPlan = generateFallbackPlan(student.name, buddy.name, weekDates || 'This Week');
+      return NextResponse.json({ success: true, data: { plan: fallbackPlan } });
+    }
+
+    const plan = await generateStudyPlan(student, buddy, weekDates || 'This Week');
+    return NextResponse.json({ success: true, data: { plan } });
+  } catch (error) {
+    console.error('Study plan error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to generate study plan' }, { status: 500 });
+  }
+}
+
+function generateFallbackPlan(studentName: string, buddyName: string, weekDates: string): string {
+  return `📚 WEEKLY STUDY PLAN
+━━━━━━━━━━━━━━━━━━━━
+
+Student: ${studentName}
+Study Buddy: ${buddyName}
+Week: ${weekDates}
+
+🎯 Main Goal: Cover key topics and build strong foundations
+
+━━━━━━━━━━━━━━━━━━━━
+
+📅 MONDAY
+Solo Session (2 hours):
+→ Review previous concepts
+→ Read chapter notes
+→ Make summary sheets
+
+📅 WEDNESDAY  
+Buddy Session (1.5 hours):
+→ Discuss difficult concepts
+→ Solve problems together
+→ Quiz each other
+
+📅 FRIDAY
+Solo Session (2 hours):
+→ Practice problems
+→ Attempt mock questions
+→ Review weak areas
+
+📅 SATURDAY
+Buddy Session (2 hours):
+→ Mock test together
+→ Discuss solutions
+→ Plan next week
+
+━━━━━━━━━━━━━━━━━━━━
+
+📊 WEEK TARGETS:
+✅ Complete 2-3 chapters
+✅ Solve 50+ practice problems
+✅ 1 mock test
+✅ Daily 30-min revision
+
+💪 You've got this, ${studentName}! Study smart with ${buddyName}!`;
+}

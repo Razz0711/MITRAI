@@ -1,0 +1,178 @@
+// ============================================
+// MitrAI - Study Plan Page
+// ============================================
+
+'use client';
+
+import { useState, useEffect } from 'react';
+import { StudentProfile } from '@/lib/types';
+
+export default function StudyPlanPage() {
+  const [plan, setPlan] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
+  const [studentId, setStudentId] = useState('');
+  const [buddyId, setBuddyId] = useState('');
+
+  useEffect(() => {
+    loadStudents();
+  }, []);
+
+  const loadStudents = async () => {
+    try {
+      const res = await fetch('/api/students');
+      const data = await res.json();
+      if (data.success) {
+        setAllStudents(data.data);
+
+        // Auto-select from localStorage
+        const savedStudent = localStorage.getItem('mitrai_student_id');
+        const savedBuddy = localStorage.getItem('mitrai_buddy_id');
+
+        if (savedStudent) setStudentId(savedStudent);
+        else if (data.data.length > 0) setStudentId(data.data[0].id);
+
+        if (savedBuddy) setBuddyId(savedBuddy);
+        else if (data.data.length > 1) setBuddyId(data.data[1].id);
+      }
+    } catch (err) {
+      console.error('Failed to load students:', err);
+    }
+  };
+
+  const generatePlan = async () => {
+    if (!studentId || !buddyId) return;
+    setLoading(true);
+    setPlan('');
+
+    try {
+      const today = new Date();
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+
+      const weekDates = `${today.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} - ${nextWeek.toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+      const res = await fetch('/api/study-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, buddyId, weekDates }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setPlan(data.data.plan);
+      }
+    } catch (err) {
+      console.error('Plan generation error:', err);
+      setPlan('Failed to generate plan. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const studentName = allStudents.find(s => s.id === studentId)?.name || '';
+  const buddyName = allStudents.find(s => s.id === buddyId)?.name || '';
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold mb-2">
+          <span className="gradient-text">AI Study Plan</span> Generator 📚
+        </h1>
+        <p className="text-[var(--muted)]">Personalized weekly study plans powered by Gemini AI</p>
+      </div>
+
+      {/* Controls */}
+      <div className="glass-card p-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="text-sm text-[var(--muted)] mb-1 block">Your Profile</label>
+            <select
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              className="input-field"
+            >
+              <option value="">Select student...</option>
+              {allStudents.map(s => (
+                <option key={s.id} value={s.id}>{s.name} — {s.targetExam}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-[var(--muted)] mb-1 block">Study Buddy</label>
+            <select
+              value={buddyId}
+              onChange={(e) => setBuddyId(e.target.value)}
+              className="input-field"
+            >
+              <option value="">Select buddy...</option>
+              {allStudents.filter(s => s.id !== studentId).map(s => (
+                <option key={s.id} value={s.id}>{s.name} — {s.targetExam}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <button
+          onClick={generatePlan}
+          disabled={!studentId || !buddyId || loading}
+          className="btn-primary w-full"
+        >
+          {loading ? '🧠 Generating with AI...' : '📚 Generate Weekly Study Plan'}
+        </button>
+
+        {studentName && buddyName && (
+          <p className="text-center text-sm text-[var(--muted)] mt-3">
+            Creating a study plan for <strong className="text-[var(--foreground)]">{studentName}</strong> with buddy <strong className="text-[var(--foreground)]">{buddyName}</strong>
+          </p>
+        )}
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="text-center py-16 glass-card">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-3xl animate-pulse">
+            📚
+          </div>
+          <p className="text-[var(--muted)]">AI is creating your personalized study plan...</p>
+          <p className="text-xs text-[var(--muted)] mt-2">This may take a few seconds</p>
+        </div>
+      )}
+
+      {/* Plan Display */}
+      {plan && !loading && (
+        <div className="glass-card p-6 slide-up">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold gradient-text">Your Study Plan</h2>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(plan);
+                alert('Plan copied to clipboard!');
+              }}
+              className="btn-secondary text-sm px-4 py-2"
+            >
+              📋 Copy
+            </button>
+          </div>
+          <div className="prose prose-invert max-w-none">
+            <pre className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)] bg-transparent p-0 m-0 font-sans">
+              {plan}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!plan && !loading && (
+        <div className="text-center py-16 glass-card">
+          <div className="text-6xl mb-4">📅</div>
+          <h2 className="text-2xl font-bold mb-2">Ready to Plan Your Week?</h2>
+          <p className="text-[var(--muted)] max-w-md mx-auto">
+            Select yourself and a study buddy above, then generate an AI-powered study plan with solo and buddy sessions.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
