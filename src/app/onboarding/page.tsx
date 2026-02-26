@@ -14,19 +14,20 @@ import { parseOnboardingData } from '@/lib/onboarding';
 const TOTAL_STEPS = 12;
 
 // Map step numbers to field names for data collection
+// STEP_FIELDS[N] = the field the user answers at step N
 const STEP_FIELDS: Record<number, string> = {
-  0: '',           // welcome - no data yet
-  1: 'name',       // ask name
-  2: 'department',  // department/branch
-  3: 'yearLevel',   // year
-  4: 'targetExam',  // what they're preparing for
-  5: 'strongSubjects', // strong subjects
-  6: 'weakSubjects',   // weak subjects
-  7: 'studyMethod',    // study method
-  8: 'sessionLength',  // session length
-  9: 'schedule',       // days and times
-  10: 'shortTermGoal', // main goal
-  11: 'personality',   // study style + accountability
+  0: 'name',           // user answers: their name
+  1: 'department',     // user answers: department/branch
+  2: 'yearLevel',      // user answers: year
+  3: 'targetExam',     // user answers: what they're preparing for
+  4: 'strongSubjects', // user answers: strong subjects
+  5: 'weakSubjects',   // user answers: weak subjects
+  6: 'studyMethod',    // user answers: study method
+  7: 'sessionLength',  // user answers: session length
+  8: 'schedule',       // user answers: days and times
+  9: 'shortTermGoal',  // user answers: main goal
+  10: 'personality',   // user answers: study style + accountability
+  11: '',              // wrap up - no data to save
 };
 
 export default function OnboardingPage() {
@@ -59,11 +60,8 @@ export default function OnboardingPage() {
     const nextStep = currentStep + 1;
     const fieldName = STEP_FIELDS[currentStep];
     const newData = { ...collectedData };
-    if (fieldName && currentStep > 0) {
+    if (fieldName) {
       newData[fieldName] = userMessage;
-    } else if (currentStep === 0) {
-      // Step 0 response is the name
-      newData['name'] = userMessage;
     }
     setCollectedData(newData);
 
