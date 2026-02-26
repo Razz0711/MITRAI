@@ -29,7 +29,7 @@ export default function MatchCard({ match, rank, onViewProfile, onConnect }: Mat
           </div>
           <div>
             <h3 className="text-sm font-semibold text-[var(--foreground)]">{student.name}</h3>
-            <p className="text-[10px] text-[var(--muted)]">{student.city}, {student.country} · {student.targetExam}</p>
+            <p className="text-[10px] text-[var(--muted)]">{student.department || student.currentStudy} · {student.targetExam}</p>
           </div>
         </div>
         <div className="text-right">

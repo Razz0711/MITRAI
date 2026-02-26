@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
       timezone: 'IST',
       preferredLanguage: 'English',
       institution: '',
+      department: '',
       yearLevel: '',
     };
 

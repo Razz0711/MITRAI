@@ -42,21 +42,19 @@ function getFallbackResponse(step: number, _message: string, data: Record<string
   const name = data.name || 'there';
 
   const responses: Record<number, string> = {
-    0: `Hey! Welcome to MitrAI 👋\nI'm your personal study agent. I'll help you find your perfect study buddy!\nLet's start - what's your name?`,
-    1: `Nice to meet you, ${name}! 🎉\nHow old are you?`,
-    2: `Great! Which city and country are you from? 🌍`,
-    3: `Awesome! Which language do you prefer for studying?\nOptions: English, Hindi, Tamil, Telugu, Bengali, Marathi, or Other`,
-    4: `Perfect! What are you currently studying? 📚\n(e.g., Class 12 Science, B.Tech, preparing for competitive exams)`,
-    5: `Nice! Which exam are you targeting? 🎯\nJEE / NEET / UPSC / CAT / GRE / GATE / Board Exams / Other`,
-    6: `Got it! What year or level are you in?`,
-    7: `Great ${name}! 💪 Which subjects are you strong in?\n(You can list multiple, separated by commas)`,
-    8: `And which subjects do you need improvement in? Don't worry, that's what study buddies are for! 😊`,
-    9: `How do you prefer to study?\n📖 Reading notes\n🎥 Watching videos\n✏️ Solving problems\n💬 Group discussion\n(Pick one or more!)`,
-    10: `How long are your study sessions usually?\n⏱️ 30 minutes / 1 hour / 2 hours / More`,
-    11: `Which days and times work best for you? 📅\n(e.g., Mon, Wed, Fri evenings 7-10 PM)`,
-    12: `What's your main study goal right now? 🎯\n(e.g., Complete calculus by month end, score 95+ in boards)`,
-    13: `Last couple of questions, ${name}! Do you prefer strict scheduled sessions or flexible ones? And do you need an accountability partner? 🤝`,
-    14: `Perfect! I have everything I need, ${name}! 🎉\nCreating your personal study agent now... I'll find you the best study buddy soon! 🎯\n\nYour profile is being set up. Head to the dashboard to see your matches!`,
+    0: `Hey! Welcome to MitrAI for SVNIT!\nI'm your study buddy matching agent. Let's find you the perfect partner.\nWhat's your name?`,
+    1: `Nice to meet you, ${name}!\nHow old are you?`,
+    2: `Which department/branch are you in at SVNIT?\n(CSE, AI, Mechanical, Civil, Electrical, Electronics, Chemical, Integrated MSc, Mathematics & Computing, etc.)`,
+    3: `Got it! What year are you in? (1st / 2nd / 3rd / 4th)`,
+    4: `What are you currently studying or preparing for?\n(Semester exams, GATE, placements, projects, etc.)`,
+    5: `Which subjects are you strong in?\n(List them separated by commas)`,
+    6: `And which subjects do you need help with? That's exactly what a study buddy is for.`,
+    7: `How do you prefer to study?\nReading notes / Watching videos / Solving problems / Group discussion\n(Pick one or more)`,
+    8: `How long are your study sessions usually?\n30 minutes / 1 hour / 2 hours`,
+    9: `Which days and times work best for you?\n(e.g., Mon, Wed, Fri evenings 7-10 PM)`,
+    10: `What's your main goal right now, ${name}?\n(e.g., Score 9+ SGPA, GATE prep, complete project, etc.)`,
+    11: `Last question! Do you prefer a strict study schedule or flexible one? And do you need someone to keep you accountable?`,
+    12: `All set, ${name}! Creating your profile now.\nI'll match you with the best study buddies from SVNIT.\n\nHead to the dashboard to see your matches!`,
   };
 
   return responses[step] || responses[0];

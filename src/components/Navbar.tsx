@@ -34,6 +34,7 @@ export default function Navbar() {
               M
             </div>
             <span className="text-sm font-semibold text-[var(--foreground)]">MitrAI</span>
+            <span className="text-[10px] text-[var(--muted)] hidden sm:inline">SVNIT</span>
           </Link>
 
           {/* Desktop Nav */}

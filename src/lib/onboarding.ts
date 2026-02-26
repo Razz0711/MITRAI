@@ -23,62 +23,46 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     id: 2,
-    phase: 'Basic Info',
+    phase: 'Academic',
     question: '',
-    field: 'location',
-    type: 'text',
-    placeholder: 'e.g. Delhi, India',
+    field: 'department',
+    type: 'select',
+    options: ['CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics', 'Chemical', 'Integrated MSc Mathematics', 'Integrated MSc Physics', 'Integrated MSc Chemistry', 'Mathematics & Computing'],
   },
   {
     id: 3,
-    phase: 'Basic Info',
+    phase: 'Academic',
     question: '',
-    field: 'preferredLanguage',
+    field: 'yearLevel',
     type: 'select',
-    options: ['English', 'Hindi', 'Tamil', 'Telugu', 'Bengali', 'Marathi', 'Other'],
+    options: ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'],
   },
   {
     id: 4,
     phase: 'Academic',
     question: '',
-    field: 'currentStudy',
-    type: 'text',
-    placeholder: 'e.g. Class 12 Science, B.Tech CSE...',
+    field: 'targetExam',
+    type: 'select',
+    options: ['Semester Exams', 'GATE', 'Placements', 'GRE', 'CAT', 'Projects', 'Other'],
   },
   {
     id: 5,
-    phase: 'Academic',
-    question: '',
-    field: 'targetExam',
-    type: 'select',
-    options: ['JEE', 'NEET', 'UPSC', 'CAT', 'GRE', 'GATE', 'Board Exams', 'Other'],
-  },
-  {
-    id: 6,
-    phase: 'Academic',
-    question: '',
-    field: 'yearLevel',
-    type: 'text',
-    placeholder: 'e.g. 12th grade, 2nd year...',
-  },
-  {
-    id: 7,
     phase: 'Subjects',
     question: '',
     field: 'strongSubjects',
     type: 'text',
-    placeholder: 'e.g. Physics, Math...',
+    placeholder: 'e.g. DSA, Thermodynamics, Circuit Theory...',
   },
   {
-    id: 8,
+    id: 6,
     phase: 'Subjects',
     question: '',
     field: 'weakSubjects',
     type: 'text',
-    placeholder: 'e.g. Chemistry, Biology...',
+    placeholder: 'e.g. OS, Fluid Mechanics, Control Systems...',
   },
   {
-    id: 9,
+    id: 7,
     phase: 'Study Style',
     question: '',
     field: 'studyMethod',
@@ -86,15 +70,15 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     options: ['Reading notes', 'Watching videos', 'Solving problems', 'Group discussion'],
   },
   {
-    id: 10,
+    id: 8,
     phase: 'Study Style',
     question: '',
     field: 'sessionLength',
     type: 'select',
-    options: ['30 minutes', '1 hour', '2 hours', 'More than 2 hours'],
+    options: ['30 minutes', '1 hour', '2 hours'],
   },
   {
-    id: 11,
+    id: 9,
     phase: 'Schedule',
     question: '',
     field: 'schedule',
@@ -102,15 +86,15 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'e.g. Mon, Wed, Fri evenings 7-10 PM',
   },
   {
-    id: 12,
+    id: 10,
     phase: 'Goals',
     question: '',
     field: 'shortTermGoal',
     type: 'text',
-    placeholder: 'What\'s your main study goal right now?',
+    placeholder: 'e.g. Score 9+ SGPA, clear GATE, etc.',
   },
   {
-    id: 13,
+    id: 11,
     phase: 'Personality',
     question: '',
     field: 'personality',
@@ -118,7 +102,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'Strict or flexible? Need accountability partner?',
   },
   {
-    id: 14,
+    id: 12,
     phase: 'Complete',
     question: '',
     field: 'complete',
@@ -133,17 +117,27 @@ export function parseOnboardingData(
   const parsed: Record<string, unknown> = {};
 
   if (rawData.name) parsed.name = rawData.name.trim();
-  if (rawData.age) parsed.age = parseInt(rawData.age) || 17;
+  if (rawData.age) parsed.age = parseInt(rawData.age) || 19;
 
-  // Parse location
-  if (rawData.location) {
-    const parts = rawData.location.split(',').map(s => s.trim());
-    parsed.city = parts[0] || '';
-    parsed.country = parts[1] || 'India';
+  // SVNIT defaults
+  parsed.city = 'Surat';
+  parsed.country = 'India';
+  parsed.institution = 'SVNIT Surat';
+  parsed.preferredLanguage = 'English';
+  parsed.timezone = 'IST';
+
+  // Department
+  if (rawData.department) {
+    parsed.department = rawData.department.trim();
+    // Auto-generate currentStudy from department
+    const dept = rawData.department.trim();
+    if (dept.startsWith('Integrated')) {
+      parsed.currentStudy = dept;
+    } else {
+      parsed.currentStudy = `B.Tech ${dept}`;
+    }
   }
 
-  if (rawData.preferredLanguage) parsed.preferredLanguage = rawData.preferredLanguage;
-  if (rawData.currentStudy) parsed.currentStudy = rawData.currentStudy;
   if (rawData.targetExam) parsed.targetExam = rawData.targetExam;
   if (rawData.yearLevel) parsed.yearLevel = rawData.yearLevel;
 

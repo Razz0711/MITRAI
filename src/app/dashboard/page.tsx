@@ -116,11 +116,11 @@ export default function DashboardPage() {
               <h2 className="text-sm font-semibold mb-3">Profile</h2>
               <div className="space-y-3">
                 <ProfileRow label="Name" value={student.name} />
-                <ProfileRow label="Location" value={`${student.city}, ${student.country}`} />
+                <ProfileRow label="Department" value={student.department || 'Not set'} />
                 <ProfileRow label="Study" value={student.currentStudy} />
                 <ProfileRow label="Year" value={student.yearLevel} />
-                <ProfileRow label="Institution" value={student.institution || 'Not specified'} />
-                <ProfileRow label="Language" value={student.preferredLanguage} />
+                <ProfileRow label="Institution" value={student.institution || 'SVNIT Surat'} />
+                <ProfileRow label="Location" value={`${student.city}, ${student.country}`} />
                 <ProfileRow label="Exam Date" value={student.targetDate || 'Not set'} />
               </div>
             </div>

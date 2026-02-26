@@ -14,16 +14,17 @@ export default function Home() {
           <div className="text-center max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--muted)] mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)]" />
-              AI-Powered Study Matching
+              Built for SVNIT Students
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-bold leading-tight mb-4 tracking-tight">
               Find your ideal{' '}
               <span className="gradient-text">study partner</span>
+              <span className="block text-lg font-normal text-[var(--muted)] mt-2">at SVNIT Surat</span>
             </h1>
 
             <p className="text-sm text-[var(--muted)] mb-8 max-w-lg mx-auto leading-relaxed">
-              MitrAI matches you with compatible study partners using AI analysis across subjects, schedule, learning style, and goals.
+              MitrAI matches SVNIT students with compatible study partners using AI — across departments, subjects, schedules, and goals.
             </p>
 
             <div className="flex gap-3 justify-center">
@@ -36,7 +37,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-3 gap-6 max-w-sm mx-auto mt-14">
-              <Stat value="100+" label="Students" />
+              <Stat value="10+" label="Departments" />
               <Stat value="95%" label="Match Rate" />
               <Stat value="24/7" label="AI Support" />
             </div>
@@ -53,10 +54,10 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StepCard step={1} title="Chat with AI" description="Tell our agent about your subjects, goals, and schedule through a quick conversation." />
-            <StepCard step={2} title="AI Analysis" description="Your profile is analyzed across 100+ compatibility factors to find ideal matches." />
-            <StepCard step={3} title="Get Matched" description="Receive ranked matches with detailed compatibility scores and insights." />
-            <StepCard step={4} title="Study Together" description="Connect via voice/video calls and get AI assistance during sessions." />
+            <StepCard step={1} title="Chat with AI" description="Tell our agent about your department, subjects, goals, and schedule through a quick conversation." />
+            <StepCard step={2} title="AI Analysis" description="Your profile is analyzed across 100+ factors to find compatible SVNIT students." />
+            <StepCard step={3} title="Get Matched" description="Receive ranked matches across departments with compatibility scores and insights." />
+            <StepCard step={4} title="Study Together" description="Connect via voice/video calls from your hostel and get AI assistance during sessions." />
           </div>
         </div>
       </section>
@@ -83,9 +84,9 @@ export default function Home() {
       {/* CTA */}
       <section className="py-16 border-t border-[var(--border)]">
         <div className="max-w-lg mx-auto px-4 text-center">
-          <h2 className="text-xl font-bold mb-3">Ready to find your study partner?</h2>
+          <h2 className="text-xl font-bold mb-3">Ready to find your SVNIT study partner?</h2>
           <p className="text-xs text-[var(--muted)] mb-6">
-            Create an account and let AI match you with the right person. Takes under 2 minutes.
+            Create an account and let AI match you with the right person from your college. Takes under 2 minutes.
           </p>
           <Link href="/login" className="btn-primary px-8">
             Create Account
@@ -96,7 +97,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-6 border-t border-[var(--border)]">
         <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--muted)]">
-          <p>&copy; 2026 MitrAI</p>
+          <p>&copy; 2026 MitrAI - SVNIT Surat</p>
           <div className="flex gap-4">
             <a href="/feedback" className="hover:text-[var(--foreground)] transition-colors">Feedback</a>
             <a href="https://github.com/Razz0711/MITRAI" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--foreground)] transition-colors">GitHub</a>

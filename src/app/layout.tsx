@@ -16,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "MitrAI — AI Study Partner Matching",
-  description: "Find your ideal study partner with AI-powered matching across subjects, schedule, and learning style.",
+  title: "MitrAI — SVNIT Study Buddy Matching",
+  description: "AI-powered study partner matching for SVNIT Surat students. Find compatible buddies across departments, subjects, and schedules.",
 };
 
 export default function RootLayout({

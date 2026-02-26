@@ -15,6 +15,7 @@ export interface StudentProfile {
   preferredLanguage: string;
 
   // Academic Info
+  department: string; // CSE, AI, Mechanical, etc.
   currentStudy: string; // degree/exam/course
   institution: string;
   yearLevel: string;
