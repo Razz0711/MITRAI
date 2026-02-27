@@ -101,7 +101,7 @@ export default function Home() {
           <div className="flex gap-4">
             <a href="/feedback" className="hover:text-[var(--foreground)] transition-colors">Feedback</a>
             <a href="https://github.com/Razz0711/MITRAI" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--foreground)] transition-colors">GitHub</a>
-            <a href="mailto:rajsinghrazz786@gmail.com" className="hover:text-[var(--foreground)] transition-colors">Contact</a>
+            <a href="mailto:rajkumaratsvnit@gmail.com" className="hover:text-[var(--foreground)] transition-colors">Contact</a>
           </div>
         </div>
       </footer>

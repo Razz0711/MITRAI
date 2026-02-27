@@ -43,64 +43,90 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/materials — upload a new material
+// POST /api/materials — save material metadata (file already uploaded directly to Supabase Storage)
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
+    const contentType = request.headers.get('content-type') || '';
+    
+    let title: string, description: string, department: string, yearLevel: string;
+    let subject: string, type: string, uploadedBy: string, uploadedByEmail: string;
+    let fileName: string, fileSize: number, storedFileName: string;
 
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
-    const department = formData.get('department') as string;
-    const yearLevel = formData.get('yearLevel') as string;
-    const subject = formData.get('subject') as string;
-    const type = formData.get('type') as string;
-    const uploadedBy = formData.get('uploadedBy') as string;
-    const uploadedByEmail = formData.get('uploadedByEmail') as string;
-    const file = formData.get('file') as File | null;
+    if (contentType.includes('application/json')) {
+      // New flow: file already uploaded from browser, just save metadata
+      const body = await request.json();
+      title = body.title;
+      description = body.description || '';
+      department = body.department;
+      yearLevel = body.yearLevel || '';
+      subject = body.subject;
+      type = body.type;
+      uploadedBy = body.uploadedBy;
+      uploadedByEmail = body.uploadedByEmail || '';
+      fileName = body.fileName;
+      fileSize = body.fileSize;
+      storedFileName = body.storedFileName;
 
-    // Validation
-    if (!title || !department || !subject || !type || !uploadedBy || !file) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields: title, department, subject, type, and file are required' },
-        { status: 400 }
-      );
-    }
+      if (!title || !department || !subject || !type || !uploadedBy || !storedFileName) {
+        return NextResponse.json(
+          { success: false, error: 'Missing required fields' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Legacy flow: file uploaded via FormData through the API
+      const formData = await request.formData();
+      title = formData.get('title') as string;
+      description = (formData.get('description') as string) || '';
+      department = formData.get('department') as string;
+      yearLevel = (formData.get('yearLevel') as string) || '';
+      subject = formData.get('subject') as string;
+      type = formData.get('type') as string;
+      uploadedBy = formData.get('uploadedBy') as string;
+      uploadedByEmail = (formData.get('uploadedByEmail') as string) || '';
+      const file = formData.get('file') as File | null;
 
-    // Validate file size (max 10MB)
-    const MAX_SIZE = 10 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { success: false, error: 'File too large. Maximum size is 10MB.' },
-        { status: 400 }
-      );
-    }
+      if (!title || !department || !subject || !type || !uploadedBy || !file) {
+        return NextResponse.json(
+          { success: false, error: 'Missing required fields: title, department, subject, type, and file are required' },
+          { status: 400 }
+        );
+      }
 
-    // Save file to Supabase Storage
-    let storedFileName: string;
-    try {
-      const arrayBuf = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuf);
-      console.log(`[Upload] File: ${file.name}, Size: ${file.size}, Buffer length: ${buffer.length}`);
-      storedFileName = await saveUploadedFile(file.name, buffer);
-      console.log(`[Upload] Stored as: ${storedFileName}`);
-    } catch (uploadErr) {
-      const msg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
-      console.error('[Upload] Storage error:', msg);
-      return NextResponse.json({ success: false, error: `File upload failed: ${msg}` }, { status: 500 });
+      const MAX_SIZE = 10 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        return NextResponse.json(
+          { success: false, error: 'File too large. Maximum size is 10MB.' },
+          { status: 400 }
+        );
+      }
+
+      fileName = file.name;
+      fileSize = file.size;
+
+      try {
+        const arrayBuf = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuf);
+        storedFileName = await saveUploadedFile(file.name, buffer);
+      } catch (uploadErr) {
+        const msg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
+        console.error('[Upload] Storage error:', msg);
+        return NextResponse.json({ success: false, error: `File upload failed: ${msg}` }, { status: 500 });
+      }
     }
 
     const material: StudyMaterial = {
       id: uuidv4(),
       title,
-      description: description || '',
+      description,
       department,
-      yearLevel: yearLevel || '',
+      yearLevel,
       subject,
       type: type as StudyMaterial['type'],
       uploadedBy,
-      uploadedByEmail: uploadedByEmail || '',
-      fileName: file.name,
-      fileSize: file.size,
+      uploadedByEmail,
+      fileName,
+      fileSize,
       storedFileName,
       createdAt: new Date().toISOString(),
     };

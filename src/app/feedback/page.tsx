@@ -28,7 +28,7 @@ export default function FeedbackPage() {
     );
 
     // Open mail client
-    window.open(`mailto:rajsinghrazz786@gmail.com?subject=${subject}&body=${body}`, '_blank');
+    window.open(`mailto:rajkumaratsvnit@gmail.com?subject=${subject}&body=${body}`, '_blank');
 
     // Also save to localStorage as backup
     const feedbackList = JSON.parse(localStorage.getItem('mitrai_feedback') || '[]');
@@ -215,7 +215,7 @@ export default function FeedbackPage() {
             💬 WhatsApp
           </a>
           <a
-            href="mailto:rajsinghrazz786@gmail.com?subject=MitrAI%20Query"
+            href="mailto:rajkumaratsvnit@gmail.com?subject=MitrAI%20Query"
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/15 border border-blue-500/30 text-xs font-medium text-blue-400 hover:bg-blue-500/25 transition-all"
           >
             ✉️ Email

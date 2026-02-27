@@ -216,3 +216,31 @@ ALTER TABLE ratings DISABLE ROW LEVEL SECURITY;
 ALTER TABLE subscriptions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE messages DISABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_threads DISABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- Storage: materials bucket + public access policies
+-- Run this AFTER creating the bucket in Supabase Dashboard
+-- (Storage → New Bucket → "materials" → Public)
+-- OR the app auto-creates it. Then run:
+-- ============================================
+
+-- Allow anyone to upload files to the materials bucket
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('materials', 'materials', true) 
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Allow public read access (download)
+CREATE POLICY "Public read access" ON storage.objects 
+  FOR SELECT USING (bucket_id = 'materials');
+
+-- Allow anyone to upload (insert) files 
+CREATE POLICY "Allow uploads" ON storage.objects 
+  FOR INSERT WITH CHECK (bucket_id = 'materials');
+
+-- Allow anyone to update their uploads
+CREATE POLICY "Allow updates" ON storage.objects 
+  FOR UPDATE USING (bucket_id = 'materials');
+
+-- Allow anyone to delete files
+CREATE POLICY "Allow deletes" ON storage.objects 
+  FOR DELETE USING (bucket_id = 'materials');

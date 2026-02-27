@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { StudyMaterial, MaterialType } from '@/lib/types';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 const DEPARTMENTS = [
   'CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics',
@@ -120,19 +121,50 @@ export default function MaterialsPage() {
     setUploadSuccess('');
 
     try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('department', department);
-      formData.append('yearLevel', yearLevel);
-      formData.append('subject', subject);
-      formData.append('type', materialType);
-      formData.append('uploadedBy', user.name);
-      formData.append('uploadedByEmail', user.email);
-      formData.append('file', file);
+      // Step 1: Upload file directly from browser to Supabase Storage
+      // This bypasses Vercel's 4.5MB body limit
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+      const storedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+      
+      const { error: storageError } = await supabaseBrowser.storage
+        .from('materials')
+        .upload(storedName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
 
-      const res = await fetch('/api/materials', { method: 'POST', body: formData });
-      const data = await res.json();
+      if (storageError) {
+        console.error('[Upload] Storage error:', storageError);
+        setUploadError(`File upload failed: ${storageError.message}`);
+        return;
+      }
+
+      // Step 2: Save material metadata via API
+      const res = await fetch('/api/materials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          department,
+          yearLevel,
+          subject,
+          type: materialType,
+          uploadedBy: user.name,
+          uploadedByEmail: user.email,
+          fileName: file.name,
+          fileSize: file.size,
+          storedFileName: storedName,
+        }),
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        setUploadError(`Server error (${res.status}): ${res.statusText}`);
+        return;
+      }
 
       if (data.success) {
         setUploadSuccess('Material uploaded successfully!');
@@ -154,8 +186,10 @@ export default function MaterialsPage() {
       } else {
         setUploadError(data.error || 'Upload failed');
       }
-    } catch {
-      setUploadError('Upload failed. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Upload] Error:', msg);
+      setUploadError(`Upload failed: ${msg}`);
     } finally {
       setUploading(false);
     }
