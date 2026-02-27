@@ -267,6 +267,5 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   created_at TEXT DEFAULT (now()::text)
 );
 
--- RLS
-ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "calendar_events_all" ON calendar_events FOR ALL USING (true) WITH CHECK (true);
+-- Disable RLS (consistent with other tables — using service role key)
+ALTER TABLE calendar_events DISABLE ROW LEVEL SECURITY;
