@@ -84,6 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setUser(userData);
     localStorage.setItem('mitrai_session', JSON.stringify(userData));
+
+    // Ensure student profile ID is linked to auth ID
+    if (!localStorage.getItem('mitrai_student_id')) {
+      localStorage.setItem('mitrai_student_id', found.id);
+      localStorage.setItem('mitrai_student_name', found.name);
+    }
+
     return { success: true };
   };
 
@@ -132,6 +139,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setUser(userData);
     localStorage.setItem('mitrai_session', JSON.stringify(userData));
+
+    // Auto-create a minimal student profile on the server so this user is
+    // immediately visible for matching (will be updated with full details
+    // after onboarding completes).
+    try {
+      const dept = data.department;
+      let currentStudy = `B.Tech ${dept}`;
+      if (dept.startsWith('Integrated')) currentStudy = dept;
+      else if (dept === 'Mathematics & Computing') currentStudy = 'B.Tech Mathematics & Computing';
+
+      fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          admissionNumber: newUser.admissionNumber,
+          department: dept,
+          yearLevel: data.yearLevel,
+          currentStudy,
+          institution: 'SVNIT Surat',
+          city: 'Surat',
+          country: 'India',
+          timezone: 'IST',
+          preferredLanguage: 'English',
+          _autoCreated: true,
+        }),
+      }).then(res => res.json()).then(result => {
+        if (result.success && result.data?.id) {
+          localStorage.setItem('mitrai_student_id', result.data.id);
+          localStorage.setItem('mitrai_student_name', newUser.name);
+        }
+      }).catch(() => { /* best-effort */ });
+    } catch { /* best-effort */ }
+
     return { success: true };
   };
 

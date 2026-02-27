@@ -17,6 +17,16 @@ export default function CallPage() {
   const [isInCall, setIsInCall] = useState(false);
   const [buddyName, setBuddyName] = useState('');
 
+  // Post-call rating
+  const [showRating, setShowRating] = useState(false);
+  const [ratingValue, setRatingValue] = useState(7);
+  const [ratingReview, setRatingReview] = useState('');
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [submittingRating, setSubmittingRating] = useState(false);
+  // Friend request
+  const [friendRequestSent, setFriendRequestSent] = useState(false);
+  const [sendingFriendReq, setSendingFriendReq] = useState(false);
+
   useEffect(() => {
     // Load saved user info
     const savedName = localStorage.getItem('mitrai_student_name') || '';
@@ -56,8 +66,185 @@ export default function CallPage() {
 
   const handleLeave = () => {
     setIsInCall(false);
+    // Show post-call rating if we had a buddy
+    if (buddyName) {
+      setShowRating(true);
+    } else {
+      setCallMode(null);
+    }
+  };
+
+  const handleSubmitRating = async () => {
+    setSubmittingRating(true);
+    try {
+      // Get user info from localStorage
+      const session = localStorage.getItem('mitrai_session');
+      const userData = session ? JSON.parse(session) : null;
+      if (userData) {
+        await fetch('/api/friends', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'rate',
+            fromUserId: userData.id,
+            fromUserName: userData.name || displayName,
+            toUserId: buddyName, // we use buddy name as ID placeholder
+            toUserName: buddyName,
+            rating: ratingValue,
+            review: ratingReview,
+          }),
+        });
+      }
+    } catch { /* ignore */ }
+    setRatingSubmitted(true);
+    setSubmittingRating(false);
+    setTimeout(() => {
+      setShowRating(false);
+      setRatingSubmitted(false);
+      setRatingValue(7);
+      setRatingReview('');
+      setCallMode(null);
+    }, 2000);
+  };
+
+  const handleSendFriendRequest = async () => {
+    setSendingFriendReq(true);
+    try {
+      const session = localStorage.getItem('mitrai_session');
+      const userData = session ? JSON.parse(session) : null;
+      if (userData) {
+        await fetch('/api/friends', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'send_request',
+            fromUserId: userData.id,
+            fromUserName: userData.name || displayName,
+            toUserId: buddyName,
+            toUserName: buddyName,
+          }),
+        });
+        setFriendRequestSent(true);
+      }
+    } catch { /* ignore */ }
+    setSendingFriendReq(false);
+  };
+
+  const skipRating = () => {
+    setShowRating(false);
     setCallMode(null);
   };
+
+  // Post-call rating modal
+  if (showRating) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-6">
+        <div className="card p-6 slide-up">
+          {ratingSubmitted ? (
+            <div className="text-center py-6">
+              <span className="text-5xl mb-4 block">🎉</span>
+              <h2 className="text-lg font-bold mb-2">Thank You!</h2>
+              <p className="text-xs text-[var(--muted)]">Your rating has been recorded</p>
+            </div>
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <span className="text-4xl mb-3 block">⭐</span>
+                <h2 className="text-lg font-bold">Rate Your Session</h2>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  How was your experience with <strong className="text-[var(--primary-light)]">{buddyName}</strong>?
+                </p>
+              </div>
+
+              {/* Rating Slider */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-[var(--muted)]">Rating</span>
+                  <span className="text-2xl font-bold text-[var(--primary-light)]">{ratingValue}/10</span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={ratingValue}
+                  onChange={(e) => setRatingValue(Number(e.target.value))}
+                  className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-[var(--primary)]"
+                />
+                <div className="flex justify-between mt-1">
+                  <span className="text-[10px] text-[var(--muted)]">Poor</span>
+                  <span className="text-[10px] text-[var(--muted)]">Great</span>
+                </div>
+                {/* Visual bar */}
+                <div className="flex gap-1 mt-3 justify-center">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setRatingValue(i + 1)}
+                      className={`w-6 h-8 rounded transition-all ${
+                        i < ratingValue
+                          ? ratingValue >= 8 ? 'bg-green-500' : ratingValue >= 5 ? 'bg-amber-500' : 'bg-red-500'
+                          : 'bg-white/10'
+                      } hover:scale-110`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Review Text */}
+              <div className="mb-6">
+                <label className="text-xs text-[var(--muted)] mb-1.5 block">Quick review (optional)</label>
+                <textarea
+                  value={ratingReview}
+                  onChange={(e) => setRatingReview(e.target.value)}
+                  placeholder="How was the study session? Any highlights?"
+                  className="input-field resize-none h-20 text-xs"
+                  maxLength={200}
+                />
+              </div>
+
+              {/* Add Friend Button */}
+              <div className="mb-5 p-3 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold">Add {buddyName} as friend?</p>
+                    <p className="text-[10px] text-[var(--muted)]">Stay connected for future sessions</p>
+                  </div>
+                  <button
+                    onClick={handleSendFriendRequest}
+                    disabled={friendRequestSent || sendingFriendReq}
+                    className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
+                      friendRequestSent
+                        ? 'bg-green-500/15 text-green-400 border border-green-500/25'
+                        : 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30 hover:bg-[var(--primary)]/30'
+                    } disabled:opacity-70`}
+                  >
+                    {sendingFriendReq ? '...' : friendRequestSent ? '✓ Sent!' : '👋 Add Friend'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={skipRating}
+                  className="btn-secondary flex-1 text-xs"
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={handleSubmitRating}
+                  disabled={submittingRating}
+                  className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  {submittingRating ? 'Submitting...' : 'Submit Rating'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // In-call view
   if (isInCall && callMode && roomCode) {

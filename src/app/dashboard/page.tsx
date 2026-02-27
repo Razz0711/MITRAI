@@ -431,18 +431,22 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
             <Link href="/matches" className="card-hover p-4 text-center block">
               <h3 className="text-sm font-semibold mb-1">Find Matches</h3>
-              <p className="text-xs text-[var(--muted)]">Discover compatible study buddies</p>
+              <p className="text-xs text-[var(--muted)]">Discover study buddies</p>
+            </Link>
+            <Link href="/friends" className="card-hover p-4 text-center block">
+              <h3 className="text-sm font-semibold mb-1">Friends</h3>
+              <p className="text-xs text-[var(--muted)]">Your buddy network</p>
             </Link>
             <Link href="/study-plan" className="card-hover p-4 text-center block">
               <h3 className="text-sm font-semibold mb-1">Study Plan</h3>
-              <p className="text-xs text-[var(--muted)]">Generate your weekly plan</p>
+              <p className="text-xs text-[var(--muted)]">Generate weekly plan</p>
             </Link>
-            <Link href="/session" className="card-hover p-4 text-center block">
-              <h3 className="text-sm font-semibold mb-1">Start Session</h3>
-              <p className="text-xs text-[var(--muted)]">Study with AI assistance</p>
+            <Link href="/subscription" className="card-hover p-4 text-center block border-amber-500/20">
+              <h3 className="text-sm font-semibold mb-1">✨ Pro</h3>
+              <p className="text-xs text-amber-400">Free during launch!</p>
             </Link>
           </div>
         </>

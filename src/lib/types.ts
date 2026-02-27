@@ -284,6 +284,84 @@ export interface StudyMaterial {
 }
 
 // ============================================
+// Friend & Rating Types
+// ============================================
+
+export type FriendRequestStatus = 'pending' | 'accepted' | 'declined';
+
+export interface FriendRequest {
+  id: string;
+  fromUserId: string;
+  fromUserName: string;
+  toUserId: string;
+  toUserName: string;
+  status: FriendRequestStatus;
+  createdAt: string;
+}
+
+export interface Friendship {
+  id: string;
+  user1Id: string;
+  user1Name: string;
+  user2Id: string;
+  user2Name: string;
+  createdAt: string;
+}
+
+export interface BuddyRating {
+  id: string;
+  fromUserId: string;
+  fromUserName: string;
+  toUserId: string;
+  toUserName: string;
+  rating: number;           // 1-10
+  review: string;           // optional text
+  createdAt: string;
+}
+
+// ============================================
+// Subscription Types
+// ============================================
+
+export type SubscriptionPlan = 'free' | 'monthly' | 'yearly';
+
+export interface Subscription {
+  userId: string;
+  plan: SubscriptionPlan;
+  startDate: string;
+  endDate: string;          // empty for free
+  status: 'active' | 'expired' | 'cancelled';
+  createdAt: string;
+}
+
+// ============================================
+// Chat / Messaging Types
+// ============================================
+
+export interface DirectMessage {
+  id: string;
+  chatId: string;           // sorted pair of user IDs
+  senderId: string;
+  senderName: string;
+  receiverId: string;
+  text: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface ChatThread {
+  chatId: string;           // sorted pair of user IDs
+  user1Id: string;
+  user1Name: string;
+  user2Id: string;
+  user2Name: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  unreadCount1: number;     // unread for user1
+  unreadCount2: number;     // unread for user2
+}
+
+// ============================================
 // API Response Types
 // ============================================
 

@@ -18,6 +18,8 @@ export default function Navbar() {
     ? [
         { href: '/dashboard', label: 'Dashboard' },
         { href: '/matches', label: 'Matches' },
+        { href: '/friends', label: 'Friends' },
+        { href: '/chat', label: 'Chat' },
         { href: '/materials', label: 'Materials' },
         { href: '/study-plan', label: 'Study Plan' },
         { href: '/session', label: 'Session' },
@@ -59,6 +61,9 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-2">
             {user ? (
               <>
+                <Link href="/subscription" className="text-xs font-medium text-amber-400 hover:text-amber-300 transition-colors px-2">
+                  ✨ Pro
+                </Link>
                 <Link href="/feedback" className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors px-2">
                   Feedback
                 </Link>
@@ -111,6 +116,9 @@ export default function Navbar() {
             ))}
             {user ? (
               <>
+                <Link href="/subscription" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-xs text-amber-400 font-medium">
+                  ✨ Pro
+                </Link>
                 <Link href="/feedback" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-xs text-[var(--muted)]">
                   Feedback
                 </Link>

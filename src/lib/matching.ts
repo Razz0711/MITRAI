@@ -245,11 +245,14 @@ export async function findTopMatches(
   // Filter out deal-breakers (0 in subject or schedule)
   const viable = scored.filter(s => s.score.subject > 0 && s.score.schedule > 0);
 
+  // If no viable matches, fallback to all students (sorted by score)
+  const pool = viable.length > 0 ? viable : scored;
+
   // Sort by overall score descending
-  viable.sort((a, b) => b.score.overall - a.score.overall);
+  pool.sort((a, b) => b.score.overall - a.score.overall);
 
   // Take top N
-  const topMatches = viable.slice(0, topN);
+  const topMatches = pool.slice(0, topN);
 
   // Generate match results with AI explanations
   const results: MatchResult[] = [];

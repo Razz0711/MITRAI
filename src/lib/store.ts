@@ -3,7 +3,7 @@
 // (Data survives server restarts in dev mode)
 // ============================================
 
-import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish } from './types';
+import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish, FriendRequest, Friendship, BuddyRating, Subscription, DirectMessage, ChatThread } from './types';
 import fs from 'fs';
 import path from 'path';
 
@@ -19,6 +19,12 @@ const AVAILABILITY_FILE = path.join(DATA_DIR, 'availability.json');
 const STATUS_FILE = path.join(DATA_DIR, 'status.json');
 const BOOKINGS_FILE = path.join(DATA_DIR, 'bookings.json');
 const BIRTHDAY_WISHES_FILE = path.join(DATA_DIR, 'birthday_wishes.json');
+const FRIENDS_FILE = path.join(DATA_DIR, 'friends.json');
+const FRIEND_REQUESTS_FILE = path.join(DATA_DIR, 'friend_requests.json');
+const RATINGS_FILE = path.join(DATA_DIR, 'ratings.json');
+const SUBSCRIPTIONS_FILE = path.join(DATA_DIR, 'subscriptions.json');
+const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
+const CHAT_THREADS_FILE = path.join(DATA_DIR, 'chat_threads.json');
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -800,4 +806,367 @@ export function hasWishedToday(fromUserId: string, toUserId: string): boolean {
 export function addBirthdayWish(wish: BirthdayWish): void {
   birthdayWishes.push(wish);
   saveBirthdayWishesToFile();
+}
+
+// ============================================
+// Friend Requests Operations (File Persistence)
+// ============================================
+
+function loadFriendRequestsFromFile(): FriendRequest[] {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(FRIEND_REQUESTS_FILE)) {
+      return JSON.parse(fs.readFileSync(FRIEND_REQUESTS_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Failed to load friend requests from file:', e);
+  }
+  return [];
+}
+
+function saveFriendRequestsToFile() {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(FRIEND_REQUESTS_FILE, JSON.stringify(friendRequests, null, 2));
+  } catch (e) {
+    console.error('Failed to save friend requests to file:', e);
+  }
+}
+
+const friendRequests: FriendRequest[] = loadFriendRequestsFromFile();
+
+export function getFriendRequestsForUser(userId: string): FriendRequest[] {
+  return friendRequests.filter(r => r.toUserId === userId || r.fromUserId === userId);
+}
+
+export function getPendingFriendRequests(userId: string): FriendRequest[] {
+  return friendRequests.filter(r => r.toUserId === userId && r.status === 'pending');
+}
+
+export function createFriendRequest(req: FriendRequest): FriendRequest {
+  // Check if request already exists
+  const existing = friendRequests.find(
+    r => (r.fromUserId === req.fromUserId && r.toUserId === req.toUserId) ||
+         (r.fromUserId === req.toUserId && r.toUserId === req.fromUserId)
+  );
+  if (existing) return existing;
+  friendRequests.push(req);
+  saveFriendRequestsToFile();
+  return req;
+}
+
+export function updateFriendRequestStatus(requestId: string, status: 'accepted' | 'declined'): FriendRequest | null {
+  const req = friendRequests.find(r => r.id === requestId);
+  if (!req) return null;
+  req.status = status;
+  saveFriendRequestsToFile();
+  return req;
+}
+
+// ============================================
+// Friendships Operations (File Persistence)
+// ============================================
+
+function loadFriendsFromFile(): Friendship[] {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(FRIENDS_FILE)) {
+      return JSON.parse(fs.readFileSync(FRIENDS_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Failed to load friends from file:', e);
+  }
+  return [];
+}
+
+function saveFriendsToFile() {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(FRIENDS_FILE, JSON.stringify(friendships, null, 2));
+  } catch (e) {
+    console.error('Failed to save friends to file:', e);
+  }
+}
+
+const friendships: Friendship[] = loadFriendsFromFile();
+
+export function getFriendsForUser(userId: string): Friendship[] {
+  return friendships.filter(f => f.user1Id === userId || f.user2Id === userId);
+}
+
+export function areFriends(userId1: string, userId2: string): boolean {
+  return friendships.some(
+    f => (f.user1Id === userId1 && f.user2Id === userId2) ||
+         (f.user1Id === userId2 && f.user2Id === userId1)
+  );
+}
+
+export function addFriendship(friendship: Friendship): Friendship {
+  // Prevent duplicates
+  if (areFriends(friendship.user1Id, friendship.user2Id)) {
+    return friendships.find(
+      f => (f.user1Id === friendship.user1Id && f.user2Id === friendship.user2Id) ||
+           (f.user1Id === friendship.user2Id && f.user2Id === friendship.user1Id)
+    )!;
+  }
+  friendships.push(friendship);
+  saveFriendsToFile();
+  return friendship;
+}
+
+export function removeFriendship(userId1: string, userId2: string): boolean {
+  const idx = friendships.findIndex(
+    f => (f.user1Id === userId1 && f.user2Id === userId2) ||
+         (f.user1Id === userId2 && f.user2Id === userId1)
+  );
+  if (idx === -1) return false;
+  friendships.splice(idx, 1);
+  saveFriendsToFile();
+  return true;
+}
+
+// ============================================
+// Buddy Ratings Operations (File Persistence)
+// ============================================
+
+function loadRatingsFromFile(): BuddyRating[] {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(RATINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(RATINGS_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Failed to load ratings from file:', e);
+  }
+  return [];
+}
+
+function saveRatingsToFile() {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(RATINGS_FILE, JSON.stringify(ratings, null, 2));
+  } catch (e) {
+    console.error('Failed to save ratings to file:', e);
+  }
+}
+
+const ratings: BuddyRating[] = loadRatingsFromFile();
+
+export function getRatingsForUser(userId: string): BuddyRating[] {
+  return ratings.filter(r => r.toUserId === userId);
+}
+
+export function getRatingsByUser(userId: string): BuddyRating[] {
+  return ratings.filter(r => r.fromUserId === userId);
+}
+
+export function getAverageRating(userId: string): number {
+  const userRatings = ratings.filter(r => r.toUserId === userId);
+  if (userRatings.length === 0) return 0;
+  const sum = userRatings.reduce((acc, r) => acc + r.rating, 0);
+  return Math.round((sum / userRatings.length) * 10) / 10;
+}
+
+export function addRating(rating: BuddyRating): BuddyRating {
+  ratings.push(rating);
+  saveRatingsToFile();
+  return rating;
+}
+
+// ============================================
+// Subscriptions Operations (File Persistence)
+// ============================================
+
+function loadSubscriptionsFromFile(): Map<string, Subscription> {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(SUBSCRIPTIONS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SUBSCRIPTIONS_FILE, 'utf-8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    console.error('Failed to load subscriptions from file:', e);
+  }
+  return new Map();
+}
+
+function saveSubscriptionsToFile() {
+  try {
+    ensureDataDir();
+    const obj: Record<string, Subscription> = {};
+    subscriptions.forEach((v, k) => { obj[k] = v; });
+    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error('Failed to save subscriptions to file:', e);
+  }
+}
+
+const subscriptions: Map<string, Subscription> = loadSubscriptionsFromFile();
+
+export function getUserSubscription(userId: string): Subscription | undefined {
+  return subscriptions.get(userId);
+}
+
+export function setUserSubscription(sub: Subscription): Subscription {
+  subscriptions.set(sub.userId, sub);
+  saveSubscriptionsToFile();
+  return sub;
+}
+
+// ============================================
+// Chat / Messaging Operations (File Persistence)
+// ============================================
+
+function makeChatId(userId1: string, userId2: string): string {
+  return [userId1, userId2].sort().join('__');
+}
+
+function loadMessagesFromFile(): DirectMessage[] {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(MESSAGES_FILE)) {
+      return JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Failed to load messages from file:', e);
+  }
+  return [];
+}
+
+function saveMessagesToFile() {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(MESSAGES_FILE, JSON.stringify(allMessages, null, 2));
+  } catch (e) {
+    console.error('Failed to save messages to file:', e);
+  }
+}
+
+function loadChatThreadsFromFile(): Map<string, ChatThread> {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(CHAT_THREADS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(CHAT_THREADS_FILE, 'utf-8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    console.error('Failed to load chat threads from file:', e);
+  }
+  return new Map();
+}
+
+function saveChatThreadsToFile() {
+  try {
+    ensureDataDir();
+    const obj: Record<string, ChatThread> = {};
+    chatThreads.forEach((v, k) => { obj[k] = v; });
+    fs.writeFileSync(CHAT_THREADS_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error('Failed to save chat threads to file:', e);
+  }
+}
+
+const allMessages: DirectMessage[] = loadMessagesFromFile();
+const chatThreads: Map<string, ChatThread> = loadChatThreadsFromFile();
+
+export function getChatId(userId1: string, userId2: string): string {
+  return makeChatId(userId1, userId2);
+}
+
+export function getMessagesForChat(chatId: string, limit = 50, before?: string): DirectMessage[] {
+  let msgs = allMessages.filter(m => m.chatId === chatId);
+  if (before) {
+    msgs = msgs.filter(m => m.createdAt < before);
+  }
+  // Return last N messages
+  return msgs.slice(-limit);
+}
+
+export function addMessage(msg: DirectMessage): DirectMessage {
+  allMessages.push(msg);
+  saveMessagesToFile();
+
+  // Update or create chat thread
+  const chatId = msg.chatId;
+  const existing = chatThreads.get(chatId);
+  if (existing) {
+    existing.lastMessage = msg.text;
+    existing.lastMessageAt = msg.createdAt;
+    if (existing.user1Id === msg.receiverId) {
+      existing.unreadCount1 += 1;
+    } else {
+      existing.unreadCount2 += 1;
+    }
+  } else {
+    chatThreads.set(chatId, {
+      chatId,
+      user1Id: msg.senderId,
+      user1Name: msg.senderName,
+      user2Id: msg.receiverId,
+      user2Name: '', // will be filled when the other user sends
+      lastMessage: msg.text,
+      lastMessageAt: msg.createdAt,
+      unreadCount1: 0,
+      unreadCount2: 1,
+    });
+  }
+  saveChatThreadsToFile();
+  return msg;
+}
+
+export function markMessagesRead(chatId: string, userId: string): void {
+  // Mark messages as read
+  allMessages.forEach(m => {
+    if (m.chatId === chatId && m.receiverId === userId && !m.read) {
+      m.read = true;
+    }
+  });
+  saveMessagesToFile();
+
+  // Reset unread count
+  const thread = chatThreads.get(chatId);
+  if (thread) {
+    if (thread.user1Id === userId) {
+      thread.unreadCount1 = 0;
+    } else {
+      thread.unreadCount2 = 0;
+    }
+    saveChatThreadsToFile();
+  }
+}
+
+export function getThreadsForUser(userId: string): ChatThread[] {
+  const threads: ChatThread[] = [];
+  chatThreads.forEach(t => {
+    if (t.user1Id === userId || t.user2Id === userId) {
+      threads.push(t);
+    }
+  });
+  threads.sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt));
+  return threads;
+}
+
+export function getUnreadCountForUser(userId: string): number {
+  let count = 0;
+  chatThreads.forEach(t => {
+    if (t.user1Id === userId) count += t.unreadCount1;
+    else if (t.user2Id === userId) count += t.unreadCount2;
+  });
+  return count;
+}
+
+export function updateThreadUserName(chatId: string, userId: string, userName: string): void {
+  const thread = chatThreads.get(chatId);
+  if (thread) {
+    if (thread.user1Id === userId) thread.user1Name = userName;
+    else if (thread.user2Id === userId) thread.user2Name = userName;
+    // Also set the "other" user's name if it was empty
+    if (!thread.user1Name && thread.user1Id !== userId) {
+      // user1 hasn't been named yet, but we don't know their name
+    }
+    if (!thread.user2Name && thread.user2Id !== userId) {
+      // user2 hasn't been named yet  
+    }
+    saveChatThreadsToFile();
+  }
 }

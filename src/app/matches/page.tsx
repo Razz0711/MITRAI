@@ -7,9 +7,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import MatchCard from '@/components/MatchCard';
-import { MatchResult, StudentProfile, UserStatus, BirthdayInfo } from '@/lib/types';
+import { MatchResult, StudentProfile, UserStatus, BirthdayInfo, Friendship, FriendRequest } from '@/lib/types';
+import { useAuth } from '@/lib/auth';
 
 export default function MatchesPage() {
+  const { user } = useAuth();
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,10 +23,15 @@ export default function MatchesPage() {
   const [statusMap, setStatusMap] = useState<Record<string, UserStatus>>({});
   const [birthdayUserIds, setBirthdayUserIds] = useState<Set<string>>(new Set());
 
+  // Friend data
+  const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
+  const [pendingSentIds, setPendingSentIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     loadStudents();
     loadStatuses();
     loadBirthdays();
+    loadFriends();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -55,6 +62,50 @@ export default function MatchesPage() {
       }
     } catch { /* ignore */ }
   }, []);
+
+  const loadFriends = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/friends?userId=${user.id}`);
+      const data = await res.json();
+      if (data.success) {
+        const fIds = new Set<string>(
+          (data.data.friends || []).map((f: Friendship) =>
+            f.user1Id === user.id ? f.user2Id : f.user1Id
+          )
+        );
+        setFriendIds(fIds);
+        const sentIds = new Set<string>(
+          (data.data.allRequests || [])
+            .filter((r: FriendRequest) => r.fromUserId === user.id && r.status === 'pending')
+            .map((r: FriendRequest) => r.toUserId)
+        );
+        setPendingSentIds(sentIds);
+      }
+    } catch { /* ignore */ }
+  }, [user]);
+
+  const handleAddFriend = async (studentId: string, studentName: string) => {
+    if (!user) return;
+    try {
+      await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_request',
+          fromUserId: user.id,
+          fromUserName: user.name,
+          toUserId: studentId,
+          toUserName: studentName,
+        }),
+      });
+      setPendingSentIds(prev => {
+        const next = new Set(Array.from(prev));
+        next.add(studentId);
+        return next;
+      });
+    } catch { /* ignore */ }
+  };
 
   const loadStudents = async () => {
     try {
@@ -185,6 +236,9 @@ export default function MatchesPage() {
                 rank={index + 1}
                 userStatus={statusMap[match.student.id]}
                 isBirthday={birthdayUserIds.has(match.student.id)}
+                onAddFriend={handleAddFriend}
+                isFriend={friendIds.has(match.student.id)}
+                friendRequestPending={pendingSentIds.has(match.student.id)}
                 onConnect={() => {
                   localStorage.setItem('mitrai_buddy_id', match.student.id);
                   localStorage.setItem('mitrai_buddy_name', match.student.name);
@@ -221,8 +275,80 @@ export default function MatchesPage() {
         </>
       )}
 
+      {/* Browse All Students — visible even without running matching */}
+      {!loading && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-bold">Browse All Students</h2>
+            <span className="text-xs text-[var(--muted)]">
+              {allStudents.filter(s => s.id !== selectedStudentId).length} students
+            </span>
+          </div>
+          {allStudents.filter(s => s.id !== selectedStudentId).length === 0 ? (
+            <div className="text-center py-8 card">
+              <span className="text-3xl mb-2 block">👥</span>
+              <p className="text-xs text-[var(--muted)]">No other students registered yet. Invite your SVNIT friends to join!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {allStudents
+                .filter(s => s.id !== selectedStudentId)
+                .map(s => (
+                  <div key={s.id} className="card p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-sm font-bold text-[var(--primary-light)]">
+                        {s.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{s.name}</p>
+                        <p className="text-[10px] text-[var(--muted)] truncate">
+                          {s.department || s.currentStudy || 'SVNIT Student'}
+                          {s.yearLevel ? ` · ${s.yearLevel}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    {s.targetExam && (
+                      <p className="text-[10px] text-[var(--muted)] mb-2">
+                        🎯 {s.targetExam}
+                      </p>
+                    )}
+                    {s.strongSubjects && s.strongSubjects.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {s.strongSubjects.slice(0, 3).map(sub => (
+                          <span key={sub} className="badge-success text-[10px]">{sub}</span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => handleAddFriend(s.id, s.name)}
+                        disabled={friendIds.has(s.id) || pendingSentIds.has(s.id)}
+                        className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
+                          friendIds.has(s.id)
+                            ? 'bg-green-500/15 text-green-400 border border-green-500/25'
+                            : pendingSentIds.has(s.id)
+                            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
+                            : 'bg-[var(--primary)]/15 text-[var(--primary-light)] border border-[var(--primary)]/25 hover:bg-[var(--primary)]/25'
+                        }`}
+                      >
+                        {friendIds.has(s.id) ? '✓ Friends' : pendingSentIds.has(s.id) ? '⏳ Sent' : '👋 Add Friend'}
+                      </button>
+                      <Link
+                        href={`/call?buddy=${encodeURIComponent(s.name)}`}
+                        className="px-2 py-1.5 rounded-lg text-[10px] font-medium bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 transition-all"
+                      >
+                        📞
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Empty State */}
-      {!loading && matches.length === 0 && !error && (
+      {!loading && matches.length === 0 && !error && allStudents.length <= 1 && (
         <div className="text-center py-12 card">
           <h2 className="text-sm font-bold mb-1">Ready to Find Matches?</h2>
           <p className="text-xs text-[var(--muted)] max-w-sm mx-auto">

@@ -1,0 +1,399 @@
+// ============================================
+// MitrAI - WhatsApp-like Chat Page
+// ============================================
+
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/lib/auth';
+import { DirectMessage, ChatThread } from '@/lib/types';
+
+export default function ChatPage() {
+  const { user } = useAuth();
+  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<DirectMessage[]>([]);
+  const [newMsg, setNewMsg] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+  const studentId = typeof window !== 'undefined'
+    ? localStorage.getItem('mitrai_student_id') || user?.id
+    : user?.id;
+
+  // Load threads
+  const loadThreads = useCallback(async () => {
+    if (!studentId) return;
+    try {
+      const res = await fetch(`/api/chat?userId=${studentId}`);
+      const data = await res.json();
+      setThreads(data.threads || []);
+    } catch { /* ignore */ }
+    setLoading(false);
+  }, [studentId]);
+
+  // Load messages for selected chat
+  const loadMessages = useCallback(async () => {
+    if (!selectedChatId || !studentId) return;
+    try {
+      const res = await fetch(`/api/chat?chatId=${selectedChatId}&userId=${studentId}`);
+      const data = await res.json();
+      setMessages(data.messages || []);
+    } catch { /* ignore */ }
+  }, [selectedChatId, studentId]);
+
+  // Mark messages as read
+  const markRead = useCallback(async () => {
+    if (!selectedChatId || !studentId) return;
+    try {
+      await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'read', chatId: selectedChatId, userId: studentId }),
+      });
+    } catch { /* ignore */ }
+  }, [selectedChatId, studentId]);
+
+  useEffect(() => {
+    loadThreads();
+  }, [loadThreads]);
+
+  useEffect(() => {
+    if (selectedChatId) {
+      loadMessages();
+      markRead();
+    }
+  }, [selectedChatId, loadMessages, markRead]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Polling for new messages every 3 seconds
+  useEffect(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => {
+      loadThreads();
+      if (selectedChatId) {
+        loadMessages();
+      }
+    }, 3000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [loadThreads, loadMessages, selectedChatId]);
+
+  // Send message
+  const sendMessage = async () => {
+    if (!newMsg.trim() || !selectedChatId || !studentId || sending) return;
+
+    const selectedThread = threads.find(t => t.chatId === selectedChatId);
+    if (!selectedThread) return;
+
+    const receiverId = selectedThread.user1Id === studentId
+      ? selectedThread.user2Id
+      : selectedThread.user1Id;
+    const receiverName = selectedThread.user1Id === studentId
+      ? selectedThread.user2Name
+      : selectedThread.user1Name;
+
+    setSending(true);
+    try {
+      await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send',
+          senderId: studentId,
+          senderName: user?.name || 'Unknown',
+          receiverId,
+          receiverName,
+          text: newMsg.trim(),
+        }),
+      });
+      setNewMsg('');
+      await loadMessages();
+      await loadThreads();
+      inputRef.current?.focus();
+    } catch { /* ignore */ }
+    setSending(false);
+  };
+
+  // Open a chat (from friends page redirect with query params)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const friendId = params.get('friendId');
+    const friendName = params.get('friendName');
+    if (friendId && studentId) {
+      // Send a placeholder to create the thread if it doesn't exist
+      const chatId = [studentId, friendId].sort().join('__');
+      setSelectedChatId(chatId);
+      setShowSidebar(false);
+
+      // Create thread by sending an empty check - the GET will just show it if it exists
+      // If no thread exists, we'll create on first message.
+      // But we need to ensure the thread appears in sidebar. Let's pre-create.
+      if (friendName) {
+        fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'send',
+            senderId: studentId,
+            senderName: user?.name || 'Unknown',
+            receiverId: friendId,
+            receiverName: friendName,
+            text: '👋 Hey! Let\'s chat!',
+          }),
+        }).then(() => {
+          loadMessages();
+          loadThreads();
+          // Remove query params
+          window.history.replaceState({}, '', '/chat');
+        });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId]);
+
+  const getOtherUserName = (thread: ChatThread) => {
+    if (thread.user1Id === studentId) return thread.user2Name || 'Unknown';
+    return thread.user1Name || 'Unknown';
+  };
+
+  const getUnreadCount = (thread: ChatThread) => {
+    if (thread.user1Id === studentId) return thread.unreadCount1;
+    return thread.unreadCount2;
+  };
+
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return 'now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+    if (diff < 86400000) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="card p-8 text-center">
+          <p className="text-[var(--muted)]">Please sign in to access chat</p>
+          <Link href="/login" className="btn-primary mt-4 inline-block">Sign In</Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pt-14">
+      <div className="h-[calc(100vh-56px)] flex">
+        {/* ======= Sidebar / Thread List ======= */}
+        <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-[var(--border)] bg-[var(--background)]`}>
+          {/* Header */}
+          <div className="p-4 border-b border-[var(--border)]">
+            <div className="flex items-center justify-between">
+              <h1 className="text-lg font-semibold text-[var(--foreground)]">💬 Chats</h1>
+              <Link href="/friends" className="text-xs text-[var(--primary-light)] hover:underline">
+                Friends
+              </Link>
+            </div>
+            <p className="text-xs text-[var(--muted)] mt-1">Message your study buddies</p>
+          </div>
+
+          {/* Thread List */}
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : threads.length === 0 ? (
+              <div className="p-6 text-center">
+                <div className="text-3xl mb-3">🗨️</div>
+                <p className="text-sm text-[var(--muted)]">No chats yet</p>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  Add friends from the <Link href="/friends" className="text-[var(--primary-light)] hover:underline">Friends</Link> page to start chatting!
+                </p>
+              </div>
+            ) : (
+              threads.map(thread => {
+                const otherName = getOtherUserName(thread);
+                const unread = getUnreadCount(thread);
+                const isActive = selectedChatId === thread.chatId;
+                return (
+                  <button
+                    key={thread.chatId}
+                    onClick={() => {
+                      setSelectedChatId(thread.chatId);
+                      setShowSidebar(false);
+                      markRead();
+                    }}
+                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b border-[var(--border)]/50 ${
+                      isActive
+                        ? 'bg-[var(--surface-light)]'
+                        : 'hover:bg-[var(--surface)]/50'
+                    }`}
+                  >
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                      {otherName.charAt(0).toUpperCase()}
+                    </div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-[var(--foreground)] truncate">
+                          {otherName}
+                        </span>
+                        <span className="text-[10px] text-[var(--muted)] flex-shrink-0">
+                          {thread.lastMessageAt ? formatTime(thread.lastMessageAt) : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-xs text-[var(--muted)] truncate">
+                          {thread.lastMessage || 'No messages yet'}
+                        </span>
+                        {unread > 0 && (
+                          <span className="ml-2 bg-[var(--primary)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 min-w-[18px] text-center">
+                            {unread}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* ======= Chat / Message Area ======= */}
+        <div className={`${!showSidebar ? 'flex' : 'hidden'} md:flex flex-col flex-1 bg-[var(--surface)]/30`}>
+          {selectedChatId ? (
+            <>
+              {/* Chat Header */}
+              <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
+                {/* Back button (mobile) */}
+                <button
+                  onClick={() => setShowSidebar(true)}
+                  className="md:hidden text-[var(--muted)] hover:text-[var(--foreground)] p-1"
+                >
+                  ← 
+                </button>
+                {/* Avatar */}
+                {(() => {
+                  const thread = threads.find(t => t.chatId === selectedChatId);
+                  const name = thread ? getOtherUserName(thread) : '?';
+                  return (
+                    <>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white font-semibold text-xs">
+                        {name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-[var(--foreground)]">{name}</div>
+                        <div className="text-[10px] text-[var(--muted)]">Study Buddy</div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+                {messages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">💬</div>
+                      <p className="text-sm text-[var(--muted)]">No messages yet. Say hi!</p>
+                    </div>
+                  </div>
+                ) : (
+                  messages.map(msg => {
+                    const isMine = msg.senderId === studentId;
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
+                            isMine
+                              ? 'bg-[var(--primary)] text-white rounded-br-md'
+                              : 'bg-[var(--surface-light)] text-[var(--foreground)] rounded-bl-md'
+                          }`}
+                        >
+                          <p className="break-words whitespace-pre-wrap">{msg.text}</p>
+                          <div className={`flex items-center gap-1 mt-1 ${isMine ? 'justify-end' : 'justify-start'}`}>
+                            <span className={`text-[10px] ${isMine ? 'text-white/60' : 'text-[var(--muted)]'}`}>
+                              {formatTime(msg.createdAt)}
+                            </span>
+                            {isMine && (
+                              <span className="text-[10px] text-white/60">
+                                {msg.read ? '✓✓' : '✓'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input Area */}
+              <div className="p-3 border-t border-[var(--border)] bg-[var(--background)]">
+                <form
+                  onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={newMsg}
+                    onChange={(e) => setNewMsg(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 input-field text-sm py-2.5"
+                    disabled={sending}
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newMsg.trim() || sending}
+                    className="btn-primary py-2.5 px-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sending ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                    ) : (
+                      '➤'
+                    )}
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            /* No chat selected */
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-5xl mb-4">💬</div>
+                <h2 className="text-lg font-semibold text-[var(--foreground)]">MitrAI Chat</h2>
+                <p className="text-sm text-[var(--muted)] mt-1">Select a conversation or start a new one</p>
+                <Link href="/friends" className="btn-primary mt-4 inline-block text-sm py-2 px-4">
+                  Find Friends
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

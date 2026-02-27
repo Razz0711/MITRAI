@@ -15,9 +15,12 @@ interface MatchCardProps {
   isBirthday?: boolean;
   onViewProfile?: () => void;
   onConnect?: () => void;
+  onAddFriend?: (studentId: string, studentName: string) => void;
+  isFriend?: boolean;
+  friendRequestPending?: boolean;
 }
 
-export default function MatchCard({ match, rank, userStatus, isBirthday, onViewProfile, onConnect }: MatchCardProps) {
+export default function MatchCard({ match, rank, userStatus, isBirthday, onViewProfile, onConnect, onAddFriend, isFriend, friendRequestPending }: MatchCardProps) {
   const { student, score, whyItWorks, potentialChallenges, recommendedFirstTopic, bestFormat, complementaryFactors } = match;
 
   const rankLabel: Record<number, string> = { 1: '#1', 2: '#2', 3: '#3' };
@@ -117,6 +120,21 @@ export default function MatchCard({ match, rank, userStatus, isBirthday, onViewP
         <button onClick={onViewProfile} className="btn-secondary flex-1 text-xs">
           Profile
         </button>
+        {onAddFriend && (
+          <button
+            onClick={() => onAddFriend(student.id, student.name)}
+            disabled={isFriend || friendRequestPending}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              isFriend
+                ? 'bg-green-500/15 text-green-400 border border-green-500/25 cursor-default'
+                : friendRequestPending
+                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25 cursor-default'
+                : 'bg-[var(--primary)]/15 text-[var(--primary-light)] border border-[var(--primary)]/25 hover:bg-[var(--primary)]/25'
+            }`}
+          >
+            {isFriend ? '✓ Friends' : friendRequestPending ? '⏳ Sent' : '👋 Add Friend'}
+          </button>
+        )}
       </div>
       <div className="flex gap-1.5 mt-1.5">
         <Link

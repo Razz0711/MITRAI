@@ -161,10 +161,14 @@ export default function OnboardingPage() {
         admissionNumber: user.admissionNumber,
       } : undefined;
       const parsed = parseOnboardingData(data, authData);
+
+      // Use the auth user ID so the profile is linked to the account.
+      // PUT will update if the auto-created profile exists, or create if not.
+      const profileId = user?.id || localStorage.getItem('mitrai_student_id') || '';
       const response = await fetch('/api/students', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsed),
+        body: JSON.stringify({ id: profileId, ...parsed }),
       });
 
       const result = await response.json();
