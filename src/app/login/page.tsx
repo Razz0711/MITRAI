@@ -4,8 +4,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 
 const DEPARTMENTS = [
@@ -16,8 +16,9 @@ const DEPARTMENTS = [
 
 const YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
 
-export default function LoginPage() {
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, signup, user } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
   const [name, setName] = useState('');
@@ -43,6 +44,14 @@ export default function LoginPage() {
     const t = setTimeout(() => setOtpResendTimer(otpResendTimer - 1), 1000);
     return () => clearTimeout(t);
   }, [otpResendTimer]);
+
+  // Auto-switch to signup mode when invited via ?ref= link
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      setIsSignup(true);
+    }
+  }, [searchParams]);
 
   // Redirect if already logged in
   if (user) {
@@ -356,5 +365,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-pulse text-[var(--muted)]">Loading...</div></div>}>
+      <LoginPageInner />
+    </Suspense>
   );
 }

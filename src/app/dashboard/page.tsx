@@ -204,7 +204,8 @@ export default function DashboardPage() {
 
   const getInviteLink = () => {
     const admNo = student?.admissionNumber || user?.id?.slice(0, 6) || 'svnit';
-    return `https://mitrai.vercel.app/login?ref=${admNo}`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://mitrai-study.vercel.app';
+    return `${origin}/login?ref=${admNo}`;
   };
 
   const copyInviteLink = () => {
