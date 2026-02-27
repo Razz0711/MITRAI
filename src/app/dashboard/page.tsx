@@ -34,8 +34,22 @@ export default function DashboardPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Invite
+  const [inviteCopied, setInviteCopied] = useState(false);
+
+  // Study streak (from sessions)
+  const [studyStreak, setStudyStreak] = useState(0);
+
+  // Today's classes timetable
+  const [todayClasses, setTodayClasses] = useState<Array<{ time: string; subject: string; room: string }>>([]);
+  const [showTimetableEditor, setShowTimetableEditor] = useState(false);
+  const [newClassTime, setNewClassTime] = useState('09:00');
+  const [newClassSubject, setNewClassSubject] = useState('');
+  const [newClassRoom, setNewClassRoom] = useState('');
+
   useEffect(() => {
     loadData();
+    loadTodayClasses();
   }, []);
 
   // Load birthdays from registered users
@@ -77,6 +91,92 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user) { loadBirthdays(); loadNotifications(); loadStatus(); }
   }, [user, loadBirthdays, loadNotifications, loadStatus]);
+
+  // Calculate study streak from localStorage activity
+  useEffect(() => {
+    try {
+      const streakData = JSON.parse(localStorage.getItem('mitrai_study_streak') || '{"dates":[],"streak":0}');
+      const today = new Date().toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const dates: string[] = streakData.dates || [];
+      
+      if (!dates.includes(today)) {
+        // Auto-mark today as active since user visited dashboard
+        dates.push(today);
+      }
+      
+      // Calculate streak: consecutive days ending at today
+      let streak = 0;
+      let checkDate = new Date();
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const dateStr = checkDate.toISOString().slice(0, 10);
+        if (dates.includes(dateStr)) {
+          streak++;
+          checkDate = new Date(checkDate.getTime() - 86400000);
+        } else {
+          break;
+        }
+      }
+      
+      setStudyStreak(streak);
+      localStorage.setItem('mitrai_study_streak', JSON.stringify({ dates: dates.slice(-30), streak }));
+    } catch { setStudyStreak(1); }
+  }, []);
+
+  const getInviteLink = () => {
+    const admNo = student?.admissionNumber || user?.id?.slice(0, 6) || 'svnit';
+    return `https://mitrai.vercel.app/login?ref=${admNo}`;
+  };
+
+  const copyInviteLink = () => {
+    navigator.clipboard.writeText(getInviteLink());
+    setInviteCopied(true);
+    setTimeout(() => setInviteCopied(false), 2000);
+  };
+
+  const shareOnWhatsApp = () => {
+    const link = getInviteLink();
+    const msg = encodeURIComponent(`Hey! Join MitrAI — find study buddies at SVNIT 🎓\n${link}\nMade by students, for students!`);
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+  };
+
+  const loadTodayClasses = () => {
+    try {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const today = days[new Date().getDay()];
+      const timetable = JSON.parse(localStorage.getItem('mitrai_timetable') || '{}');
+      const classes: Array<{ time: string; subject: string; room: string }> = timetable[today] || [];
+      setTodayClasses(classes.sort((a, b) => a.time.localeCompare(b.time)));
+    } catch { setTodayClasses([]); }
+  };
+
+  const addClassToTimetable = () => {
+    if (!newClassSubject) return;
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = days[new Date().getDay()];
+    const timetable = JSON.parse(localStorage.getItem('mitrai_timetable') || '{}');
+    if (!timetable[today]) timetable[today] = [];
+    timetable[today].push({ time: newClassTime, subject: newClassSubject, room: newClassRoom });
+    localStorage.setItem('mitrai_timetable', JSON.stringify(timetable));
+    setNewClassTime('09:00');
+    setNewClassSubject('');
+    setNewClassRoom('');
+    loadTodayClasses();
+  };
+
+  const removeClassFromTimetable = (index: number) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = days[new Date().getDay()];
+    const timetable = JSON.parse(localStorage.getItem('mitrai_timetable') || '{}');
+    if (timetable[today]) {
+      const sorted = [...timetable[today]].sort((a: { time: string }, b: { time: string }) => a.time.localeCompare(b.time));
+      sorted.splice(index, 1);
+      timetable[today] = sorted;
+      localStorage.setItem('mitrai_timetable', JSON.stringify(timetable));
+    }
+    loadTodayClasses();
+  };
 
   const loadData = async () => {
     try {
@@ -263,11 +363,12 @@ export default function DashboardPage() {
       {student ? (
         <>
           {/* Quick Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
             <StatCard label="Target Exam" value={student.targetExam} color="primary" />
             <StatCard label="Studying" value={student.currentStudy || 'Not set'} color="secondary" />
             <StatCard label="Daily Target" value={`${student.studyHoursTarget}h`} color="success" />
             <StatCard label="Sessions/Week" value={`${student.sessionsPerWeek}`} color="accent" />
+            <StatCard label={`🔥 ${studyStreak} Day Streak`} value={studyStreak >= 7 ? '🏆 On Fire!' : studyStreak >= 3 ? '💪 Going!' : '🌱 Start'} color="primary" />
           </div>
 
           {/* Main Grid */}
@@ -430,8 +531,91 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Today's Classes Widget */}
+          <div className="card p-4 mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📅</span>
+                <h2 className="text-sm font-semibold">Today&apos;s Classes</h2>
+                <span className="text-[10px] text-[var(--muted)]">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()]}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowTimetableEditor(!showTimetableEditor)}
+                className="text-[10px] text-[var(--primary-light)] hover:underline"
+              >
+                {showTimetableEditor ? 'Done' : '+ Add Class'}
+              </button>
+            </div>
+
+            {showTimetableEditor && (
+              <div className="flex flex-col sm:flex-row gap-2 mb-3 p-3 rounded-lg bg-white/5">
+                <input
+                  type="time"
+                  value={newClassTime}
+                  onChange={(e) => setNewClassTime(e.target.value)}
+                  className="input-field text-xs w-24"
+                />
+                <input
+                  type="text"
+                  value={newClassSubject}
+                  onChange={(e) => setNewClassSubject(e.target.value)}
+                  placeholder="Subject name"
+                  className="input-field text-xs flex-1"
+                />
+                <input
+                  type="text"
+                  value={newClassRoom}
+                  onChange={(e) => setNewClassRoom(e.target.value)}
+                  placeholder="Room (optional)"
+                  className="input-field text-xs w-28"
+                />
+                <button onClick={addClassToTimetable} className="btn-primary text-xs px-3 whitespace-nowrap">
+                  Add
+                </button>
+              </div>
+            )}
+
+            {todayClasses.length === 0 ? (
+              <div className="text-center py-4">
+                <span className="text-2xl mb-1 block">🎉</span>
+                <p className="text-xs text-[var(--muted)]">No classes today! Perfect for self-study.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {todayClasses.map((cls, i) => {
+                  const now = new Date();
+                  const [h, m] = cls.time.split(':').map(Number);
+                  const classTime = new Date(); classTime.setHours(h, m, 0, 0);
+                  const endTime = new Date(classTime.getTime() + 60 * 60 * 1000);
+                  const isOngoing = now >= classTime && now <= endTime;
+                  const isPast = now > endTime;
+
+                  return (
+                    <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${
+                      isOngoing ? 'bg-green-500/10 border border-green-500/20' :
+                      isPast ? 'bg-white/5 opacity-60' : 'bg-white/5'
+                    }`}>
+                      <div className="text-xs font-mono font-bold text-[var(--primary-light)] w-12">
+                        {cls.time}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate">{cls.subject}</p>
+                        {cls.room && <p className="text-[10px] text-[var(--muted)]">📍 {cls.room}</p>}
+                      </div>
+                      {isOngoing && <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 font-medium">Now</span>}
+                      {isPast && <span className="text-[10px] text-[var(--muted)]">Done</span>}
+                      <button onClick={() => removeClassFromTimetable(i)} className="text-[10px] text-red-400 hover:text-red-300 px-1">✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
             <Link href="/matches" className="card-hover p-4 text-center block">
               <h3 className="text-sm font-semibold mb-1">Find Matches</h3>
               <p className="text-xs text-[var(--muted)]">Discover study buddies</p>
@@ -448,6 +632,33 @@ export default function DashboardPage() {
               <h3 className="text-sm font-semibold mb-1">✨ Pro</h3>
               <p className="text-xs text-amber-400">Free during launch!</p>
             </Link>
+          </div>
+
+          {/* Invite Batchmates */}
+          <div className="card p-4 mt-4 border-[var(--primary)]/20">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">📤</span>
+              <h2 className="text-sm font-semibold">Invite your batchmates</h2>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1 bg-[var(--surface)] rounded-lg px-3 py-2 text-xs text-[var(--muted)] truncate border border-[var(--border)]">
+                {getInviteLink()}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={copyInviteLink}
+                  className="btn-secondary text-xs px-3 py-2 whitespace-nowrap"
+                >
+                  {inviteCopied ? '✅ Copied!' : '📋 Copy'}
+                </button>
+                <button
+                  onClick={shareOnWhatsApp}
+                  className="text-xs px-3 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors whitespace-nowrap"
+                >
+                  📱 WhatsApp
+                </button>
+              </div>
+            </div>
           </div>
         </>
       ) : (

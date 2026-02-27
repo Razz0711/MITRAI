@@ -8,6 +8,7 @@ import {
   getThreadsForUser,
   getUnreadCountForUser,
   updateThreadUserName,
+  addNotification,
 } from '@/lib/store';
 import { DirectMessage } from '@/lib/types';
 
@@ -67,6 +68,19 @@ export async function POST(request: NextRequest) {
       };
 
       await addMessage(message);
+
+      // Notify the receiver about the new message
+      try {
+        await addNotification({
+          id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          userId: receiverId,
+          type: 'session_request',
+          title: 'New Message',
+          message: `${senderName || 'Someone'}: ${text.trim().slice(0, 50)}${text.length > 50 ? '...' : ''}`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (_) { /* non-critical */ }
 
       // Update receiver name in thread if provided
       if (receiverName) {

@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import { getAllMaterials, createMaterial, saveUploadedFile } from '@/lib/store';
+import { getAllMaterials, createMaterial, saveUploadedFile, addNotification } from '@/lib/store';
 import { StudyMaterial } from '@/lib/types';
 
 // GET /api/materials — list all materials with optional filters
@@ -132,6 +132,19 @@ export async function POST(request: NextRequest) {
     };
 
     await createMaterial(material);
+
+    // Notify uploader (confirmation) — could be extended to notify department mates
+    try {
+      await addNotification({
+        id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        userId: uploadedBy,
+        type: 'goal_achievement',
+        title: 'Material Uploaded!',
+        message: `Your "${title}" has been uploaded successfully 📚`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (_) { /* non-critical */ }
 
     return NextResponse.json({ success: true, data: material });
   } catch (error) {

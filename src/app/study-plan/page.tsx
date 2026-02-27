@@ -32,8 +32,12 @@ export default function StudyPlanPage() {
         if (savedStudent) setStudentId(savedStudent);
         else if (data.data.length > 0) setStudentId(data.data[0].id);
 
-        if (savedBuddy) setBuddyId(savedBuddy);
-        else if (data.data.length > 1) setBuddyId(data.data[1].id);
+        // Prevent self-buddy: only set buddy if different from student
+        if (savedBuddy && savedBuddy !== savedStudent) setBuddyId(savedBuddy);
+        else if (data.data.length > 1) {
+          const firstOther = data.data.find((s: StudentProfile) => s.id !== (savedStudent || data.data[0]?.id));
+          if (firstOther) setBuddyId(firstOther.id);
+        }
       }
     } catch (err) {
       console.error('Failed to load students:', err);
@@ -42,6 +46,10 @@ export default function StudyPlanPage() {
 
   const generatePlan = async () => {
     if (!studentId || !buddyId) return;
+    if (studentId === buddyId) {
+      setPlan('⚠️ You cannot be your own study buddy. Please select a different buddy.');
+      return;
+    }
     setLoading(true);
     setPlan('');
 

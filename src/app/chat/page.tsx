@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { DirectMessage, ChatThread } from '@/lib/types';
+import { DirectMessage, ChatThread, UserStatus } from '@/lib/types';
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -18,6 +18,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -30,9 +31,19 @@ export default function ChatPage() {
   const loadThreads = useCallback(async () => {
     if (!studentId) return;
     try {
-      const res = await fetch(`/api/chat?userId=${studentId}`);
-      const data = await res.json();
-      setThreads(data.threads || []);
+      const [threadsRes, statusRes] = await Promise.all([
+        fetch(`/api/chat?userId=${studentId}`),
+        fetch('/api/status'),
+      ]);
+      const threadsData = await threadsRes.json();
+      setThreads(threadsData.threads || []);
+      
+      const statusData = await statusRes.json();
+      if (statusData.success) {
+        const map: Record<string, UserStatus> = {};
+        (statusData.data || []).forEach((s: UserStatus) => { map[s.userId] = s; });
+        setStatuses(map);
+      }
     } catch { /* ignore */ }
     setLoading(false);
   }, [studentId]);
@@ -227,6 +238,9 @@ export default function ChatPage() {
             ) : (
               threads.map(thread => {
                 const otherName = getOtherUserName(thread);
+                const otherId = thread.user1Id === studentId ? thread.user2Id : thread.user1Id;
+                const otherStatus = statuses[otherId];
+                const isOnline = otherStatus?.status === 'online' || otherStatus?.status === 'in-session';
                 const unread = getUnreadCount(thread);
                 const isActive = selectedChatId === thread.chatId;
                 return (
@@ -243,9 +257,12 @@ export default function ChatPage() {
                         : 'hover:bg-[var(--surface)]/50'
                     }`}
                   >
-                    {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                      {otherName.charAt(0).toUpperCase()}
+                    {/* Avatar with status dot */}
+                    <div className="relative flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white font-semibold text-sm">
+                        {otherName.charAt(0).toUpperCase()}
+                      </div>
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--background)] ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
                     </div>
                     {/* Info */}
                     <div className="flex-1 min-w-0">
@@ -292,14 +309,20 @@ export default function ChatPage() {
                 {(() => {
                   const thread = threads.find(t => t.chatId === selectedChatId);
                   const name = thread ? getOtherUserName(thread) : '?';
+                  const otherId = thread ? (thread.user1Id === studentId ? thread.user2Id : thread.user1Id) : '';
+                  const otherStatus = statuses[otherId];
+                  const isOnline = otherStatus?.status === 'online' || otherStatus?.status === 'in-session';
                   return (
                     <>
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white font-semibold text-xs">
-                        {name.charAt(0).toUpperCase()}
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white font-semibold text-xs">
+                          {name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[var(--background)] ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
                       </div>
                       <div>
                         <div className="text-sm font-medium text-[var(--foreground)]">{name}</div>
-                        <div className="text-[10px] text-[var(--muted)]">Study Buddy</div>
+                        <div className="text-[10px] text-[var(--muted)]">{isOnline ? '🟢 Online' : 'Offline'}</div>
                       </div>
                     </>
                   );

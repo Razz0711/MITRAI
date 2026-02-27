@@ -1,11 +1,11 @@
 // ============================================
 // MitrAI - Notifications API
 // GET: get notifications for a user
-// POST: mark notification as read
+// POST: mark notification as read OR create notification
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getNotifications, markNotificationRead } from '@/lib/store';
+import { getNotifications, markNotificationRead, addNotification } from '@/lib/store';
 
 // GET /api/notifications?userId=xxx
 export async function GET(request: NextRequest) {
@@ -28,12 +28,32 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/notifications — mark as read
+// POST /api/notifications — mark as read OR create notification
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, notificationId } = body;
+    const { action } = body;
 
+    // Create a new notification
+    if (action === 'create') {
+      const { userId, type, title, message } = body;
+      if (!userId || !title) {
+        return NextResponse.json({ success: false, error: 'Missing userId or title' }, { status: 400 });
+      }
+      await addNotification({
+        id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        userId,
+        type: type || 'match_found',
+        title,
+        message: message || '',
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    // Default: mark as read
+    const { userId, notificationId } = body;
     if (!userId || !notificationId) {
       return NextResponse.json({ success: false, error: 'Missing userId or notificationId' }, { status: 400 });
     }

@@ -296,15 +296,32 @@ export default function MatchesPage() {
                 .map(s => (
                   <div key={s.id} className="card p-4">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-sm font-bold text-[var(--primary-light)]">
-                        {s.name.charAt(0).toUpperCase()}
+                      <div className="relative">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-sm font-bold text-[var(--primary-light)]">
+                          {s.name.charAt(0).toUpperCase()}
+                        </div>
+                        {/* Online status dot */}
+                        {statusMap[s.id] && (
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--card-bg)] ${
+                            statusMap[s.id].status === 'online' || statusMap[s.id].status === 'in-session' ? 'bg-green-500' : 'bg-gray-500'
+                          }`} />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{s.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-semibold truncate">{s.name}</p>
+                          {birthdayUserIds.has(s.id) && <span title="Birthday coming up!">🎂</span>}
+                        </div>
                         <p className="text-[10px] text-[var(--muted)] truncate">
                           {s.department || s.currentStudy || 'SVNIT Student'}
                           {s.yearLevel ? ` · ${s.yearLevel}` : ''}
                         </p>
+                        {statusMap[s.id]?.status === 'online' && (
+                          <p className="text-[10px] text-green-400">🟢 Online now</p>
+                        )}
+                        {statusMap[s.id]?.status === 'in-session' && (
+                          <p className="text-[10px] text-amber-400">📖 {statusMap[s.id].currentSubject ? `Studying ${statusMap[s.id].currentSubject}` : 'In study session'}</p>
+                        )}
                       </div>
                     </div>
                     {s.targetExam && (

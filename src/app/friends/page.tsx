@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { Friendship, FriendRequest, BuddyRating } from '@/lib/types';
+import { Friendship, FriendRequest, BuddyRating, UserStatus } from '@/lib/types';
 
 export default function FriendsPage() {
   const { user } = useAuth();
@@ -18,6 +18,7 @@ export default function FriendsPage() {
   const [avgRating, setAvgRating] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'ratings'>('friends');
+  const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -30,6 +31,20 @@ export default function FriendsPage() {
         setRatingsReceived(data.data.ratingsReceived || []);
         setRatingsGiven(data.data.ratingsGiven || []);
         setAvgRating(data.data.averageRating || 0);
+        
+        // Load online statuses for all friends
+        const friendsList: Friendship[] = data.data.friends || [];
+        if (friendsList.length > 0) {
+          try {
+            const statusRes = await fetch('/api/status');
+            const statusData = await statusRes.json();
+            if (statusData.success) {
+              const statusMap: Record<string, UserStatus> = {};
+              (statusData.data || []).forEach((s: UserStatus) => { statusMap[s.userId] = s; });
+              setStatuses(statusMap);
+            }
+          } catch { /* ignore */ }
+        }
       }
     } catch { /* ignore */ }
     setLoading(false);
@@ -147,16 +162,21 @@ export default function FriendsPage() {
             friends.map((f) => {
               const friendName = f.user1Id === user?.id ? f.user2Name : f.user1Name;
               const friendId = f.user1Id === user?.id ? f.user2Id : f.user1Id;
+              const friendStatus = statuses[friendId];
+              const isOnline = friendStatus?.status === 'online' || friendStatus?.status === 'in-session';
               return (
                 <div key={f.id} className="card p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-sm font-bold text-[var(--primary-light)]">
-                      {friendName.charAt(0).toUpperCase()}
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-sm font-bold text-[var(--primary-light)]">
+                        {friendName.charAt(0).toUpperCase()}
+                      </div>
+                      <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--background)] ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
                     </div>
                     <div>
                       <p className="text-sm font-semibold">{friendName}</p>
                       <p className="text-[10px] text-[var(--muted)]">
-                        Friends since {new Date(f.createdAt).toLocaleDateString()}
+                        {isOnline ? (friendStatus?.status === 'in-session' ? '📖 In study session' : '🟢 Online now') : `Friends since ${new Date(f.createdAt).toLocaleDateString()}`}
                       </p>
                     </div>
                   </div>

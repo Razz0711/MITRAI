@@ -38,7 +38,7 @@ export default function Home() {
 
             <div className="grid grid-cols-3 gap-6 max-w-sm mx-auto mt-14">
               <Stat value="10+" label="Departments" />
-              <Stat value="95%" label="Match Rate" />
+              <Stat value="5D" label="AI Matching" />
               <Stat value="24/7" label="AI Support" />
             </div>
           </div>

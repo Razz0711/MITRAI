@@ -16,6 +16,7 @@ export default function CallPage() {
   const [displayName, setDisplayName] = useState('');
   const [isInCall, setIsInCall] = useState(false);
   const [buddyName, setBuddyName] = useState('');
+  const [buddyOnline, setBuddyOnline] = useState<'online' | 'in-session' | 'offline' | null>(null);
 
   // Post-call rating
   const [showRating, setShowRating] = useState(false);
@@ -48,6 +49,24 @@ export default function CallPage() {
     if (mode && room && savedName) {
       setIsInCall(true);
     }
+
+    // Check buddy online status
+    const checkBuddyStatus = async () => {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          const buddyTarget = buddy || savedBuddy;
+          if (buddyTarget) {
+            const found = data.data.find((s: { userName?: string; status: string }) =>
+              s.userName?.toLowerCase() === buddyTarget.toLowerCase()
+            );
+            setBuddyOnline(found ? (found.status as 'online' | 'in-session' | 'offline') : 'offline');
+          }
+        }
+      } catch { /* ignore */ }
+    };
+    checkBuddyStatus();
   }, []);
 
   const generateRoomCode = () => {
@@ -88,8 +107,9 @@ export default function CallPage() {
             action: 'rate',
             fromUserId: userData.id,
             fromUserName: userData.name || displayName,
-            toUserId: buddyName, // we use buddy name as ID placeholder
+            toUserId: buddyName, // name-based lookup (server resolves)
             toUserName: buddyName,
+            lookupByName: true,
             rating: ratingValue,
             review: ratingReview,
           }),
@@ -364,10 +384,24 @@ export default function CallPage() {
           {/* Buddy Info */}
           {buddyName && (
             <div className="p-2.5 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20">
-              <p className="text-xs">
-                Calling <strong className="text-[var(--primary-light)]">{buddyName}</strong> — 
-                share code <strong className="font-mono text-[var(--secondary)]">{roomCode || '...'}</strong>
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs">
+                  Calling <strong className="text-[var(--primary-light)]">{buddyName}</strong> — 
+                  share code <strong className="font-mono text-[var(--secondary)]">{roomCode || '...'}</strong>
+                </p>
+                {buddyOnline && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                    buddyOnline === 'online' ? 'bg-green-500/15 text-green-400' :
+                    buddyOnline === 'in-session' ? 'bg-amber-500/15 text-amber-400' :
+                    'bg-gray-500/15 text-gray-400'
+                  }`}>
+                    {buddyOnline === 'online' ? '🟢 Online' : buddyOnline === 'in-session' ? '📖 In Session' : '⚫ Offline'}
+                  </span>
+                )}
+              </div>
+              {buddyOnline === 'online' && (
+                <p className="text-[10px] text-green-400 mt-1">Your buddy is online — great time to call!</p>
+              )}
             </div>
           )}
 

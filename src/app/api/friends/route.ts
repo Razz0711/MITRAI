@@ -17,6 +17,7 @@ import {
   getRatingsByUser,
   getAverageRating,
   addRating,
+  addNotification,
 } from '@/lib/store';
 
 // GET /api/friends?userId=xxx
@@ -72,6 +73,16 @@ export async function POST(req: NextRequest) {
           status: 'pending',
           createdAt: new Date().toISOString(),
         });
+        // Notify the recipient about the friend request
+        await addNotification({
+          id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          userId: toUserId,
+          type: 'session_request',
+          title: 'New Friend Request',
+          message: `${fromUserName || 'Someone'} sent you a friend request!`,
+          read: false,
+          createdAt: new Date().toISOString(),
+        });
         return NextResponse.json({ success: true, data: request });
       }
 
@@ -93,6 +104,16 @@ export async function POST(req: NextRequest) {
             user1Name: updated.fromUserName,
             user2Id: updated.toUserId,
             user2Name: updated.toUserName,
+            createdAt: new Date().toISOString(),
+          });
+          // Notify the original sender that their request was accepted
+          await addNotification({
+            id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            userId: updated.fromUserId,
+            type: 'session_accepted',
+            title: 'Friend Request Accepted!',
+            message: `${updated.toUserName} accepted your friend request 🎉`,
+            read: false,
             createdAt: new Date().toISOString(),
           });
         }
@@ -123,6 +144,16 @@ export async function POST(req: NextRequest) {
           toUserName: toUserName || 'Unknown',
           rating: Number(rating),
           review: review || '',
+          createdAt: new Date().toISOString(),
+        });
+        // Notify the user they received a rating
+        await addNotification({
+          id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          userId: toUserId,
+          type: 'goal_achievement',
+          title: 'New Rating Received',
+          message: `${fromUserName || 'Someone'} rated you ${rating}/10${review ? `: "${review}"` : ''}`,
+          read: false,
           createdAt: new Date().toISOString(),
         });
         return NextResponse.json({ success: true, data: newRating });
