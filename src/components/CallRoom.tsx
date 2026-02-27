@@ -39,6 +39,8 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
   const [participantCount, setParticipantCount] = useState(1);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState('');
+  const [buddyJoined, setBuddyJoined] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   const initJitsi = useCallback(() => {
     if (!containerRef.current || apiRef.current) return;
@@ -110,6 +112,8 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
 
       api.addListener('participantJoined', () => {
         setParticipantCount(api.getNumberOfParticipants());
+        setBuddyJoined(true);
+        setTimeout(() => setBuddyJoined(false), 4000);
       });
 
       api.addListener('participantLeft', () => {
@@ -209,14 +213,47 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         </div>
       )}
 
+      {/* Waiting for buddy overlay */}
+      {isConnected && participantCount <= 1 && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 animate-pulse">
+          <div className="px-5 py-3 rounded-xl bg-[var(--surface)]/95 border border-[var(--primary)]/30 backdrop-blur-sm shadow-lg text-center">
+            <p className="text-sm font-semibold text-[var(--primary-light)]">⏳ Waiting for your buddy to join...</p>
+            <p className="text-[10px] text-[var(--muted)] mt-1 mb-2">Share this room code with your buddy:</p>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(roomName).then(() => {
+                  setCodeCopied(true);
+                  setTimeout(() => setCodeCopied(false), 2000);
+                });
+              }}
+              className="px-4 py-1.5 rounded-lg bg-[var(--primary)]/20 border border-[var(--primary)]/30 font-mono text-lg tracking-widest text-[var(--primary-light)] hover:bg-[var(--primary)]/30 transition-all"
+            >
+              {codeCopied ? '✅ Copied!' : roomName}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Buddy joined toast */}
+      {buddyJoined && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 slide-up">
+          <div className="px-5 py-3 rounded-xl bg-green-500/20 border border-green-500/40 backdrop-blur-sm shadow-lg text-center">
+            <p className="text-sm font-semibold text-green-400">🎉 Your buddy joined the call!</p>
+          </div>
+        </div>
+      )}
+
       {/* Status Bar */}
       {isConnected && (
         <div className="px-4 py-2 bg-[var(--surface)] border-b border-[var(--border)] flex items-center justify-between z-20">
           <div className="flex items-center gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--success)] animate-pulse" />
+            <div className={`w-2.5 h-2.5 rounded-full ${participantCount > 1 ? 'bg-[var(--success)]' : 'bg-amber-400'} animate-pulse`} />
             <span className="text-sm font-medium">
               {audioOnly ? '🎙️ Voice Call' : '📹 Video Call'} — {participantCount} participant{participantCount !== 1 ? 's' : ''}
             </span>
+            {participantCount <= 1 && (
+              <span className="text-xs text-amber-400">(only you)</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
