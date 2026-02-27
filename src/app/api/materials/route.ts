@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const year = searchParams.get('year');
     const search = searchParams.get('search')?.toLowerCase();
 
-    let materials = getAllMaterials();
+    let materials = await getAllMaterials();
 
     if (department && department !== 'all') {
       materials = materials.filter(m => m.department === department);
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    createMaterial(material);
+    await createMaterial(material);
 
     return NextResponse.json({ success: true, data: material });
   } catch (error) {

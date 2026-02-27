@@ -24,18 +24,18 @@ export async function GET(request: NextRequest) {
 
     // Get unread count
     if (action === 'unread') {
-      const count = getUnreadCountForUser(userId);
+      const count = await getUnreadCountForUser(userId);
       return NextResponse.json({ unreadCount: count });
     }
 
     // Get messages for a specific chat
     if (chatId) {
-      const messages = getMessagesForChat(chatId);
+      const messages = await getMessagesForChat(chatId);
       return NextResponse.json({ messages });
     }
 
     // Get all threads for user
-    const threads = getThreadsForUser(userId);
+    const threads = await getThreadsForUser(userId);
     return NextResponse.json({ threads });
   } catch (error) {
     console.error('Chat GET error:', error);
@@ -66,15 +66,15 @@ export async function POST(request: NextRequest) {
         createdAt: new Date().toISOString(),
       };
 
-      addMessage(message);
+      await addMessage(message);
 
       // Update receiver name in thread if provided
       if (receiverName) {
-        updateThreadUserName(chatId, receiverId, receiverName);
+        await updateThreadUserName(chatId, receiverId, receiverName);
       }
       // Update sender name too
       if (senderName) {
-        updateThreadUserName(chatId, senderId, senderName);
+        await updateThreadUserName(chatId, senderId, senderName);
       }
 
       return NextResponse.json({ message });
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       if (!chatId || !userId) {
         return NextResponse.json({ error: 'chatId, userId required' }, { status: 400 });
       }
-      markMessagesRead(chatId, userId);
+      await markMessagesRead(chatId, userId);
       return NextResponse.json({ success: true });
     }
 

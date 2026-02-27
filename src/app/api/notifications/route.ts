@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
     }
 
-    const notifs = getNotifications(userId);
+    const notifs = await getNotifications(userId);
     // Sort newest first
     notifs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing userId or notificationId' }, { status: 400 });
     }
 
-    markNotificationRead(userId, notificationId);
+    await markNotificationRead(userId, notificationId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Notifications POST error:', error);

@@ -13,14 +13,14 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get('id');
 
   if (id) {
-    const student = getStudentById(id);
+    const student = await getStudentById(id);
     if (!student) {
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
     }
     return NextResponse.json({ success: true, data: student });
   }
 
-  const students = getAllStudents();
+  const students = await getAllStudents();
   return NextResponse.json({ success: true, data: students });
 }
 
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     // If client sends an ID, check if it already exists — if so, return it
     // (this happens when signup auto-creates a profile)
     if (body.id) {
-      const existing = getStudentById(body.id);
+      const existing = await getStudentById(body.id);
       if (existing) {
         return NextResponse.json({ success: true, data: existing }, { status: 200 });
       }
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     // Check for duplicate: same email + same targetExam = already exists
     // Skip this check for auto-created profiles (they have no targetExam yet)
     if (!body._autoCreated) {
-      const allStudents = getAllStudents();
+      const allStudents = await getAllStudents();
       const duplicate = allStudents.find(
         s => s.email && body.email &&
           s.email.toLowerCase() === body.email.toLowerCase() &&
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       weeklyGoals: body.weeklyGoals || '',
     };
 
-    const created = createStudent(student);
+    const created = await createStudent(student);
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (error) {
     console.error('Create student error:', error);
@@ -115,7 +115,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Student ID is required' }, { status: 400 });
     }
 
-    const existing = getStudentById(id);
+    const existing = await getStudentById(id);
     if (!existing) {
       // If not found, create it instead
       const student: StudentProfile = {
@@ -158,11 +158,11 @@ export async function PUT(req: NextRequest) {
         studyHoursTarget: updates.studyHoursTarget || 4,
         weeklyGoals: updates.weeklyGoals || '',
       };
-      const created = createStudent(student);
+      const created = await createStudent(student);
       return NextResponse.json({ success: true, data: created }, { status: 201 });
     }
 
-    const updated = updateStudent(id, updates);
+    const updated = await updateStudent(id, updates);
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error('Update student error:', error);
@@ -180,12 +180,12 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Student ID is required' }, { status: 400 });
     }
 
-    const student = getStudentById(id);
+    const student = await getStudentById(id);
     if (!student) {
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
     }
 
-    const deleted = deleteStudent(id);
+    const deleted = await deleteStudent(id);
     if (deleted) {
       return NextResponse.json({ success: true, message: 'Profile deleted successfully' });
     }

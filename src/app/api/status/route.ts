@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
 
     if (userId) {
-      const status = getUserStatus(userId);
+      const status = await getUserStatus(userId);
       if (!status) {
         return NextResponse.json({
           success: true,
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       const now = Date.now();
       if (now - lastSeen > 5 * 60 * 1000 && status.status !== 'offline') {
         status.status = 'offline';
-        updateUserStatus(userId, { status: 'offline' });
+        await updateUserStatus(userId, { status: 'offline' });
       }
 
       // Apply privacy: if hideStatus, show as offline
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Return all statuses (for match cards)
-    const allStatuses = getAllUserStatuses();
+    const allStatuses = await getAllUserStatuses();
     const now = Date.now();
 
     // Auto-detect offline for all
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       updates.sessionStartedAt = new Date().toISOString();
     }
 
-    const updated = updateUserStatus(userId, updates);
+    const updated = await updateUserStatus(userId, updates);
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error('Status POST error:', error);

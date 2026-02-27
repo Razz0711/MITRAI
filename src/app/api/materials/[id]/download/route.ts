@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const material = getMaterialById(params.id);
+    const material = await getMaterialById(params.id);
     if (!material) {
       return NextResponse.json({ success: false, error: 'Material not found' }, { status: 404 });
     }

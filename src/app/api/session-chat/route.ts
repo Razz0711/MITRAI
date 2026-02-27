@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'message is required' }, { status: 400 });
     }
 
-    const student1 = student1Id ? getStudentById(student1Id) : null;
-    const student2 = student2Id ? getStudentById(student2Id) : null;
+    const student1 = student1Id ? await getStudentById(student1Id) : null;
+    const student2 = student2Id ? await getStudentById(student2Id) : null;
 
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({

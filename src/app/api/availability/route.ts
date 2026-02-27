@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
     }
 
-    let avail = getUserAvailability(userId);
+    let avail = await getUserAvailability(userId);
 
     // If no availability set, create default
     if (!avail) {
@@ -67,14 +67,14 @@ export async function POST(request: NextRequest) {
         slots,
         updatedAt: new Date().toISOString(),
       };
-      setUserAvailability(avail);
+      await setUserAvailability(avail);
       return NextResponse.json({ success: true, data: avail });
     }
 
     // Action: 'engage' — mark a slot as engaged (after session accepted)
     if (action === 'engage') {
       const { day, hour, sessionId, buddyName } = body;
-      markSlotEngaged(userId, day, hour, sessionId, buddyName);
+      await markSlotEngaged(userId, day, hour, sessionId, buddyName);
       return NextResponse.json({ success: true });
     }
 

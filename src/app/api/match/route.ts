@@ -14,12 +14,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'studentId is required' }, { status: 400 });
     }
 
-    const student = getStudentById(studentId);
+    const student = await getStudentById(studentId);
     if (!student) {
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
     }
 
-    const allStudents = getAllStudents();
+    const allStudents = await getAllStudents();
     const hasApiKey = !!process.env.GEMINI_API_KEY;
     const shouldUseAI = useAI !== false && hasApiKey;
 

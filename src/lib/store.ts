@@ -1,30 +1,17 @@
 // ============================================
-// MitrAI - Data Store with File Persistence
-// (Data survives server restarts in dev mode)
+// MitrAI - Data Store (Supabase)
+// Persistent database — data survives deployments
 // ============================================
 
 import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish, FriendRequest, Friendship, BuddyRating, Subscription, DirectMessage, ChatThread } from './types';
+import { supabase } from './supabase';
 import fs from 'fs';
 import path from 'path';
 
-// File-based persistence
-// On Vercel (production), use /tmp since the filesystem is read-only elsewhere
-// Locally, use .data in the project root for persistence across dev restarts
+// File uploads still use local/tmp filesystem
 const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
 const DATA_DIR = IS_VERCEL ? path.join('/tmp', '.data') : path.join(process.cwd(), '.data');
-const STUDENTS_FILE = path.join(DATA_DIR, 'students.json');
-const MATERIALS_FILE = path.join(DATA_DIR, 'materials.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
-const AVAILABILITY_FILE = path.join(DATA_DIR, 'availability.json');
-const STATUS_FILE = path.join(DATA_DIR, 'status.json');
-const BOOKINGS_FILE = path.join(DATA_DIR, 'bookings.json');
-const BIRTHDAY_WISHES_FILE = path.join(DATA_DIR, 'birthday_wishes.json');
-const FRIENDS_FILE = path.join(DATA_DIR, 'friends.json');
-const FRIEND_REQUESTS_FILE = path.join(DATA_DIR, 'friend_requests.json');
-const RATINGS_FILE = path.join(DATA_DIR, 'ratings.json');
-const SUBSCRIPTIONS_FILE = path.join(DATA_DIR, 'subscriptions.json');
-const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
-const CHAT_THREADS_FILE = path.join(DATA_DIR, 'chat_threads.json');
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -32,566 +19,309 @@ function ensureDataDir() {
   }
 }
 
-function loadStudentsFromFile(): Map<string, StudentProfile> {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(STUDENTS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(STUDENTS_FILE, 'utf-8'));
-      return new Map(Object.entries(data));
-    }
-  } catch (e) {
-    console.error('Failed to load students from file:', e);
-  }
-  return new Map();
-}
-
-function saveStudentsToFile() {
-  try {
-    ensureDataDir();
-    const obj: Record<string, StudentProfile> = {};
-    students.forEach((v, k) => { obj[k] = v; });
-    fs.writeFileSync(STUDENTS_FILE, JSON.stringify(obj, null, 2));
-  } catch (e) {
-    console.error('Failed to save students to file:', e);
-  }
-}
-
-// Load persisted data on startup
-const students: Map<string, StudentProfile> = loadStudentsFromFile();
-const sessions: Map<string, StudySession> = new Map();
-const notifications: Map<string, Notification[]> = new Map();
-
 // ============================================
-// Demo Seed Data (only loaded when DEMO_MODE=true)
+// Helper: Convert between camelCase ↔ snake_case
 // ============================================
 
-const seedStudents: StudentProfile[] = [
-  {
-    id: 'demo-1',
-    createdAt: new Date().toISOString(),
-    name: 'Arjun Sharma',
-    age: 20,
-    email: 'arjun.sharma@svnit.ac.in',
-    admissionNumber: 'U23CS001',
-    city: 'Surat',
-    country: 'India',
-    timezone: 'IST',
-    preferredLanguage: 'English',
-    department: 'Computer Science & Engineering',
-    currentStudy: 'B.Tech CSE',
-    institution: 'SVNIT Surat',
-    yearLevel: '3rd Year',
-    targetExam: 'Semester Exams',
-    targetDate: '2026-05-10',
-    strongSubjects: ['Data Structures', 'Algorithms', 'DBMS'],
-    weakSubjects: ['Computer Networks', 'Operating Systems'],
-    currentlyStudying: 'Design and Analysis of Algorithms',
-    upcomingTopics: ['Machine Learning', 'Compiler Design'],
-    learningType: 'practical',
-    studyMethod: ['problems', 'discussion'],
-    sessionLength: '2hrs',
-    breakPattern: 'pomodoro',
-    pace: 'fast',
-    availableDays: ['Monday', 'Wednesday', 'Friday', 'Saturday'],
-    availableTimes: '8PM-11PM IST',
-    sessionsPerWeek: 4,
-    sessionType: 'both',
-    studyStyle: 'strict',
-    communication: 'extrovert',
-    teachingAbility: 'can explain well',
-    accountabilityNeed: 'high',
-    videoCallComfort: true,
-    shortTermGoal: 'Score 9+ SGPA this semester',
-    longTermGoal: 'Get placed in a top product company',
-    studyHoursTarget: 5,
-    weeklyGoals: 'Complete 3 chapters and solve 150 DSA problems',
-  },
-  {
-    id: 'demo-2',
-    createdAt: new Date().toISOString(),
-    name: 'Priya Patel',
-    age: 19,
-    email: 'priya.patel@svnit.ac.in',
-    admissionNumber: 'U24AI001',
-    city: 'Surat',
-    country: 'India',
-    timezone: 'IST',
-    preferredLanguage: 'English',
-    department: 'Artificial Intelligence',
-    currentStudy: 'B.Tech AI',
-    institution: 'SVNIT Surat',
-    yearLevel: '2nd Year',
-    targetExam: 'Semester Exams',
-    targetDate: '2026-05-10',
-    strongSubjects: ['Linear Algebra', 'Python Programming', 'Probability & Statistics'],
-    weakSubjects: ['Digital Logic', 'Discrete Mathematics'],
-    currentlyStudying: 'Machine Learning Fundamentals',
-    upcomingTopics: ['Deep Learning', 'Natural Language Processing'],
-    learningType: 'visual',
-    studyMethod: ['videos', 'notes'],
-    sessionLength: '1hr',
-    breakPattern: 'pomodoro',
-    pace: 'medium',
-    availableDays: ['Monday', 'Tuesday', 'Thursday', 'Saturday'],
-    availableTimes: '7PM-10PM IST',
-    sessionsPerWeek: 3,
-    sessionType: 'both',
-    studyStyle: 'flexible',
-    communication: 'introvert',
-    teachingAbility: 'can explain well',
-    accountabilityNeed: 'medium',
-    videoCallComfort: true,
-    shortTermGoal: 'Master ML algorithms before midsems',
-    longTermGoal: 'Research internship at a top AI lab',
-    studyHoursTarget: 4,
-    weeklyGoals: 'Finish 2 ML modules and implement 3 algorithms',
-  },
-  {
-    id: 'demo-3',
-    createdAt: new Date().toISOString(),
-    name: 'Rahul Verma',
-    age: 20,
-    email: 'rahul.verma@svnit.ac.in',
-    admissionNumber: 'U23ME001',
-    city: 'Surat',
-    country: 'India',
-    timezone: 'IST',
-    preferredLanguage: 'English',
-    department: 'Mechanical Engineering',
-    currentStudy: 'B.Tech Mechanical',
-    institution: 'SVNIT Surat',
-    yearLevel: '3rd Year',
-    targetExam: 'GATE ME',
-    targetDate: '2027-02-01',
-    strongSubjects: ['Thermodynamics', 'Strength of Materials', 'Engineering Mechanics'],
-    weakSubjects: ['Fluid Mechanics', 'Heat Transfer'],
-    currentlyStudying: 'Manufacturing Processes',
-    upcomingTopics: ['Machine Design', 'Vibrations'],
-    learningType: 'practical',
-    studyMethod: ['problems', 'notes'],
-    sessionLength: '2hrs',
-    breakPattern: 'flexible',
-    pace: 'fast',
-    availableDays: ['Monday', 'Wednesday', 'Friday', 'Sunday'],
-    availableTimes: '6PM-9PM IST',
-    sessionsPerWeek: 4,
-    sessionType: 'teaching',
-    studyStyle: 'strict',
-    communication: 'extrovert',
-    teachingAbility: 'can explain well',
-    accountabilityNeed: 'high',
-    videoCallComfort: true,
-    shortTermGoal: 'Complete Thermo & SOM revision by March',
-    longTermGoal: 'Crack GATE with under 500 AIR',
-    studyHoursTarget: 6,
-    weeklyGoals: 'Solve 200 GATE PYQs and revise 2 chapters',
-  },
-  {
-    id: 'demo-4',
-    createdAt: new Date().toISOString(),
-    name: 'Sneha Desai',
-    age: 19,
-    email: 'sneha.desai@svnit.ac.in',
-    admissionNumber: 'U24EC001',
-    city: 'Surat',
-    country: 'India',
-    timezone: 'IST',
-    preferredLanguage: 'English',
-    department: 'Electronics & Communication',
-    currentStudy: 'B.Tech ECE',
-    institution: 'SVNIT Surat',
-    yearLevel: '2nd Year',
-    targetExam: 'Semester Exams',
-    targetDate: '2026-05-10',
-    strongSubjects: ['Circuit Theory', 'Signals & Systems'],
-    weakSubjects: ['Electromagnetic Theory', 'Microprocessors'],
-    currentlyStudying: 'Analog Electronics',
-    upcomingTopics: ['Digital Communication', 'VLSI Design'],
-    learningType: 'visual',
-    studyMethod: ['notes', 'videos'],
-    sessionLength: '1hr',
-    breakPattern: 'pomodoro',
-    pace: 'medium',
-    availableDays: ['Tuesday', 'Thursday', 'Saturday', 'Sunday'],
-    availableTimes: '5PM-8PM IST',
-    sessionsPerWeek: 3,
-    sessionType: 'learning',
-    studyStyle: 'flexible',
-    communication: 'introvert',
-    teachingAbility: 'average',
-    accountabilityNeed: 'high',
-    videoCallComfort: false,
-    shortTermGoal: 'Clear all subjects with A grade',
-    longTermGoal: 'MS in VLSI from a top university',
-    studyHoursTarget: 4,
-    weeklyGoals: 'Complete 2 chapters, solve tutorials, revise previous week',
-  },
-  {
-    id: 'demo-5',
-    createdAt: new Date().toISOString(),
-    name: 'Aditya Joshi',
-    age: 21,
-    email: 'aditya.joshi@svnit.ac.in',
-    admissionNumber: 'U22CE001',
-    city: 'Surat',
-    country: 'India',
-    timezone: 'IST',
-    preferredLanguage: 'English',
-    department: 'Civil Engineering',
-    currentStudy: 'B.Tech Civil',
-    institution: 'SVNIT Surat',
-    yearLevel: '4th Year',
-    targetExam: 'GATE CE',
-    targetDate: '2027-02-01',
-    strongSubjects: ['Structural Analysis', 'RCC Design', 'Geotechnical Engineering'],
-    weakSubjects: ['Fluid Mechanics', 'Environmental Engineering'],
-    currentlyStudying: 'Steel Structures',
-    upcomingTopics: ['Transportation Engineering', 'Estimation & Costing'],
-    learningType: 'reading',
-    studyMethod: ['notes', 'problems'],
-    sessionLength: '2hrs',
-    breakPattern: 'flexible',
-    pace: 'medium',
-    availableDays: ['Monday', 'Wednesday', 'Saturday'],
-    availableTimes: '9PM-11PM IST',
-    sessionsPerWeek: 3,
-    sessionType: 'both',
-    studyStyle: 'flexible',
-    communication: 'introvert',
-    teachingAbility: 'prefer learning',
-    accountabilityNeed: 'medium',
-    videoCallComfort: true,
-    shortTermGoal: 'Master Structural Analysis for GATE',
-    longTermGoal: 'Clear GATE and join IIT for M.Tech',
-    studyHoursTarget: 5,
-    weeklyGoals: 'Complete 2 chapters and solve 100 GATE problems',
-  },
-  {
-    id: 'demo-6',
-    createdAt: new Date().toISOString(),
-    name: 'Kavya Mehta',
-    age: 20,
-    email: 'kavya.mehta@svnit.ac.in',
-    admissionNumber: 'U23MA001',
-    city: 'Surat',
-    country: 'India',
-    timezone: 'IST',
-    preferredLanguage: 'English',
-    department: 'Integrated M.Sc. Mathematics',
-    currentStudy: 'Integrated M.Sc. Mathematics',
-    institution: 'SVNIT Surat',
-    yearLevel: '3rd Year',
-    targetExam: 'Semester Exams',
-    targetDate: '2026-05-10',
-    strongSubjects: ['Linear Algebra', 'Probability & Statistics', 'Numerical Analysis'],
-    weakSubjects: ['Complex Analysis', 'Mechanics', 'Computer Networks'],
-    currentlyStudying: 'Ordinary Differential Equations',
-    upcomingTopics: ['Complex Analysis', 'Continuum Mechanics', 'Metric Spaces'],
-    learningType: 'reading',
-    studyMethod: ['notes', 'problems'],
-    sessionLength: '2hrs',
-    breakPattern: 'pomodoro',
-    pace: 'medium',
-    availableDays: ['Monday', 'Wednesday', 'Friday', 'Sunday'],
-    availableTimes: '7PM-10PM IST',
-    sessionsPerWeek: 4,
-    sessionType: 'both',
-    studyStyle: 'strict',
-    communication: 'introvert',
-    teachingAbility: 'can explain well',
-    accountabilityNeed: 'high',
-    videoCallComfort: true,
-    shortTermGoal: 'Score 9+ SGPA in ODE and Probability',
-    longTermGoal: 'Pursue research in Applied Mathematics or get into a quant firm',
-    studyHoursTarget: 5,
-    weeklyGoals: 'Finish 3 chapters, solve problem sets, revise proofs',
-  },
-  {
-    id: 'demo-9',
-    createdAt: new Date().toISOString(),
-    name: 'Deepak Rathod',
-    age: 19,
-    email: 'deepak.rathod@svnit.ac.in',
-    admissionNumber: 'U24MA002',
-    city: 'Surat',
-    country: 'India',
-    timezone: 'IST',
-    preferredLanguage: 'English',
-    department: 'Integrated M.Sc. Mathematics',
-    currentStudy: 'Integrated M.Sc. Mathematics',
-    institution: 'SVNIT Surat',
-    yearLevel: '2nd Year',
-    targetExam: 'Semester Exams',
-    targetDate: '2026-05-10',
-    strongSubjects: ['Elements of Analysis', 'Analytical Geometry', 'Discrete Mathematics'],
-    weakSubjects: ['Numerical Analysis', 'Data Structures', 'Electromagnetics'],
-    currentlyStudying: 'Linear Algebra',
-    upcomingTopics: ['Number Theory', 'Computational Life Science'],
-    learningType: 'practical',
-    studyMethod: ['problems', 'discussion'],
-    sessionLength: '1hr',
-    breakPattern: 'flexible',
-    pace: 'medium',
-    availableDays: ['Tuesday', 'Thursday', 'Saturday'],
-    availableTimes: '8PM-11PM IST',
-    sessionsPerWeek: 3,
-    sessionType: 'learning',
-    studyStyle: 'flexible',
-    communication: 'extrovert',
-    teachingAbility: 'average',
-    accountabilityNeed: 'medium',
-    videoCallComfort: true,
-    shortTermGoal: 'Clear Numerical Analysis and Linear Algebra with good grades',
-    longTermGoal: 'GATE Mathematics or Data Science career',
-    studyHoursTarget: 4,
-    weeklyGoals: 'Complete tutorial sheets and practice 50 problems per subject',
-  },
-  {
-    id: 'demo-7',
-    createdAt: new Date().toISOString(),
-    name: 'Rohan Tiwari',
-    age: 19,
-    email: 'rohan.tiwari@svnit.ac.in',
-    admissionNumber: 'U24EE001',
-    city: 'Surat',
-    country: 'India',
-    timezone: 'IST',
-    preferredLanguage: 'English',
-    department: 'Electrical Engineering',
-    currentStudy: 'B.Tech EE',
-    institution: 'SVNIT Surat',
-    yearLevel: '2nd Year',
-    targetExam: 'Semester Exams',
-    targetDate: '2026-05-10',
-    strongSubjects: ['Circuit Analysis', 'Electrical Machines'],
-    weakSubjects: ['Control Systems', 'Power Electronics'],
-    currentlyStudying: 'Network Theory',
-    upcomingTopics: ['Power Systems', 'Instrumentation'],
-    learningType: 'practical',
-    studyMethod: ['problems', 'videos'],
-    sessionLength: '1hr',
-    breakPattern: 'flexible',
-    pace: 'medium',
-    availableDays: ['Monday', 'Wednesday', 'Friday'],
-    availableTimes: '8PM-10PM IST',
-    sessionsPerWeek: 3,
-    sessionType: 'learning',
-    studyStyle: 'flexible',
-    communication: 'introvert',
-    teachingAbility: 'average',
-    accountabilityNeed: 'medium',
-    videoCallComfort: true,
-    shortTermGoal: 'Clear Control Systems with good marks',
-    longTermGoal: 'GATE EE or core company placement',
-    studyHoursTarget: 4,
-    weeklyGoals: 'Solve tutorial sheets and practice numericals',
-  },
-  {
-    id: 'demo-8',
-    createdAt: new Date().toISOString(),
-    name: 'Ananya Iyer',
-    age: 20,
-    email: 'ananya.iyer@svnit.ac.in',
-    admissionNumber: 'U23CH001',
-    city: 'Surat',
-    country: 'India',
-    timezone: 'IST',
-    preferredLanguage: 'English',
-    department: 'Chemical Engineering',
-    currentStudy: 'B.Tech Chemical',
-    institution: 'SVNIT Surat',
-    yearLevel: '3rd Year',
-    targetExam: 'GATE CH',
-    targetDate: '2027-02-01',
-    strongSubjects: ['Chemical Reaction Engineering', 'Thermodynamics', 'Mass Transfer'],
-    weakSubjects: ['Process Control', 'Heat Transfer'],
-    currentlyStudying: 'Process Dynamics and Control',
-    upcomingTopics: ['Plant Design', 'Process Economics'],
-    learningType: 'reading',
-    studyMethod: ['notes', 'problems'],
-    sessionLength: '2hrs',
-    breakPattern: 'pomodoro',
-    pace: 'slow',
-    availableDays: ['Tuesday', 'Thursday', 'Saturday', 'Sunday'],
-    availableTimes: '7PM-10PM IST',
-    sessionsPerWeek: 4,
-    sessionType: 'both',
-    studyStyle: 'strict',
-    communication: 'extrovert',
-    teachingAbility: 'can explain well',
-    accountabilityNeed: 'high',
-    videoCallComfort: true,
-    shortTermGoal: 'Complete CRE and Mass Transfer revision',
-    longTermGoal: 'Crack GATE CH and join IIT Bombay M.Tech',
-    studyHoursTarget: 5,
-    weeklyGoals: 'Revise 2 chapters and solve GATE PYQs',
-  },
-];
+function studentToRow(s: StudentProfile): Record<string, unknown> {
+  return {
+    id: s.id,
+    created_at: s.createdAt,
+    name: s.name,
+    age: s.age,
+    email: s.email,
+    admission_number: s.admissionNumber,
+    city: s.city,
+    country: s.country,
+    timezone: s.timezone,
+    preferred_language: s.preferredLanguage,
+    department: s.department,
+    current_study: s.currentStudy,
+    institution: s.institution,
+    year_level: s.yearLevel,
+    target_exam: s.targetExam,
+    target_date: s.targetDate,
+    strong_subjects: s.strongSubjects || [],
+    weak_subjects: s.weakSubjects || [],
+    currently_studying: s.currentlyStudying,
+    upcoming_topics: s.upcomingTopics || [],
+    learning_type: s.learningType,
+    study_method: s.studyMethod || [],
+    session_length: s.sessionLength,
+    break_pattern: s.breakPattern,
+    pace: s.pace,
+    available_days: s.availableDays || [],
+    available_times: s.availableTimes,
+    sessions_per_week: s.sessionsPerWeek,
+    session_type: s.sessionType,
+    study_style: s.studyStyle,
+    communication: s.communication,
+    teaching_ability: s.teachingAbility,
+    accountability_need: s.accountabilityNeed,
+    video_call_comfort: s.videoCallComfort,
+    short_term_goal: s.shortTermGoal,
+    long_term_goal: s.longTermGoal,
+    study_hours_target: s.studyHoursTarget,
+    weekly_goals: s.weeklyGoals,
+  };
+}
 
-// Initialize with seed data only in demo mode
-if (process.env.DEMO_MODE === 'true') {
-  seedStudents.forEach(s => students.set(s.id, s));
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToStudent(r: any): StudentProfile {
+  return {
+    id: r.id,
+    createdAt: r.created_at,
+    name: r.name || '',
+    age: r.age || 0,
+    email: r.email || '',
+    admissionNumber: r.admission_number || '',
+    city: r.city || '',
+    country: r.country || '',
+    timezone: r.timezone || '',
+    preferredLanguage: r.preferred_language || '',
+    department: r.department || '',
+    currentStudy: r.current_study || '',
+    institution: r.institution || '',
+    yearLevel: r.year_level || '',
+    targetExam: r.target_exam || '',
+    targetDate: r.target_date || '',
+    strongSubjects: r.strong_subjects || [],
+    weakSubjects: r.weak_subjects || [],
+    currentlyStudying: r.currently_studying || '',
+    upcomingTopics: r.upcoming_topics || [],
+    learningType: r.learning_type || 'practical',
+    studyMethod: r.study_method || [],
+    sessionLength: r.session_length || '1hr',
+    breakPattern: r.break_pattern || 'flexible',
+    pace: r.pace || 'medium',
+    availableDays: r.available_days || [],
+    availableTimes: r.available_times || '',
+    sessionsPerWeek: r.sessions_per_week || 0,
+    sessionType: r.session_type || 'both',
+    studyStyle: r.study_style || 'flexible',
+    communication: r.communication || 'introvert',
+    teachingAbility: r.teaching_ability || 'average',
+    accountabilityNeed: r.accountability_need || 'medium',
+    videoCallComfort: r.video_call_comfort || false,
+    shortTermGoal: r.short_term_goal || '',
+    longTermGoal: r.long_term_goal || '',
+    studyHoursTarget: r.study_hours_target || 0,
+    weeklyGoals: r.weekly_goals || '',
+  };
 }
 
 // ============================================
 // Student CRUD Operations
 // ============================================
 
-export function getAllStudents(): StudentProfile[] {
-  return Array.from(students.values());
+export async function getAllStudents(): Promise<StudentProfile[]> {
+  const { data, error } = await supabase.from('students').select('*');
+  if (error) { console.error('getAllStudents error:', error); return []; }
+  return (data || []).map(rowToStudent);
 }
 
-export function getStudentById(id: string): StudentProfile | undefined {
-  return students.get(id);
+export async function getStudentById(id: string): Promise<StudentProfile | undefined> {
+  const { data, error } = await supabase.from('students').select('*').eq('id', id).single();
+  if (error || !data) return undefined;
+  return rowToStudent(data);
 }
 
-export function createStudent(student: StudentProfile): StudentProfile {
-  students.set(student.id, student);
-  saveStudentsToFile();
+export async function createStudent(student: StudentProfile): Promise<StudentProfile> {
+  const row = studentToRow(student);
+  const { error } = await supabase.from('students').upsert(row);
+  if (error) console.error('createStudent error:', error);
   return student;
 }
 
-export function updateStudent(id: string, updates: Partial<StudentProfile>): StudentProfile | null {
-  const existing = students.get(id);
+export async function updateStudent(id: string, updates: Partial<StudentProfile>): Promise<StudentProfile | null> {
+  const existing = await getStudentById(id);
   if (!existing) return null;
-
-  const updated = { ...existing, ...updates };
-  students.set(id, updated);
-  saveStudentsToFile();
-  return updated;
+  const merged = { ...existing, ...updates };
+  const row = studentToRow(merged);
+  const { error } = await supabase.from('students').upsert(row);
+  if (error) { console.error('updateStudent error:', error); return null; }
+  return merged;
 }
 
-export function deleteStudent(id: string): boolean {
-  const result = students.delete(id);
-  if (result) saveStudentsToFile();
-  return result;
+export async function deleteStudent(id: string): Promise<boolean> {
+  const { error } = await supabase.from('students').delete().eq('id', id);
+  if (error) { console.error('deleteStudent error:', error); return false; }
+  return true;
 }
 
 // ============================================
 // Session Operations
 // ============================================
 
-export function getAllSessions(): StudySession[] {
-  return Array.from(sessions.values());
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToSession(r: any): StudySession {
+  return {
+    id: r.id,
+    student1Id: r.student1_id,
+    student2Id: r.student2_id,
+    topic: r.topic,
+    goal: r.goal,
+    startTime: r.start_time,
+    endTime: r.end_time,
+    status: r.status,
+    summary: r.summary,
+  };
 }
 
-export function getSessionsByStudent(studentId: string): StudySession[] {
-  return Array.from(sessions.values()).filter(
-    s => s.student1Id === studentId || s.student2Id === studentId
-  );
+export async function getAllSessions(): Promise<StudySession[]> {
+  const { data, error } = await supabase.from('sessions').select('*');
+  if (error) { console.error('getAllSessions error:', error); return []; }
+  return (data || []).map(rowToSession);
 }
 
-export function createSession(session: StudySession): StudySession {
-  sessions.set(session.id, session);
+export async function getSessionsByStudent(studentId: string): Promise<StudySession[]> {
+  const { data, error } = await supabase.from('sessions').select('*').or(`student1_id.eq.${studentId},student2_id.eq.${studentId}`);
+  if (error) { console.error('getSessionsByStudent error:', error); return []; }
+  return (data || []).map(rowToSession);
+}
+
+export async function createSession(session: StudySession): Promise<StudySession> {
+  const { error } = await supabase.from('sessions').upsert({
+    id: session.id,
+    student1_id: session.student1Id,
+    student2_id: session.student2Id,
+    topic: session.topic,
+    goal: session.goal,
+    start_time: session.startTime,
+    end_time: session.endTime,
+    status: session.status,
+    summary: session.summary || null,
+  });
+  if (error) console.error('createSession error:', error);
   return session;
 }
 
-export function updateSession(id: string, updates: Partial<StudySession>): StudySession | null {
-  const existing = sessions.get(id);
-  if (!existing) return null;
-
-  const updated = { ...existing, ...updates };
-  sessions.set(id, updated);
-  return updated;
+export async function updateSession(id: string, updates: Partial<StudySession>): Promise<StudySession | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const row: any = {};
+  if (updates.topic !== undefined) row.topic = updates.topic;
+  if (updates.goal !== undefined) row.goal = updates.goal;
+  if (updates.startTime !== undefined) row.start_time = updates.startTime;
+  if (updates.endTime !== undefined) row.end_time = updates.endTime;
+  if (updates.status !== undefined) row.status = updates.status;
+  if (updates.summary !== undefined) row.summary = updates.summary;
+  const { error } = await supabase.from('sessions').update(row).eq('id', id);
+  if (error) { console.error('updateSession error:', error); return null; }
+  return { id, ...updates } as StudySession;
 }
 
 // ============================================
 // Notification Operations
 // ============================================
 
-export function getNotifications(userId: string): Notification[] {
-  return notifications.get(userId) || [];
+export async function getNotifications(userId: string): Promise<Notification[]> {
+  const { data, error } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  if (error) { console.error('getNotifications error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    userId: r.user_id,
+    type: r.type,
+    title: r.title,
+    message: r.message,
+    read: r.read,
+    createdAt: r.created_at,
+  }));
 }
 
-export function addNotification(notification: Notification): void {
-  const userNotifs = notifications.get(notification.userId) || [];
-  userNotifs.push(notification);
-  notifications.set(notification.userId, userNotifs);
+export async function addNotification(notification: Notification): Promise<void> {
+  const { error } = await supabase.from('notifications').insert({
+    id: notification.id,
+    user_id: notification.userId,
+    type: notification.type,
+    title: notification.title,
+    message: notification.message,
+    read: notification.read,
+    created_at: notification.createdAt,
+  });
+  if (error) console.error('addNotification error:', error);
 }
 
-export function markNotificationRead(userId: string, notifId: string): void {
-  const userNotifs = notifications.get(userId);
-  if (userNotifs) {
-    const notif = userNotifs.find(n => n.id === notifId);
-    if (notif) notif.read = true;
-  }
+export async function markNotificationRead(userId: string, notifId: string): Promise<void> {
+  const { error } = await supabase.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', userId);
+  if (error) console.error('markNotificationRead error:', error);
 }
 
 // ============================================
-// Study Materials Operations (File Persistence)
+// Study Materials Operations
 // ============================================
 
-function ensureUploadsDir() {
-  if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToMaterial(r: any): StudyMaterial {
+  return {
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    department: r.department,
+    yearLevel: r.year_level,
+    subject: r.subject,
+    type: r.type,
+    uploadedBy: r.uploaded_by,
+    uploadedByEmail: r.uploaded_by_email,
+    fileName: r.file_name,
+    fileSize: r.file_size,
+    storedFileName: r.stored_file_name,
+    createdAt: r.created_at,
+  };
 }
 
-function loadMaterialsFromFile(): Map<string, StudyMaterial> {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(MATERIALS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(MATERIALS_FILE, 'utf-8'));
-      return new Map(Object.entries(data));
-    }
-  } catch (e) {
-    console.error('Failed to load materials from file:', e);
-  }
-  return new Map();
+export async function getAllMaterials(): Promise<StudyMaterial[]> {
+  const { data, error } = await supabase.from('materials').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('getAllMaterials error:', error); return []; }
+  return (data || []).map(rowToMaterial);
 }
 
-function saveMaterialsToFile() {
-  try {
-    ensureDataDir();
-    const obj: Record<string, StudyMaterial> = {};
-    materials.forEach((v, k) => { obj[k] = v; });
-    fs.writeFileSync(MATERIALS_FILE, JSON.stringify(obj, null, 2));
-  } catch (e) {
-    console.error('Failed to save materials to file:', e);
-  }
+export async function getMaterialById(id: string): Promise<StudyMaterial | undefined> {
+  const { data, error } = await supabase.from('materials').select('*').eq('id', id).single();
+  if (error || !data) return undefined;
+  return rowToMaterial(data);
 }
 
-const materials: Map<string, StudyMaterial> = loadMaterialsFromFile();
-
-export function getAllMaterials(): StudyMaterial[] {
-  return Array.from(materials.values()).sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+export async function getMaterialsByDepartment(department: string): Promise<StudyMaterial[]> {
+  const all = await getAllMaterials();
+  return all.filter(m => m.department === department);
 }
 
-export function getMaterialById(id: string): StudyMaterial | undefined {
-  return materials.get(id);
-}
-
-export function getMaterialsByDepartment(department: string): StudyMaterial[] {
-  return getAllMaterials().filter(m => m.department === department);
-}
-
-export function createMaterial(material: StudyMaterial): StudyMaterial {
-  materials.set(material.id, material);
-  saveMaterialsToFile();
+export async function createMaterial(material: StudyMaterial): Promise<StudyMaterial> {
+  const { error } = await supabase.from('materials').insert({
+    id: material.id,
+    title: material.title,
+    description: material.description,
+    department: material.department,
+    year_level: material.yearLevel,
+    subject: material.subject,
+    type: material.type,
+    uploaded_by: material.uploadedBy,
+    uploaded_by_email: material.uploadedByEmail,
+    file_name: material.fileName,
+    file_size: material.fileSize,
+    stored_file_name: material.storedFileName,
+    created_at: material.createdAt,
+  });
+  if (error) console.error('createMaterial error:', error);
   return material;
 }
 
-export function deleteMaterial(id: string): boolean {
-  const material = materials.get(id);
-  if (!material) return false;
-  // Delete the file from disk
+export async function deleteMaterial(id: string): Promise<boolean> {
+  const mat = await getMaterialById(id);
+  if (!mat) return false;
   try {
-    const filePath = path.join(UPLOADS_DIR, material.storedFileName);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-  } catch (e) {
-    console.error('Failed to delete uploaded file:', e);
-  }
-  const result = materials.delete(id);
-  if (result) saveMaterialsToFile();
-  return result;
+    const filePath = path.join(UPLOADS_DIR, mat.storedFileName);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch (e) { console.error('Failed to delete uploaded file:', e); }
+  const { error } = await supabase.from('materials').delete().eq('id', id);
+  if (error) { console.error('deleteMaterial error:', error); return false; }
+  return true;
 }
 
 export function saveUploadedFile(fileName: string, buffer: Buffer): string {
-  ensureUploadsDir();
+  ensureDataDir();
+  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
   const ext = path.extname(fileName);
   const storedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
   fs.writeFileSync(path.join(UPLOADS_DIR, storedName), buffer);
@@ -603,46 +333,26 @@ export function getUploadedFilePath(storedFileName: string): string {
 }
 
 // ============================================
-// User Availability Operations (File Persistence)
+// User Availability Operations
 // ============================================
 
-function loadAvailabilityFromFile(): Map<string, UserAvailability> {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(AVAILABILITY_FILE)) {
-      const data = JSON.parse(fs.readFileSync(AVAILABILITY_FILE, 'utf-8'));
-      return new Map(Object.entries(data));
-    }
-  } catch (e) {
-    console.error('Failed to load availability from file:', e);
-  }
-  return new Map();
+export async function getUserAvailability(userId: string): Promise<UserAvailability | undefined> {
+  const { data, error } = await supabase.from('availability').select('*').eq('user_id', userId).single();
+  if (error || !data) return undefined;
+  return { userId: data.user_id, slots: data.slots || [], updatedAt: data.updated_at };
 }
 
-function saveAvailabilityToFile() {
-  try {
-    ensureDataDir();
-    const obj: Record<string, UserAvailability> = {};
-    availability.forEach((v, k) => { obj[k] = v; });
-    fs.writeFileSync(AVAILABILITY_FILE, JSON.stringify(obj, null, 2));
-  } catch (e) {
-    console.error('Failed to save availability to file:', e);
-  }
+export async function setUserAvailability(avail: UserAvailability): Promise<void> {
+  const { error } = await supabase.from('availability').upsert({
+    user_id: avail.userId,
+    slots: avail.slots,
+    updated_at: avail.updatedAt,
+  });
+  if (error) console.error('setUserAvailability error:', error);
 }
 
-const availability: Map<string, UserAvailability> = loadAvailabilityFromFile();
-
-export function getUserAvailability(userId: string): UserAvailability | undefined {
-  return availability.get(userId);
-}
-
-export function setUserAvailability(data: UserAvailability): void {
-  availability.set(data.userId, data);
-  saveAvailabilityToFile();
-}
-
-export function markSlotEngaged(userId: string, day: string, hour: number, sessionId: string, buddyName: string): void {
-  const ua = availability.get(userId);
+export async function markSlotEngaged(userId: string, day: string, hour: number, sessionId: string, buddyName: string): Promise<void> {
+  const ua = await getUserAvailability(userId);
   if (ua) {
     const slot = ua.slots.find(s => s.day === day && s.hour === hour);
     if (slot) {
@@ -650,523 +360,474 @@ export function markSlotEngaged(userId: string, day: string, hour: number, sessi
       slot.sessionId = sessionId;
       slot.buddyName = buddyName;
     }
-    saveAvailabilityToFile();
+    await setUserAvailability(ua);
   }
 }
 
 // ============================================
-// User Status Operations (File Persistence)
+// User Status Operations
 // ============================================
 
-function loadStatusFromFile(): Map<string, UserStatus> {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(STATUS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf-8'));
-      return new Map(Object.entries(data));
-    }
-  } catch (e) {
-    console.error('Failed to load status from file:', e);
-  }
-  return new Map();
-}
-
-function saveStatusToFile() {
-  try {
-    ensureDataDir();
-    const obj: Record<string, UserStatus> = {};
-    userStatuses.forEach((v, k) => { obj[k] = v; });
-    fs.writeFileSync(STATUS_FILE, JSON.stringify(obj, null, 2));
-  } catch (e) {
-    console.error('Failed to save status to file:', e);
-  }
-}
-
-const userStatuses: Map<string, UserStatus> = loadStatusFromFile();
-
-export function getUserStatus(userId: string): UserStatus | undefined {
-  return userStatuses.get(userId);
-}
-
-export function getAllUserStatuses(): UserStatus[] {
-  return Array.from(userStatuses.values());
-}
-
-export function updateUserStatus(userId: string, updates: Partial<UserStatus>): UserStatus {
-  const existing = userStatuses.get(userId) || {
-    userId,
-    status: 'offline' as const,
-    lastSeen: new Date().toISOString(),
-    hideStatus: false,
-    hideSubject: false,
+export async function getUserStatus(userId: string): Promise<UserStatus | undefined> {
+  const { data, error } = await supabase.from('user_statuses').select('*').eq('user_id', userId).single();
+  if (error || !data) return undefined;
+  return {
+    userId: data.user_id,
+    status: data.status,
+    lastSeen: data.last_seen,
+    currentSubject: data.current_subject || undefined,
+    sessionStartedAt: data.session_started_at || undefined,
+    hideStatus: data.hide_status,
+    hideSubject: data.hide_subject,
   };
-  const updated = { ...existing, ...updates };
-  userStatuses.set(userId, updated);
-  saveStatusToFile();
-  return updated;
+}
+
+export async function getAllUserStatuses(): Promise<UserStatus[]> {
+  const { data, error } = await supabase.from('user_statuses').select('*');
+  if (error) { console.error('getAllUserStatuses error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    userId: r.user_id,
+    status: r.status,
+    lastSeen: r.last_seen,
+    currentSubject: r.current_subject || undefined,
+    sessionStartedAt: r.session_started_at || undefined,
+    hideStatus: r.hide_status,
+    hideSubject: r.hide_subject,
+  }));
+}
+
+export async function updateUserStatus(userId: string, updates: Partial<UserStatus>): Promise<UserStatus> {
+  const existing = await getUserStatus(userId);
+  const merged: UserStatus = {
+    userId,
+    status: updates.status ?? existing?.status ?? 'offline',
+    lastSeen: updates.lastSeen ?? existing?.lastSeen ?? new Date().toISOString(),
+    currentSubject: updates.currentSubject ?? existing?.currentSubject,
+    sessionStartedAt: updates.sessionStartedAt ?? existing?.sessionStartedAt,
+    hideStatus: updates.hideStatus ?? existing?.hideStatus ?? false,
+    hideSubject: updates.hideSubject ?? existing?.hideSubject ?? false,
+  };
+  const { error } = await supabase.from('user_statuses').upsert({
+    user_id: merged.userId,
+    status: merged.status,
+    last_seen: merged.lastSeen,
+    current_subject: merged.currentSubject || '',
+    session_started_at: merged.sessionStartedAt || null,
+    hide_status: merged.hideStatus,
+    hide_subject: merged.hideSubject,
+  });
+  if (error) console.error('updateUserStatus error:', error);
+  return merged;
 }
 
 // ============================================
-// Session Bookings Operations (File Persistence)
+// Session Bookings Operations
 // ============================================
 
-function loadBookingsFromFile(): Map<string, SessionBooking> {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(BOOKINGS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(BOOKINGS_FILE, 'utf-8'));
-      return new Map(Object.entries(data));
-    }
-  } catch (e) {
-    console.error('Failed to load bookings from file:', e);
-  }
-  return new Map();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToBooking(r: any): SessionBooking {
+  return {
+    id: r.id,
+    requesterId: r.requester_id,
+    requesterName: r.requester_name,
+    targetId: r.target_id,
+    targetName: r.target_name,
+    day: r.day,
+    hour: r.hour,
+    topic: r.topic,
+    status: r.status,
+    createdAt: r.created_at,
+  };
 }
 
-function saveBookingsToFile() {
-  try {
-    ensureDataDir();
-    const obj: Record<string, SessionBooking> = {};
-    bookings.forEach((v, k) => { obj[k] = v; });
-    fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(obj, null, 2));
-  } catch (e) {
-    console.error('Failed to save bookings to file:', e);
-  }
+export async function getAllBookings(): Promise<SessionBooking[]> {
+  const { data, error } = await supabase.from('bookings').select('*');
+  if (error) { console.error('getAllBookings error:', error); return []; }
+  return (data || []).map(rowToBooking);
 }
 
-const bookings: Map<string, SessionBooking> = loadBookingsFromFile();
-
-export function getAllBookings(): SessionBooking[] {
-  return Array.from(bookings.values());
+export async function getBookingsForUser(userId: string): Promise<SessionBooking[]> {
+  const { data, error } = await supabase.from('bookings').select('*').or(`requester_id.eq.${userId},target_id.eq.${userId}`);
+  if (error) { console.error('getBookingsForUser error:', error); return []; }
+  return (data || []).map(rowToBooking);
 }
 
-export function getBookingsForUser(userId: string): SessionBooking[] {
-  return Array.from(bookings.values()).filter(
-    b => b.requesterId === userId || b.targetId === userId
-  );
+export async function getBookingById(id: string): Promise<SessionBooking | undefined> {
+  const { data, error } = await supabase.from('bookings').select('*').eq('id', id).single();
+  if (error || !data) return undefined;
+  return rowToBooking(data);
 }
 
-export function getBookingById(id: string): SessionBooking | undefined {
-  return bookings.get(id);
-}
-
-export function createBooking(booking: SessionBooking): SessionBooking {
-  bookings.set(booking.id, booking);
-  saveBookingsToFile();
+export async function createBooking(booking: SessionBooking): Promise<SessionBooking> {
+  const { error } = await supabase.from('bookings').insert({
+    id: booking.id,
+    requester_id: booking.requesterId,
+    requester_name: booking.requesterName,
+    target_id: booking.targetId,
+    target_name: booking.targetName,
+    day: booking.day,
+    hour: booking.hour,
+    topic: booking.topic,
+    status: booking.status,
+    created_at: booking.createdAt,
+  });
+  if (error) console.error('createBooking error:', error);
   return booking;
 }
 
-export function updateBooking(id: string, updates: Partial<SessionBooking>): SessionBooking | null {
-  const existing = bookings.get(id);
-  if (!existing) return null;
-  const updated = { ...existing, ...updates };
-  bookings.set(id, updated);
-  saveBookingsToFile();
-  return updated;
+export async function updateBooking(id: string, updates: Partial<SessionBooking>): Promise<SessionBooking | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const row: any = {};
+  if (updates.status !== undefined) row.status = updates.status;
+  if (updates.day !== undefined) row.day = updates.day;
+  if (updates.hour !== undefined) row.hour = updates.hour;
+  if (updates.topic !== undefined) row.topic = updates.topic;
+  const { error } = await supabase.from('bookings').update(row).eq('id', id);
+  if (error) { console.error('updateBooking error:', error); return null; }
+  return { id, ...updates } as SessionBooking;
 }
 
 // ============================================
-// Birthday Wishes Operations (File Persistence)
+// Birthday Wishes Operations
 // ============================================
 
-function loadBirthdayWishesFromFile(): BirthdayWish[] {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(BIRTHDAY_WISHES_FILE)) {
-      return JSON.parse(fs.readFileSync(BIRTHDAY_WISHES_FILE, 'utf-8'));
-    }
-  } catch (e) {
-    console.error('Failed to load birthday wishes from file:', e);
-  }
-  return [];
+export async function getBirthdayWishesForUser(userId: string): Promise<BirthdayWish[]> {
+  const { data, error } = await supabase.from('birthday_wishes').select('*').eq('to_user_id', userId);
+  if (error) { console.error('getBirthdayWishesForUser error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    fromUserId: r.from_user_id,
+    fromUserName: r.from_user_name,
+    toUserId: r.to_user_id,
+    createdAt: r.created_at,
+  }));
 }
 
-function saveBirthdayWishesToFile() {
-  try {
-    ensureDataDir();
-    fs.writeFileSync(BIRTHDAY_WISHES_FILE, JSON.stringify(birthdayWishes, null, 2));
-  } catch (e) {
-    console.error('Failed to save birthday wishes to file:', e);
-  }
-}
-
-const birthdayWishes: BirthdayWish[] = loadBirthdayWishesFromFile();
-
-export function getBirthdayWishesForUser(userId: string): BirthdayWish[] {
-  return birthdayWishes.filter(w => w.toUserId === userId);
-}
-
-export function hasWishedToday(fromUserId: string, toUserId: string): boolean {
+export async function hasWishedToday(fromUserId: string, toUserId: string): Promise<boolean> {
   const today = new Date().toISOString().split('T')[0];
-  return birthdayWishes.some(
-    w => w.fromUserId === fromUserId && w.toUserId === toUserId && w.createdAt.startsWith(today)
-  );
+  const { data } = await supabase.from('birthday_wishes').select('id').eq('from_user_id', fromUserId).eq('to_user_id', toUserId).gte('created_at', today);
+  return (data || []).length > 0;
 }
 
-export function addBirthdayWish(wish: BirthdayWish): void {
-  birthdayWishes.push(wish);
-  saveBirthdayWishesToFile();
+export async function addBirthdayWish(wish: BirthdayWish): Promise<void> {
+  const { error } = await supabase.from('birthday_wishes').insert({
+    id: wish.id,
+    from_user_id: wish.fromUserId,
+    from_user_name: wish.fromUserName,
+    to_user_id: wish.toUserId,
+    created_at: wish.createdAt,
+  });
+  if (error) console.error('addBirthdayWish error:', error);
 }
 
 // ============================================
-// Friend Requests Operations (File Persistence)
+// Friend Requests Operations
 // ============================================
 
-function loadFriendRequestsFromFile(): FriendRequest[] {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(FRIEND_REQUESTS_FILE)) {
-      return JSON.parse(fs.readFileSync(FRIEND_REQUESTS_FILE, 'utf-8'));
-    }
-  } catch (e) {
-    console.error('Failed to load friend requests from file:', e);
-  }
-  return [];
+export async function getFriendRequestsForUser(userId: string): Promise<FriendRequest[]> {
+  const { data, error } = await supabase.from('friend_requests').select('*').or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`);
+  if (error) { console.error('getFriendRequestsForUser error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    fromUserId: r.from_user_id,
+    fromUserName: r.from_user_name,
+    toUserId: r.to_user_id,
+    toUserName: r.to_user_name,
+    status: r.status,
+    createdAt: r.created_at,
+  }));
 }
 
-function saveFriendRequestsToFile() {
-  try {
-    ensureDataDir();
-    fs.writeFileSync(FRIEND_REQUESTS_FILE, JSON.stringify(friendRequests, null, 2));
-  } catch (e) {
-    console.error('Failed to save friend requests to file:', e);
-  }
+export async function getPendingFriendRequests(userId: string): Promise<FriendRequest[]> {
+  const { data, error } = await supabase.from('friend_requests').select('*').eq('to_user_id', userId).eq('status', 'pending');
+  if (error) { console.error('getPendingFriendRequests error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    fromUserId: r.from_user_id,
+    fromUserName: r.from_user_name,
+    toUserId: r.to_user_id,
+    toUserName: r.to_user_name,
+    status: r.status,
+    createdAt: r.created_at,
+  }));
 }
 
-const friendRequests: FriendRequest[] = loadFriendRequestsFromFile();
-
-export function getFriendRequestsForUser(userId: string): FriendRequest[] {
-  return friendRequests.filter(r => r.toUserId === userId || r.fromUserId === userId);
-}
-
-export function getPendingFriendRequests(userId: string): FriendRequest[] {
-  return friendRequests.filter(r => r.toUserId === userId && r.status === 'pending');
-}
-
-export function createFriendRequest(req: FriendRequest): FriendRequest {
+export async function createFriendRequest(req: FriendRequest): Promise<FriendRequest> {
   // Check if request already exists
-  const existing = friendRequests.find(
-    r => (r.fromUserId === req.fromUserId && r.toUserId === req.toUserId) ||
-         (r.fromUserId === req.toUserId && r.toUserId === req.fromUserId)
-  );
-  if (existing) return existing;
-  friendRequests.push(req);
-  saveFriendRequestsToFile();
+  const { data: existing } = await supabase.from('friend_requests').select('*')
+    .or(`and(from_user_id.eq.${req.fromUserId},to_user_id.eq.${req.toUserId}),and(from_user_id.eq.${req.toUserId},to_user_id.eq.${req.fromUserId})`);
+  if (existing && existing.length > 0) {
+    const r = existing[0];
+    return { id: r.id, fromUserId: r.from_user_id, fromUserName: r.from_user_name, toUserId: r.to_user_id, toUserName: r.to_user_name, status: r.status, createdAt: r.created_at };
+  }
+  const { error } = await supabase.from('friend_requests').insert({
+    id: req.id,
+    from_user_id: req.fromUserId,
+    from_user_name: req.fromUserName,
+    to_user_id: req.toUserId,
+    to_user_name: req.toUserName,
+    status: req.status,
+    created_at: req.createdAt,
+  });
+  if (error) console.error('createFriendRequest error:', error);
   return req;
 }
 
-export function updateFriendRequestStatus(requestId: string, status: 'accepted' | 'declined'): FriendRequest | null {
-  const req = friendRequests.find(r => r.id === requestId);
-  if (!req) return null;
-  req.status = status;
-  saveFriendRequestsToFile();
-  return req;
+export async function updateFriendRequestStatus(requestId: string, status: 'accepted' | 'declined'): Promise<FriendRequest | null> {
+  const { data, error } = await supabase.from('friend_requests').update({ status }).eq('id', requestId).select().single();
+  if (error || !data) { console.error('updateFriendRequestStatus error:', error); return null; }
+  return { id: data.id, fromUserId: data.from_user_id, fromUserName: data.from_user_name, toUserId: data.to_user_id, toUserName: data.to_user_name, status: data.status, createdAt: data.created_at };
 }
 
 // ============================================
-// Friendships Operations (File Persistence)
+// Friendships Operations
 // ============================================
 
-function loadFriendsFromFile(): Friendship[] {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(FRIENDS_FILE)) {
-      return JSON.parse(fs.readFileSync(FRIENDS_FILE, 'utf-8'));
-    }
-  } catch (e) {
-    console.error('Failed to load friends from file:', e);
+export async function getFriendsForUser(userId: string): Promise<Friendship[]> {
+  const { data, error } = await supabase.from('friendships').select('*').or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+  if (error) { console.error('getFriendsForUser error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    user1Id: r.user1_id,
+    user1Name: r.user1_name,
+    user2Id: r.user2_id,
+    user2Name: r.user2_name,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function areFriends(userId1: string, userId2: string): Promise<boolean> {
+  const { data } = await supabase.from('friendships').select('id')
+    .or(`and(user1_id.eq.${userId1},user2_id.eq.${userId2}),and(user1_id.eq.${userId2},user2_id.eq.${userId1})`);
+  return (data || []).length > 0;
+}
+
+export async function addFriendship(friendship: Friendship): Promise<Friendship> {
+  const alreadyFriends = await areFriends(friendship.user1Id, friendship.user2Id);
+  if (alreadyFriends) {
+    const friends = await getFriendsForUser(friendship.user1Id);
+    return friends.find(f =>
+      (f.user1Id === friendship.user1Id && f.user2Id === friendship.user2Id) ||
+      (f.user1Id === friendship.user2Id && f.user2Id === friendship.user1Id)
+    ) || friendship;
   }
-  return [];
-}
-
-function saveFriendsToFile() {
-  try {
-    ensureDataDir();
-    fs.writeFileSync(FRIENDS_FILE, JSON.stringify(friendships, null, 2));
-  } catch (e) {
-    console.error('Failed to save friends to file:', e);
-  }
-}
-
-const friendships: Friendship[] = loadFriendsFromFile();
-
-export function getFriendsForUser(userId: string): Friendship[] {
-  return friendships.filter(f => f.user1Id === userId || f.user2Id === userId);
-}
-
-export function areFriends(userId1: string, userId2: string): boolean {
-  return friendships.some(
-    f => (f.user1Id === userId1 && f.user2Id === userId2) ||
-         (f.user1Id === userId2 && f.user2Id === userId1)
-  );
-}
-
-export function addFriendship(friendship: Friendship): Friendship {
-  // Prevent duplicates
-  if (areFriends(friendship.user1Id, friendship.user2Id)) {
-    return friendships.find(
-      f => (f.user1Id === friendship.user1Id && f.user2Id === friendship.user2Id) ||
-           (f.user1Id === friendship.user2Id && f.user2Id === friendship.user1Id)
-    )!;
-  }
-  friendships.push(friendship);
-  saveFriendsToFile();
+  const { error } = await supabase.from('friendships').insert({
+    id: friendship.id,
+    user1_id: friendship.user1Id,
+    user1_name: friendship.user1Name,
+    user2_id: friendship.user2Id,
+    user2_name: friendship.user2Name,
+    created_at: friendship.createdAt,
+  });
+  if (error) console.error('addFriendship error:', error);
   return friendship;
 }
 
-export function removeFriendship(userId1: string, userId2: string): boolean {
-  const idx = friendships.findIndex(
-    f => (f.user1Id === userId1 && f.user2Id === userId2) ||
-         (f.user1Id === userId2 && f.user2Id === userId1)
-  );
-  if (idx === -1) return false;
-  friendships.splice(idx, 1);
-  saveFriendsToFile();
+export async function removeFriendship(userId1: string, userId2: string): Promise<boolean> {
+  const { error } = await supabase.from('friendships').delete()
+    .or(`and(user1_id.eq.${userId1},user2_id.eq.${userId2}),and(user1_id.eq.${userId2},user2_id.eq.${userId1})`);
+  if (error) { console.error('removeFriendship error:', error); return false; }
   return true;
 }
 
 // ============================================
-// Buddy Ratings Operations (File Persistence)
+// Buddy Ratings Operations
 // ============================================
 
-function loadRatingsFromFile(): BuddyRating[] {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(RATINGS_FILE)) {
-      return JSON.parse(fs.readFileSync(RATINGS_FILE, 'utf-8'));
-    }
-  } catch (e) {
-    console.error('Failed to load ratings from file:', e);
-  }
-  return [];
+export async function getRatingsForUser(userId: string): Promise<BuddyRating[]> {
+  const { data, error } = await supabase.from('ratings').select('*').eq('to_user_id', userId);
+  if (error) { console.error('getRatingsForUser error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    fromUserId: r.from_user_id,
+    fromUserName: r.from_user_name,
+    toUserId: r.to_user_id,
+    toUserName: r.to_user_name,
+    rating: r.rating,
+    review: r.review,
+    createdAt: r.created_at,
+  }));
 }
 
-function saveRatingsToFile() {
-  try {
-    ensureDataDir();
-    fs.writeFileSync(RATINGS_FILE, JSON.stringify(ratings, null, 2));
-  } catch (e) {
-    console.error('Failed to save ratings to file:', e);
-  }
+export async function getRatingsByUser(userId: string): Promise<BuddyRating[]> {
+  const { data, error } = await supabase.from('ratings').select('*').eq('from_user_id', userId);
+  if (error) { console.error('getRatingsByUser error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    fromUserId: r.from_user_id,
+    fromUserName: r.from_user_name,
+    toUserId: r.to_user_id,
+    toUserName: r.to_user_name,
+    rating: r.rating,
+    review: r.review,
+    createdAt: r.created_at,
+  }));
 }
 
-const ratings: BuddyRating[] = loadRatingsFromFile();
-
-export function getRatingsForUser(userId: string): BuddyRating[] {
-  return ratings.filter(r => r.toUserId === userId);
-}
-
-export function getRatingsByUser(userId: string): BuddyRating[] {
-  return ratings.filter(r => r.fromUserId === userId);
-}
-
-export function getAverageRating(userId: string): number {
-  const userRatings = ratings.filter(r => r.toUserId === userId);
+export async function getAverageRating(userId: string): Promise<number> {
+  const userRatings = await getRatingsForUser(userId);
   if (userRatings.length === 0) return 0;
   const sum = userRatings.reduce((acc, r) => acc + r.rating, 0);
   return Math.round((sum / userRatings.length) * 10) / 10;
 }
 
-export function addRating(rating: BuddyRating): BuddyRating {
-  ratings.push(rating);
-  saveRatingsToFile();
+export async function addRating(rating: BuddyRating): Promise<BuddyRating> {
+  const { error } = await supabase.from('ratings').insert({
+    id: rating.id,
+    from_user_id: rating.fromUserId,
+    from_user_name: rating.fromUserName,
+    to_user_id: rating.toUserId,
+    to_user_name: rating.toUserName,
+    rating: rating.rating,
+    review: rating.review,
+    created_at: rating.createdAt,
+  });
+  if (error) console.error('addRating error:', error);
   return rating;
 }
 
 // ============================================
-// Subscriptions Operations (File Persistence)
+// Subscriptions Operations
 // ============================================
 
-function loadSubscriptionsFromFile(): Map<string, Subscription> {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(SUBSCRIPTIONS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(SUBSCRIPTIONS_FILE, 'utf-8'));
-      return new Map(Object.entries(data));
-    }
-  } catch (e) {
-    console.error('Failed to load subscriptions from file:', e);
-  }
-  return new Map();
+export async function getUserSubscription(userId: string): Promise<Subscription | undefined> {
+  const { data, error } = await supabase.from('subscriptions').select('*').eq('user_id', userId).single();
+  if (error || !data) return undefined;
+  return { userId: data.user_id, plan: data.plan, startDate: data.start_date, endDate: data.end_date, status: data.status, createdAt: data.created_at };
 }
 
-function saveSubscriptionsToFile() {
-  try {
-    ensureDataDir();
-    const obj: Record<string, Subscription> = {};
-    subscriptions.forEach((v, k) => { obj[k] = v; });
-    fs.writeFileSync(SUBSCRIPTIONS_FILE, JSON.stringify(obj, null, 2));
-  } catch (e) {
-    console.error('Failed to save subscriptions to file:', e);
-  }
-}
-
-const subscriptions: Map<string, Subscription> = loadSubscriptionsFromFile();
-
-export function getUserSubscription(userId: string): Subscription | undefined {
-  return subscriptions.get(userId);
-}
-
-export function setUserSubscription(sub: Subscription): Subscription {
-  subscriptions.set(sub.userId, sub);
-  saveSubscriptionsToFile();
+export async function setUserSubscription(sub: Subscription): Promise<Subscription> {
+  const { error } = await supabase.from('subscriptions').upsert({
+    user_id: sub.userId,
+    plan: sub.plan,
+    start_date: sub.startDate,
+    end_date: sub.endDate,
+    status: sub.status,
+    created_at: sub.createdAt,
+  });
+  if (error) console.error('setUserSubscription error:', error);
   return sub;
 }
 
 // ============================================
-// Chat / Messaging Operations (File Persistence)
+// Chat / Messaging Operations
 // ============================================
 
-function makeChatId(userId1: string, userId2: string): string {
+export function getChatId(userId1: string, userId2: string): string {
   return [userId1, userId2].sort().join('__');
 }
 
-function loadMessagesFromFile(): DirectMessage[] {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(MESSAGES_FILE)) {
-      return JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf-8'));
-    }
-  } catch (e) {
-    console.error('Failed to load messages from file:', e);
-  }
-  return [];
+export async function getMessagesForChat(chatId: string, limit = 50, before?: string): Promise<DirectMessage[]> {
+  let query = supabase.from('messages').select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
+  if (before) query = query.lt('created_at', before);
+  query = query.limit(limit);
+  const { data, error } = await query;
+  if (error) { console.error('getMessagesForChat error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    chatId: r.chat_id,
+    senderId: r.sender_id,
+    senderName: r.sender_name,
+    receiverId: r.receiver_id,
+    text: r.text,
+    read: r.read,
+    createdAt: r.created_at,
+  }));
 }
 
-function saveMessagesToFile() {
-  try {
-    ensureDataDir();
-    fs.writeFileSync(MESSAGES_FILE, JSON.stringify(allMessages, null, 2));
-  } catch (e) {
-    console.error('Failed to save messages to file:', e);
-  }
-}
-
-function loadChatThreadsFromFile(): Map<string, ChatThread> {
-  try {
-    ensureDataDir();
-    if (fs.existsSync(CHAT_THREADS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(CHAT_THREADS_FILE, 'utf-8'));
-      return new Map(Object.entries(data));
-    }
-  } catch (e) {
-    console.error('Failed to load chat threads from file:', e);
-  }
-  return new Map();
-}
-
-function saveChatThreadsToFile() {
-  try {
-    ensureDataDir();
-    const obj: Record<string, ChatThread> = {};
-    chatThreads.forEach((v, k) => { obj[k] = v; });
-    fs.writeFileSync(CHAT_THREADS_FILE, JSON.stringify(obj, null, 2));
-  } catch (e) {
-    console.error('Failed to save chat threads to file:', e);
-  }
-}
-
-const allMessages: DirectMessage[] = loadMessagesFromFile();
-const chatThreads: Map<string, ChatThread> = loadChatThreadsFromFile();
-
-export function getChatId(userId1: string, userId2: string): string {
-  return makeChatId(userId1, userId2);
-}
-
-export function getMessagesForChat(chatId: string, limit = 50, before?: string): DirectMessage[] {
-  let msgs = allMessages.filter(m => m.chatId === chatId);
-  if (before) {
-    msgs = msgs.filter(m => m.createdAt < before);
-  }
-  // Return last N messages
-  return msgs.slice(-limit);
-}
-
-export function addMessage(msg: DirectMessage): DirectMessage {
-  allMessages.push(msg);
-  saveMessagesToFile();
+export async function addMessage(msg: DirectMessage): Promise<DirectMessage> {
+  const { error } = await supabase.from('messages').insert({
+    id: msg.id,
+    chat_id: msg.chatId,
+    sender_id: msg.senderId,
+    sender_name: msg.senderName,
+    receiver_id: msg.receiverId,
+    text: msg.text,
+    read: msg.read,
+    created_at: msg.createdAt,
+  });
+  if (error) console.error('addMessage error:', error);
 
   // Update or create chat thread
-  const chatId = msg.chatId;
-  const existing = chatThreads.get(chatId);
-  if (existing) {
-    existing.lastMessage = msg.text;
-    existing.lastMessageAt = msg.createdAt;
-    if (existing.user1Id === msg.receiverId) {
-      existing.unreadCount1 += 1;
+  const { data: threadData } = await supabase.from('chat_threads').select('*').eq('chat_id', msg.chatId).single();
+  if (threadData) {
+    const updates: Record<string, unknown> = { last_message: msg.text, last_message_at: msg.createdAt };
+    if (threadData.user1_id === msg.receiverId) {
+      updates.unread_count1 = (threadData.unread_count1 || 0) + 1;
     } else {
-      existing.unreadCount2 += 1;
+      updates.unread_count2 = (threadData.unread_count2 || 0) + 1;
     }
+    await supabase.from('chat_threads').update(updates).eq('chat_id', msg.chatId);
   } else {
-    chatThreads.set(chatId, {
-      chatId,
-      user1Id: msg.senderId,
-      user1Name: msg.senderName,
-      user2Id: msg.receiverId,
-      user2Name: '', // will be filled when the other user sends
-      lastMessage: msg.text,
-      lastMessageAt: msg.createdAt,
-      unreadCount1: 0,
-      unreadCount2: 1,
+    await supabase.from('chat_threads').insert({
+      chat_id: msg.chatId,
+      user1_id: msg.senderId,
+      user1_name: msg.senderName,
+      user2_id: msg.receiverId,
+      user2_name: '',
+      last_message: msg.text,
+      last_message_at: msg.createdAt,
+      unread_count1: 0,
+      unread_count2: 1,
     });
   }
-  saveChatThreadsToFile();
   return msg;
 }
 
-export function markMessagesRead(chatId: string, userId: string): void {
-  // Mark messages as read
-  allMessages.forEach(m => {
-    if (m.chatId === chatId && m.receiverId === userId && !m.read) {
-      m.read = true;
-    }
-  });
-  saveMessagesToFile();
-
-  // Reset unread count
-  const thread = chatThreads.get(chatId);
+export async function markMessagesRead(chatId: string, userId: string): Promise<void> {
+  await supabase.from('messages').update({ read: true }).eq('chat_id', chatId).eq('receiver_id', userId).eq('read', false);
+  const { data: thread } = await supabase.from('chat_threads').select('*').eq('chat_id', chatId).single();
   if (thread) {
-    if (thread.user1Id === userId) {
-      thread.unreadCount1 = 0;
+    if (thread.user1_id === userId) {
+      await supabase.from('chat_threads').update({ unread_count1: 0 }).eq('chat_id', chatId);
     } else {
-      thread.unreadCount2 = 0;
+      await supabase.from('chat_threads').update({ unread_count2: 0 }).eq('chat_id', chatId);
     }
-    saveChatThreadsToFile();
   }
 }
 
-export function getThreadsForUser(userId: string): ChatThread[] {
-  const threads: ChatThread[] = [];
-  chatThreads.forEach(t => {
-    if (t.user1Id === userId || t.user2Id === userId) {
-      threads.push(t);
-    }
-  });
-  threads.sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt));
-  return threads;
+export async function getThreadsForUser(userId: string): Promise<ChatThread[]> {
+  const { data, error } = await supabase.from('chat_threads').select('*').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).order('last_message_at', { ascending: false });
+  if (error) { console.error('getThreadsForUser error:', error); return []; }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).map((r: any) => ({
+    chatId: r.chat_id,
+    user1Id: r.user1_id,
+    user1Name: r.user1_name,
+    user2Id: r.user2_id,
+    user2Name: r.user2_name,
+    lastMessage: r.last_message,
+    lastMessageAt: r.last_message_at,
+    unreadCount1: r.unread_count1,
+    unreadCount2: r.unread_count2,
+  }));
 }
 
-export function getUnreadCountForUser(userId: string): number {
+export async function getUnreadCountForUser(userId: string): Promise<number> {
+  const threads = await getThreadsForUser(userId);
   let count = 0;
-  chatThreads.forEach(t => {
+  threads.forEach(t => {
     if (t.user1Id === userId) count += t.unreadCount1;
     else if (t.user2Id === userId) count += t.unreadCount2;
   });
   return count;
 }
 
-export function updateThreadUserName(chatId: string, userId: string, userName: string): void {
-  const thread = chatThreads.get(chatId);
+export async function updateThreadUserName(chatId: string, userId: string, userName: string): Promise<void> {
+  const { data: thread } = await supabase.from('chat_threads').select('*').eq('chat_id', chatId).single();
   if (thread) {
-    if (thread.user1Id === userId) thread.user1Name = userName;
-    else if (thread.user2Id === userId) thread.user2Name = userName;
-    // Also set the "other" user's name if it was empty
-    if (!thread.user1Name && thread.user1Id !== userId) {
-      // user1 hasn't been named yet, but we don't know their name
+    if (thread.user1_id === userId) {
+      await supabase.from('chat_threads').update({ user1_name: userName }).eq('chat_id', chatId);
+    } else if (thread.user2_id === userId) {
+      await supabase.from('chat_threads').update({ user2_name: userName }).eq('chat_id', chatId);
     }
-    if (!thread.user2Name && thread.user2Id !== userId) {
-      // user2 hasn't been named yet  
-    }
-    saveChatThreadsToFile();
   }
 }

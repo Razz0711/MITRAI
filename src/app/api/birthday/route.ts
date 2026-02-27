@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     // Get all users from localStorage (passed via query) or from students store
     // We check both registered users and student profiles
-    const students = getAllStudents();
+    const students = await getAllStudents();
 
     // Parse users from query if provided (from localStorage on client)
     const usersParam = searchParams.get('users');
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     const wishedMap: Record<string, boolean> = {};
     if (userId) {
       for (const b of todayBirthdays) {
-        wishedMap[b.userId] = hasWishedToday(userId, b.userId);
+        wishedMap[b.userId] = await hasWishedToday(userId, b.userId);
       }
     }
 
@@ -119,12 +119,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already wished today
-    if (hasWishedToday(fromUserId, toUserId)) {
+    if (await hasWishedToday(fromUserId, toUserId)) {
       return NextResponse.json({ success: false, error: 'You already wished them today!' }, { status: 400 });
     }
 
     // Add wish
-    addBirthdayWish({
+    await addBirthdayWish({
       id: uuidv4(),
       fromUserId,
       fromUserName: fromUserName || 'Someone',
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send notification to birthday person
-    addNotification({
+    await addNotification({
       id: uuidv4(),
       userId: toUserId,
       type: 'birthday_wish',
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Count total wishes
-    const wishes = getBirthdayWishesForUser(toUserId);
+    const wishes = await getBirthdayWishesForUser(toUserId);
     const todayWishes = wishes.filter(w => w.createdAt.startsWith(new Date().toISOString().split('T')[0]));
 
     return NextResponse.json({

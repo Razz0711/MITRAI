@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'studentId and buddyId required' }, { status: 400 });
     }
 
-    const student = getStudentById(studentId);
-    const buddy = getStudentById(buddyId);
+    const student = await getStudentById(studentId);
+    const buddy = await getStudentById(buddyId);
 
     if (!student || !buddy) {
       return NextResponse.json({ success: false, error: 'Student or buddy not found' }, { status: 404 });

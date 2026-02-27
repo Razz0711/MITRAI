@@ -26,12 +26,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
   }
 
-  const friends = getFriendsForUser(userId);
-  const pendingRequests = getPendingFriendRequests(userId);
-  const allRequests = getFriendRequestsForUser(userId);
-  const ratingsReceived = getRatingsForUser(userId);
-  const ratingsGiven = getRatingsByUser(userId);
-  const avgRating = getAverageRating(userId);
+  const friends = await getFriendsForUser(userId);
+  const pendingRequests = await getPendingFriendRequests(userId);
+  const allRequests = await getFriendRequestsForUser(userId);
+  const ratingsReceived = await getRatingsForUser(userId);
+  const ratingsGiven = await getRatingsByUser(userId);
+  const avgRating = await getAverageRating(userId);
 
   return NextResponse.json({
     success: true,
@@ -60,10 +60,10 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ success: false, error: 'fromUserId and toUserId required' }, { status: 400 });
         }
         // Already friends?
-        if (areFriends(fromUserId, toUserId)) {
+        if (await areFriends(fromUserId, toUserId)) {
           return NextResponse.json({ success: false, error: 'Already friends' }, { status: 409 });
         }
-        const request = createFriendRequest({
+        const request = await createFriendRequest({
           id: uuidv4(),
           fromUserId,
           fromUserName: fromUserName || 'Unknown',
@@ -81,13 +81,13 @@ export async function POST(req: NextRequest) {
         if (!requestId || !['accepted', 'declined'].includes(status)) {
           return NextResponse.json({ success: false, error: 'requestId and valid status required' }, { status: 400 });
         }
-        const updated = updateFriendRequestStatus(requestId, status);
+        const updated = await updateFriendRequestStatus(requestId, status);
         if (!updated) {
           return NextResponse.json({ success: false, error: 'Request not found' }, { status: 404 });
         }
         // If accepted, create friendship
         if (status === 'accepted') {
-          addFriendship({
+          await addFriendship({
             id: uuidv4(),
             user1Id: updated.fromUserId,
             user1Name: updated.fromUserName,
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
         if (!userId1 || !userId2) {
           return NextResponse.json({ success: false, error: 'userId1 and userId2 required' }, { status: 400 });
         }
-        const removed = removeFriendship(userId1, userId2);
+        const removed = await removeFriendship(userId1, userId2);
         return NextResponse.json({ success: true, data: { removed } });
       }
 
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
         if (!fromUserId || !toUserId || !rating || rating < 1 || rating > 10) {
           return NextResponse.json({ success: false, error: 'Valid fromUserId, toUserId and rating (1-10) required' }, { status: 400 });
         }
-        const newRating = addRating({
+        const newRating = await addRating({
           id: uuidv4(),
           fromUserId,
           fromUserName: fromUserName || 'Unknown',
@@ -131,8 +131,8 @@ export async function POST(req: NextRequest) {
       // ── Check friendship status ──
       case 'check': {
         const { userId1, userId2 } = body;
-        const isFriend = areFriends(userId1, userId2);
-        const avg = getAverageRating(userId2);
+        const isFriend = await areFriends(userId1, userId2);
+        const avg = await getAverageRating(userId2);
         return NextResponse.json({ success: true, data: { isFriend, averageRating: avg } });
       }
 

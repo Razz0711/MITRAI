@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
   }
 
-  const sub = getUserSubscription(userId);
+  const sub = await getUserSubscription(userId);
 
   // Default to free plan
   if (!sub) {
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       endDate = end.toISOString();
     }
 
-    const subscription = setUserSubscription({
+    const subscription = await setUserSubscription({
       userId,
       plan,
       startDate: now.toISOString(),

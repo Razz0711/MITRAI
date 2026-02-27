@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
     }
 
-    const bookings = getBookingsForUser(userId);
+    const bookings = await getBookingsForUser(userId);
     return NextResponse.json({ success: true, data: bookings });
   } catch (error) {
     console.error('Bookings GET error:', error);
@@ -57,10 +57,10 @@ export async function POST(request: NextRequest) {
         createdAt: new Date().toISOString(),
       };
 
-      createBooking(booking);
+      await createBooking(booking);
 
       // Notify target
-      addNotification({
+      await addNotification({
         id: uuidv4(),
         userId: targetId,
         type: 'session_request',
@@ -76,19 +76,19 @@ export async function POST(request: NextRequest) {
     // ACCEPT a session request
     if (action === 'accept') {
       const { bookingId } = body;
-      const booking = getBookingById(bookingId);
+      const booking = await getBookingById(bookingId);
       if (!booking) {
         return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
       }
 
-      updateBooking(bookingId, { status: 'accepted' });
+      await updateBooking(bookingId, { status: 'accepted' });
 
       // Mark both users as engaged for that slot
-      markSlotEngaged(booking.requesterId, booking.day, booking.hour, bookingId, booking.targetName);
-      markSlotEngaged(booking.targetId, booking.day, booking.hour, bookingId, booking.requesterName);
+      await markSlotEngaged(booking.requesterId, booking.day, booking.hour, bookingId, booking.targetName);
+      await markSlotEngaged(booking.targetId, booking.day, booking.hour, bookingId, booking.requesterName);
 
       // Notify requester
-      addNotification({
+      await addNotification({
         id: uuidv4(),
         userId: booking.requesterId,
         type: 'session_accepted',
@@ -104,15 +104,15 @@ export async function POST(request: NextRequest) {
     // DECLINE a session request
     if (action === 'decline') {
       const { bookingId } = body;
-      const booking = getBookingById(bookingId);
+      const booking = await getBookingById(bookingId);
       if (!booking) {
         return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
       }
 
-      updateBooking(bookingId, { status: 'declined' });
+      await updateBooking(bookingId, { status: 'declined' });
 
       // Notify requester
-      addNotification({
+      await addNotification({
         id: uuidv4(),
         userId: booking.requesterId,
         type: 'session_declined',
