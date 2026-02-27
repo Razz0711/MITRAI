@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 import { supabase } from '@/lib/supabase';
 
 // Create reusable transporter
@@ -84,8 +85,8 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Generate 6-digit OTP
-      const code = String(Math.floor(100000 + Math.random() * 900000));
+      // Generate 6-digit OTP (cryptographically secure)
+      const code = String(crypto.randomInt(100000, 999999));
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
       // Store in Supabase (upsert — replace any existing OTP for this email)

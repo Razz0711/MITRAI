@@ -185,6 +185,7 @@ CREATE TABLE IF NOT EXISTS messages (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_messages_chat ON messages(chat_id);
+CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id);
 
 -- 14. Chat threads
 CREATE TABLE IF NOT EXISTS chat_threads (
@@ -200,22 +201,96 @@ CREATE TABLE IF NOT EXISTS chat_threads (
 );
 
 -- ============================================
--- Disable RLS on all tables (server-side only access)
+-- Enable Row-Level Security (defense-in-depth)
+-- The API routes use the service-role key which bypasses RLS.
+-- RLS protects against direct PostgREST abuse via the public anon key.
 -- ============================================
-ALTER TABLE students DISABLE ROW LEVEL SECURITY;
-ALTER TABLE sessions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications DISABLE ROW LEVEL SECURITY;
-ALTER TABLE materials DISABLE ROW LEVEL SECURITY;
-ALTER TABLE availability DISABLE ROW LEVEL SECURITY;
-ALTER TABLE user_statuses DISABLE ROW LEVEL SECURITY;
-ALTER TABLE bookings DISABLE ROW LEVEL SECURITY;
-ALTER TABLE birthday_wishes DISABLE ROW LEVEL SECURITY;
-ALTER TABLE friend_requests DISABLE ROW LEVEL SECURITY;
-ALTER TABLE friendships DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ratings DISABLE ROW LEVEL SECURITY;
-ALTER TABLE subscriptions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE messages DISABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_threads DISABLE ROW LEVEL SECURITY;
+
+-- Students: users can read all profiles, but only modify their own
+ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "students_select" ON students FOR SELECT USING (true);
+CREATE POLICY "students_modify" ON students FOR ALL USING (id = auth.uid()::text);
+
+-- Sessions: both participants can access
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "sessions_select" ON sessions FOR SELECT USING (
+  student1_id = auth.uid()::text OR student2_id = auth.uid()::text
+);
+
+-- Notifications: users can only access their own
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "notifications_own" ON notifications FOR ALL USING (user_id = auth.uid()::text);
+
+-- Materials: everyone can read, only uploader can modify
+ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "materials_select" ON materials FOR SELECT USING (true);
+CREATE POLICY "materials_insert" ON materials FOR INSERT WITH CHECK (uploaded_by = auth.uid()::text);
+
+-- Availability: users can read all (for booking), only modify own
+ALTER TABLE availability ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "availability_select" ON availability FOR SELECT USING (true);
+CREATE POLICY "availability_modify" ON availability FOR ALL USING (user_id = auth.uid()::text);
+
+-- User statuses: public read, own write
+ALTER TABLE user_statuses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "status_select" ON user_statuses FOR SELECT USING (true);
+CREATE POLICY "status_modify" ON user_statuses FOR ALL USING (user_id = auth.uid()::text);
+
+-- Bookings: both parties can access
+ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "bookings_access" ON bookings FOR ALL USING (
+  requester_id = auth.uid()::text OR target_id = auth.uid()::text
+);
+
+-- Birthday wishes: everyone can see, only sender can create
+ALTER TABLE birthday_wishes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "wishes_select" ON birthday_wishes FOR SELECT USING (true);
+CREATE POLICY "wishes_insert" ON birthday_wishes FOR INSERT WITH CHECK (from_user_id = auth.uid()::text);
+
+-- Friend requests: both parties can access
+ALTER TABLE friend_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "friend_requests_access" ON friend_requests FOR ALL USING (
+  from_user_id = auth.uid()::text OR to_user_id = auth.uid()::text
+);
+
+-- Friendships: both parties can access
+ALTER TABLE friendships ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "friendships_access" ON friendships FOR ALL USING (
+  user1_id = auth.uid()::text OR user2_id = auth.uid()::text
+);
+
+-- Ratings: everyone can read, only rater can create
+ALTER TABLE ratings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "ratings_select" ON ratings FOR SELECT USING (true);
+CREATE POLICY "ratings_insert" ON ratings FOR INSERT WITH CHECK (from_user_id = auth.uid()::text);
+
+-- Subscriptions: users can only access their own
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "subscriptions_own" ON subscriptions FOR ALL USING (user_id = auth.uid()::text);
+
+-- Messages: both sender and receiver can access
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "messages_access" ON messages FOR ALL USING (
+  sender_id = auth.uid()::text OR receiver_id = auth.uid()::text
+);
+
+-- Chat threads: both parties can access
+ALTER TABLE chat_threads ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "chat_threads_access" ON chat_threads FOR ALL USING (
+  user1_id = auth.uid()::text OR user2_id = auth.uid()::text
+);
+
+-- Calendar events: users can only access their own
+ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "calendar_own" ON calendar_events FOR ALL USING (user_id = auth.uid()::text);
+
+-- Attendance: users can only access their own
+ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "attendance_own" ON attendance FOR ALL USING (user_id = auth.uid()::text);
+
+-- OTP codes: server-only (no client access ever)
+ALTER TABLE otp_codes ENABLE ROW LEVEL SECURITY;
+-- No policies = no client access (service role bypasses)
 
 -- ============================================
 -- Storage: materials bucket + public access policies
@@ -233,17 +308,17 @@ ON CONFLICT (id) DO UPDATE SET public = true;
 CREATE POLICY "Public read access" ON storage.objects 
   FOR SELECT USING (bucket_id = 'materials');
 
--- Allow anyone to upload (insert) files 
+-- Allow authenticated users to upload files
 CREATE POLICY "Allow uploads" ON storage.objects 
-  FOR INSERT WITH CHECK (bucket_id = 'materials');
+  FOR INSERT WITH CHECK (bucket_id = 'materials' AND auth.role() = 'authenticated');
 
--- Allow anyone to update their uploads
+-- Allow authenticated users to update their uploads
 CREATE POLICY "Allow updates" ON storage.objects 
-  FOR UPDATE USING (bucket_id = 'materials');
+  FOR UPDATE USING (bucket_id = 'materials' AND auth.role() = 'authenticated');
 
--- Allow anyone to delete files
+-- Allow authenticated users to delete files
 CREATE POLICY "Allow deletes" ON storage.objects 
-  FOR DELETE USING (bucket_id = 'materials');
+  FOR DELETE USING (bucket_id = 'materials' AND auth.role() = 'authenticated');
 
 -- ============================================
 -- Calendar Events
@@ -268,7 +343,7 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 );
 
 -- Disable RLS (consistent with other tables — using service role key)
-ALTER TABLE calendar_events DISABLE ROW LEVEL SECURITY;
+-- RLS for calendar_events is enabled in the main RLS block above
 
 -- ============================================
 -- Attendance Tracking
@@ -284,7 +359,26 @@ CREATE TABLE IF NOT EXISTS attendance (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance(user_id);
-ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_calendar_events_user ON calendar_events(user_id);
+
+-- ============================================
+-- Additional Performance Indexes
+-- ============================================
+CREATE INDEX IF NOT EXISTS idx_sessions_student1 ON sessions(student1_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_student2 ON sessions(student2_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_requester ON bookings(requester_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_target ON bookings(target_id);
+CREATE INDEX IF NOT EXISTS idx_friend_requests_from ON friend_requests(from_user_id);
+CREATE INDEX IF NOT EXISTS idx_friend_requests_to ON friend_requests(to_user_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_user1 ON friendships(user1_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_user2 ON friendships(user2_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_to ON ratings(to_user_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_from ON ratings(from_user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_threads_user1 ON chat_threads(user1_id);
+CREATE INDEX IF NOT EXISTS idx_chat_threads_user2 ON chat_threads(user2_id);
+CREATE INDEX IF NOT EXISTS idx_birthday_wishes_to ON birthday_wishes(to_user_id);
+CREATE INDEX IF NOT EXISTS idx_birthday_wishes_from ON birthday_wishes(from_user_id);
+-- RLS for attendance is enabled in the main RLS block above
 
 -- 17. OTP Codes (used for email verification)
 CREATE TABLE IF NOT EXISTS otp_codes (
@@ -294,4 +388,16 @@ CREATE TABLE IF NOT EXISTS otp_codes (
   attempts INT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-ALTER TABLE otp_codes DISABLE ROW LEVEL SECURITY;
+-- RLS for otp_codes is enabled in the main RLS block above
+
+-- ============================================
+-- SQL Functions
+-- ============================================
+
+-- Average rating function (avoids fetching all ratings in JS)
+CREATE OR REPLACE FUNCTION get_average_rating(target_user_id TEXT)
+RETURNS FLOAT AS $$
+  SELECT COALESCE(AVG(rating)::float, 0)
+  FROM ratings
+  WHERE to_user_id = target_user_id;
+$$ LANGUAGE SQL STABLE;

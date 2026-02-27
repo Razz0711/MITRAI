@@ -264,7 +264,11 @@ export async function getAllMaterials(filters?: {
   if (filters?.department && filters.department !== 'all') query = query.eq('department', filters.department);
   if (filters?.type && filters.type !== 'all') query = query.eq('type', filters.type);
   if (filters?.year && filters.year !== 'all') query = query.eq('year_level', filters.year);
-  if (filters?.search) query = query.or(`title.ilike.%${filters.search}%,subject.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+  if (filters?.search) {
+    // Sanitize search input to prevent PostgREST filter injection
+    const safe = filters.search.replace(/[,().%\\]/g, '');
+    if (safe) query = query.or(`title.ilike.%${safe}%,subject.ilike.%${safe}%,description.ilike.%${safe}%`);
+  }
   const { data, error } = await query.order('created_at', { ascending: false });
   if (error) { console.error('getAllMaterials error:', error); return []; }
   return (data || []).map(rowToMaterial);
@@ -632,6 +636,12 @@ export async function updateFriendRequestStatus(requestId: string, status: 'acce
   return { id: data.id, fromUserId: data.from_user_id, fromUserName: data.from_user_name, toUserId: data.to_user_id, toUserName: data.to_user_name, status: data.status, createdAt: data.created_at };
 }
 
+export async function getFriendRequestById(requestId: string): Promise<FriendRequest | null> {
+  const { data, error } = await supabase.from('friend_requests').select('*').eq('id', requestId).single();
+  if (error || !data) return null;
+  return { id: data.id, fromUserId: data.from_user_id, fromUserName: data.from_user_name, toUserId: data.to_user_id, toUserName: data.to_user_name, status: data.status, createdAt: data.created_at };
+}
+
 // ============================================
 // Friendships Operations
 // ============================================
@@ -721,10 +731,16 @@ export async function getRatingsByUser(userId: string): Promise<BuddyRating[]> {
 }
 
 export async function getAverageRating(userId: string): Promise<number> {
-  const userRatings = await getRatingsForUser(userId);
-  if (userRatings.length === 0) return 0;
-  const sum = userRatings.reduce((acc, r) => acc + r.rating, 0);
-  return Math.round((sum / userRatings.length) * 10) / 10;
+  // Use SQL AVG() instead of fetching all ratings and computing in JS
+  const { data, error } = await supabase.rpc('get_average_rating', { target_user_id: userId }).single();
+  if (error || !data) {
+    // Fallback to JS computation if RPC doesn't exist yet
+    const userRatings = await getRatingsForUser(userId);
+    if (userRatings.length === 0) return 0;
+    const sum = userRatings.reduce((acc, r) => acc + r.rating, 0);
+    return Math.round((sum / userRatings.length) * 10) / 10;
+  }
+  return Math.round((data as number) * 10) / 10;
 }
 
 export async function addRating(rating: BuddyRating): Promise<BuddyRating> {
@@ -1086,4 +1102,10 @@ export async function deleteAttendance(id: string): Promise<boolean> {
   const { error } = await supabase.from('attendance').delete().eq('id', id);
   if (error) { console.error('deleteAttendance error:', error); return false; }
   return true;
+}
+
+export async function getAttendanceRecordById(id: string): Promise<AttendanceRecord | null> {
+  const { data, error } = await supabase.from('attendance').select('*').eq('id', id).single();
+  if (error || !data) return null;
+  return rowToAttendance(data);
 }

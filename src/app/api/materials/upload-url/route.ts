@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       console.error('[SignedUpload] Error creating signed URL:', error.message);
       return NextResponse.json({ 
         success: false, 
-        error: `Failed to create upload URL: ${error.message}` 
+        error: 'Failed to create upload URL' 
       }, { status: 500 });
     }
 

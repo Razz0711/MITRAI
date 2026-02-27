@@ -29,12 +29,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
   }
 
-  const friends = await getFriendsForUser(userId);
-  const pendingRequests = await getPendingFriendRequests(userId);
-  const allRequests = await getFriendRequestsForUser(userId);
-  const ratingsReceived = await getRatingsForUser(userId);
-  const ratingsGiven = await getRatingsByUser(userId);
-  const avgRating = await getAverageRating(userId);
+  const [friends, pendingRequests, allRequests, ratingsReceived, ratingsGiven, avgRating] = await Promise.all([
+    getFriendsForUser(userId),
+    getPendingFriendRequests(userId),
+    getFriendRequestsForUser(userId),
+    getRatingsForUser(userId),
+    getRatingsByUser(userId),
+    getAverageRating(userId),
+  ]);
 
   return NextResponse.json({
     success: true,
@@ -97,12 +99,17 @@ export async function POST(req: NextRequest) {
         if (!requestId || !['accepted', 'declined'].includes(status)) {
           return NextResponse.json({ success: false, error: 'requestId and valid status required' }, { status: 400 });
         }
-        const updated = await updateFriendRequestStatus(requestId, status);
-        if (!updated) {
+        // Ownership: fetch first, check, THEN update (avoid TOCTOU)
+        const { getFriendRequestById } = await import('@/lib/store');
+        const existing = await getFriendRequestById(requestId);
+        if (!existing) {
           return NextResponse.json({ success: false, error: 'Request not found' }, { status: 404 });
         }
-        // Ownership: only the recipient can respond
-        if (updated.toUserId !== authUser.id) return forbidden();
+        if (existing.toUserId !== authUser.id) return forbidden();
+        const updated = await updateFriendRequestStatus(requestId, status);
+        if (!updated) {
+          return NextResponse.json({ success: false, error: 'Failed to update request' }, { status: 500 });
+        }
         // If accepted, create friendship
         if (status === 'accepted') {
           await addFriendship({

@@ -40,12 +40,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action } = body;
 
-    // Create a new notification
+    // Create a notification (restricted: can only create for yourself)
     if (action === 'create') {
       const { userId, type, title, message } = body;
       if (!userId || !title) {
         return NextResponse.json({ success: false, error: 'Missing userId or title' }, { status: 400 });
       }
+      if (userId !== authUser.id) return forbidden();
       await addNotification({
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         userId,

@@ -3,6 +3,7 @@
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { getUserSubscription, setUserSubscription } from '@/lib/store';
 import { Subscription } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
@@ -46,7 +47,10 @@ export async function POST(req: NextRequest) {
 
     // ── Admin actions (approve / reject) ──
     if (action === 'approve' || action === 'reject') {
-      if (adminKey !== process.env.ADMIN_KEY) {
+      const expected = process.env.ADMIN_KEY || '';
+      const provided = String(adminKey || '');
+      if (!expected || expected.length !== provided.length ||
+          !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(provided))) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
       }
       if (!targetUserId) {
@@ -65,7 +69,10 @@ export async function POST(req: NextRequest) {
 
     // ── List pending (admin) ──
     if (action === 'list-pending') {
-      if (adminKey !== process.env.ADMIN_KEY) {
+      const expected = process.env.ADMIN_KEY || '';
+      const provided = String(adminKey || '');
+      if (!expected || expected.length !== provided.length ||
+          !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(provided))) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
       }
       const { getAllPendingSubscriptions } = await import('@/lib/store');

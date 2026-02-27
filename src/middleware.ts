@@ -38,6 +38,28 @@ export async function middleware(request: NextRequest) {
   const isApiRoute = pathname.startsWith('/api/');
   const isPublicApi = pathname.startsWith('/api/otp') || pathname.startsWith('/api/auth');
 
+  // CSRF protection: validate Origin header on mutating API requests
+  if (isApiRoute && !isPublicApi && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
+    const origin = request.headers.get('origin');
+    if (origin) {
+      const allowedHost = request.nextUrl.host; // e.g. "mitrai-study.vercel.app" or "localhost:3000"
+      try {
+        const originHost = new URL(origin).host;
+        if (originHost !== allowedHost) {
+          return NextResponse.json(
+            { success: false, error: 'Forbidden: origin mismatch' },
+            { status: 403 }
+          );
+        }
+      } catch {
+        return NextResponse.json(
+          { success: false, error: 'Forbidden: invalid origin' },
+          { status: 403 }
+        );
+      }
+    }
+  }
+
   // Allow public pages and public APIs without auth
   if (isPublicPage || isPublicApi) {
     // If user is logged in and on login page, redirect to dashboard

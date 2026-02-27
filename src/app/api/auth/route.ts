@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabase as supabaseService } from '@/lib/supabase';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 // Admin client for user creation (uses service role key)
 const supabaseAdmin = createClient(
@@ -20,6 +21,9 @@ export async function POST(req: NextRequest) {
 
     if (action === 'signup') {
       const { name, email, password, admissionNumber, department, yearLevel, dob } = body;
+
+      // Rate limit signups by email (10 attempts per 10 minutes)
+      if (email && !rateLimit(`auth:${email}`, 10, 600_000)) return rateLimitExceeded();
 
       if (!name || !email || !password || !admissionNumber || !department || !yearLevel || !dob) {
         return NextResponse.json({ success: false, error: 'All fields are required' }, { status: 400 });
@@ -55,7 +59,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ success: false, error: 'An account with this email already exists' }, { status: 409 });
         }
         console.error('[Auth] Signup error:', authError);
-        return NextResponse.json({ success: false, error: authError.message }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Failed to create account. Please try again.' }, { status: 500 });
       }
 
       const userId = authData.user.id;

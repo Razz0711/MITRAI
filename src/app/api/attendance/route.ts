@@ -62,6 +62,11 @@ export async function POST(req: NextRequest) {
     if (action === 'delete') {
       const { id } = body;
       if (!id) return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
+      // Ownership: verify the record belongs to the current user
+      const { getAttendanceRecordById } = await import('@/lib/store');
+      const record = await getAttendanceRecordById(id);
+      if (!record) return NextResponse.json({ success: false, error: 'Record not found' }, { status: 404 });
+      if (record.userId !== authUser.id) return forbidden();
       const deleted = await deleteAttendance(id);
       return NextResponse.json({ success: deleted, error: deleted ? undefined : 'Failed to delete' });
     }

@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getAllMaterials, createMaterial, saveUploadedFile, addNotification } from '@/lib/store';
 import { StudyMaterial } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 // GET /api/materials — list all materials with optional filters
 export async function GET(request: NextRequest) {
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
 // POST /api/materials — save material metadata (file already uploaded directly to Supabase Storage)
 export async function POST(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`materials:${authUser.id}`, 5, 60_000)) return rateLimitExceeded();
   try {
     const contentType = request.headers.get('content-type') || '';
     
@@ -98,9 +100,8 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(arrayBuf);
         storedFileName = await saveUploadedFile(file.name, buffer);
       } catch (uploadErr) {
-        const msg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
-        console.error('[Upload] Storage error:', msg);
-        return NextResponse.json({ success: false, error: `File upload failed: ${msg}` }, { status: 500 });
+        console.error('[Upload] Storage error:', uploadErr);
+        return NextResponse.json({ success: false, error: 'File upload failed' }, { status: 500 });
       }
     }
 

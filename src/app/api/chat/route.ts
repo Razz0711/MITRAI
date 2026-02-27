@@ -13,6 +13,7 @@ import {
 } from '@/lib/store';
 import { DirectMessage } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 export async function GET(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
       if (!senderId || !receiverId || !text) {
         return NextResponse.json({ error: 'senderId, receiverId, text required' }, { status: 400 });
       }
+      if (!rateLimit(`chat:${authUser.id}`, 30, 60_000)) return rateLimitExceeded();
       if (text.length > 2000) {
         return NextResponse.json({ error: 'Message too long (max 2000 chars)' }, { status: 400 });
       }
