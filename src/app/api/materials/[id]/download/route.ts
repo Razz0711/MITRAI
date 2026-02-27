@@ -4,11 +4,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getMaterialById, getUploadedFileUrl } from '@/lib/store';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const material = await getMaterialById(params.id);
     if (!material) {

@@ -2,23 +2,12 @@
 // MitrAI - OTP Verification API
 // Generates and verifies email OTP codes
 // Sends real OTP via Gmail SMTP (nodemailer)
+// Stores OTPs in Supabase (not in-memory) for serverless compatibility
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-
-// In-memory OTP store (resets on server restart)
-const otpStore = new Map<string, { code: string; expiresAt: number; attempts: number }>();
-
-// Clean expired OTPs periodically
-function cleanExpired() {
-  const now = Date.now();
-  const keys = Array.from(otpStore.keys());
-  keys.forEach(key => {
-    const val = otpStore.get(key);
-    if (val && val.expiresAt < now) otpStore.delete(key);
-  });
-}
+import { supabase } from '@/lib/supabase';
 
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
@@ -62,8 +51,6 @@ async function sendOtpEmail(to: string, code: string) {
 }
 
 // POST /api/otp
-// action: 'send' — generate and "send" OTP (demo: returns it in response)
-// action: 'verify' — verify the OTP code
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -76,34 +63,54 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (action === 'send') {
-      cleanExpired();
+      // Clean expired OTPs
+      await supabase.from('otp_codes').delete().lt('expires_at', new Date().toISOString());
 
       // Rate limit: don't allow re-send within 30 seconds
-      const existing = otpStore.get(normalizedEmail);
-      if (existing && existing.expiresAt - 4.5 * 60 * 1000 > Date.now()) {
-        // Less than 30s since last send
-        return NextResponse.json({
-          success: false,
-          error: 'Please wait 30 seconds before requesting a new code',
-        }, { status: 429 });
+      const { data: existing } = await supabase
+        .from('otp_codes')
+        .select('created_at')
+        .eq('email', normalizedEmail)
+        .single();
+
+      if (existing) {
+        const createdAt = new Date(existing.created_at).getTime();
+        const now = Date.now();
+        if (now - createdAt < 30000) {
+          return NextResponse.json({
+            success: false,
+            error: 'Please wait 30 seconds before requesting a new code',
+          }, { status: 429 });
+        }
       }
 
       // Generate 6-digit OTP
       const code = String(Math.floor(100000 + Math.random() * 900000));
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
-      // Store with 5-minute expiry
-      otpStore.set(normalizedEmail, {
+      // Store in Supabase (upsert — replace any existing OTP for this email)
+      const { error: upsertError } = await supabase.from('otp_codes').upsert({
+        email: normalizedEmail,
         code,
-        expiresAt: Date.now() + 5 * 60 * 1000,
+        expires_at: expiresAt,
         attempts: 0,
-      });
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'email' });
+
+      if (upsertError) {
+        console.error('[OTP] Failed to store OTP:', upsertError);
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to generate verification code. Please try again.',
+        }, { status: 500 });
+      }
 
       // Send OTP via email
       try {
         await sendOtpEmail(normalizedEmail, code);
       } catch (emailErr) {
         console.error('[OTP] Failed to send email:', emailErr);
-        otpStore.delete(normalizedEmail);
+        await supabase.from('otp_codes').delete().eq('email', normalizedEmail);
         return NextResponse.json({
           success: false,
           error: 'Failed to send verification email. Please try again.',
@@ -125,32 +132,40 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Verification code is required' }, { status: 400 });
       }
 
-      const stored = otpStore.get(normalizedEmail);
+      const { data: stored, error: fetchError } = await supabase
+        .from('otp_codes')
+        .select('*')
+        .eq('email', normalizedEmail)
+        .single();
 
-      if (!stored) {
+      if (fetchError || !stored) {
         return NextResponse.json({ success: false, error: 'No verification code found. Please request a new one.' }, { status: 400 });
       }
 
-      if (stored.expiresAt < Date.now()) {
-        otpStore.delete(normalizedEmail);
+      if (new Date(stored.expires_at) < new Date()) {
+        await supabase.from('otp_codes').delete().eq('email', normalizedEmail);
         return NextResponse.json({ success: false, error: 'Code expired. Please request a new one.' }, { status: 400 });
       }
 
       if (stored.attempts >= 5) {
-        otpStore.delete(normalizedEmail);
+        await supabase.from('otp_codes').delete().eq('email', normalizedEmail);
         return NextResponse.json({ success: false, error: 'Too many failed attempts. Please request a new code.' }, { status: 429 });
       }
 
       if (stored.code !== code.trim()) {
-        stored.attempts++;
+        await supabase
+          .from('otp_codes')
+          .update({ attempts: stored.attempts + 1 })
+          .eq('email', normalizedEmail);
+
         return NextResponse.json({
           success: false,
-          error: `Invalid code. ${5 - stored.attempts} attempts remaining.`,
+          error: `Invalid code. ${5 - (stored.attempts + 1)} attempts remaining.`,
         }, { status: 400 });
       }
 
       // OTP verified — remove it
-      otpStore.delete(normalizedEmail);
+      await supabase.from('otp_codes').delete().eq('email', normalizedEmail);
 
       return NextResponse.json({ success: true, message: 'Email verified successfully' });
     }

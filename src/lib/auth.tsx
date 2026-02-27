@@ -1,10 +1,12 @@
 // ============================================
-// MitrAI - Auth Context (localStorage-based)
+// MitrAI - Auth Context (Supabase Auth)
+// Cookie-based sessions via @supabase/ssr
 // ============================================
 
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabaseBrowser } from './supabase-browser';
 
 interface User {
   id: string;
@@ -31,156 +33,126 @@ interface SignupData {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => { success: boolean; error?: string };
-  signup: (data: SignupData) => { success: boolean; error?: string };
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (data: SignupData) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
-const SVNIT_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+\.)?svnit\.ac\.in$/;
-
 const AuthContext = createContext<AuthContextType | null>(null);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapSupabaseUser(supabaseUser: any): User {
+  const meta = supabaseUser.user_metadata || {};
+  return {
+    id: supabaseUser.id,
+    name: meta.name || '',
+    email: supabaseUser.email || '',
+    admissionNumber: meta.admissionNumber || '',
+    department: meta.department || '',
+    yearLevel: meta.yearLevel || '',
+    dob: meta.dob || '',
+    showBirthday: meta.showBirthday !== false,
+    createdAt: supabaseUser.created_at || '',
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
-    const session = localStorage.getItem('mitrai_session');
-    if (session) {
-      try {
-        const parsed = JSON.parse(session);
-        setUser(parsed);
-      } catch {
-        localStorage.removeItem('mitrai_session');
+    // Get initial session
+    supabaseBrowser.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const u = mapSupabaseUser(session.user);
+        setUser(u);
+        // Set localStorage for backward-compat with pages that read it directly
+        localStorage.setItem('mitrai_student_id', u.id);
+        localStorage.setItem('mitrai_student_name', u.name);
+        localStorage.setItem('mitrai_session', JSON.stringify(u));
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    });
+
+    // Listen for auth state changes (login, logout, token refresh)
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          const u = mapSupabaseUser(session.user);
+          setUser(u);
+          localStorage.setItem('mitrai_student_id', u.id);
+          localStorage.setItem('mitrai_student_name', u.name);
+          localStorage.setItem('mitrai_session', JSON.stringify(u));
+        } else {
+          setUser(null);
+          localStorage.removeItem('mitrai_student_id');
+          localStorage.removeItem('mitrai_student_name');
+          localStorage.removeItem('mitrai_session');
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = (email: string, password: string): { success: boolean; error?: string } => {
-    if (!SVNIT_EMAIL_REGEX.test(email)) {
-      return { success: false, error: 'Please use your SVNIT email (e.g. i22ma038@amhd.svnit.ac.in)' };
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await supabaseBrowser.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          return { success: false, error: 'Invalid email or password' };
+        }
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Login failed. Please try again.' };
     }
-
-    const usersRaw = localStorage.getItem('mitrai_users') || '[]';
-    const users = JSON.parse(usersRaw);
-    const found = users.find((u: { email: string; password: string }) => u.email === email && u.password === password);
-
-    if (!found) {
-      return { success: false, error: 'Invalid email or password' };
-    }
-
-    const userData: User = {
-      id: found.id,
-      name: found.name,
-      email: found.email,
-      admissionNumber: found.admissionNumber || '',
-      department: found.department || '',
-      yearLevel: found.yearLevel || '',
-      dob: found.dob || '',
-      showBirthday: found.showBirthday !== false,
-      createdAt: found.createdAt,
-    };
-    setUser(userData);
-    localStorage.setItem('mitrai_session', JSON.stringify(userData));
-
-    // Ensure student profile ID is linked to auth ID
-    if (!localStorage.getItem('mitrai_student_id')) {
-      localStorage.setItem('mitrai_student_id', found.id);
-      localStorage.setItem('mitrai_student_name', found.name);
-    }
-
-    return { success: true };
   };
 
-  const signup = (data: SignupData): { success: boolean; error?: string } => {
-    if (!SVNIT_EMAIL_REGEX.test(data.email)) {
-      return { success: false, error: 'Please use your SVNIT email (e.g. i22ma038@amhd.svnit.ac.in)' };
-    }
-
-    const usersRaw = localStorage.getItem('mitrai_users') || '[]';
-    const users = JSON.parse(usersRaw);
-
-    if (users.find((u: { email: string }) => u.email === data.email)) {
-      return { success: false, error: 'An account with this email already exists' };
-    }
-
-    if (users.find((u: { admissionNumber?: string }) => u.admissionNumber === data.admissionNumber)) {
-      return { success: false, error: 'This admission number is already registered' };
-    }
-
-    const newUser = {
-      id: `user_${Date.now()}`,
-      name: data.name,
-      email: data.email,
-      password: data.password,
-      admissionNumber: data.admissionNumber,
-      department: data.department,
-      yearLevel: data.yearLevel,
-      dob: data.dob,
-      showBirthday: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    users.push(newUser);
-    localStorage.setItem('mitrai_users', JSON.stringify(users));
-
-    const userData: User = {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      admissionNumber: newUser.admissionNumber,
-      department: newUser.department,
-      yearLevel: newUser.yearLevel,
-      dob: newUser.dob,
-      showBirthday: true,
-      createdAt: newUser.createdAt,
-    };
-    setUser(userData);
-    localStorage.setItem('mitrai_session', JSON.stringify(userData));
-
-    // Auto-create a minimal student profile on the server so this user is
-    // immediately visible for matching (will be updated with full details
-    // after onboarding completes).
+  const signup = async (data: SignupData): Promise<{ success: boolean; error?: string }> => {
     try {
-      const dept = data.department;
-      let currentStudy = `B.Tech ${dept}`;
-      if (dept.startsWith('Integrated')) currentStudy = dept;
-      else if (dept === 'Mathematics & Computing') currentStudy = 'B.Tech Mathematics & Computing';
-
-      fetch('/api/students', {
+      // Step 1: Create the user on the server (uses admin API for auto-confirmation)
+      const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          admissionNumber: newUser.admissionNumber,
-          department: dept,
-          yearLevel: data.yearLevel,
-          currentStudy,
-          institution: 'SVNIT Surat',
-          city: 'Surat',
-          country: 'India',
-          timezone: 'IST',
-          preferredLanguage: 'English',
-          _autoCreated: true,
-        }),
-      }).then(res => res.json()).then(result => {
-        if (result.success && result.data?.id) {
-          localStorage.setItem('mitrai_student_id', result.data.id);
-          localStorage.setItem('mitrai_student_name', newUser.name);
-        }
-      }).catch(() => { /* best-effort */ });
-    } catch { /* best-effort */ }
+        body: JSON.stringify({ action: 'signup', ...data }),
+      });
+      const result = await res.json();
 
-    return { success: true };
+      if (!result.success) {
+        return { success: false, error: result.error || 'Failed to create account' };
+      }
+
+      // Step 2: Sign in to establish the session
+      const { error } = await supabaseBrowser.auth.signInWithPassword({
+        email: data.email.trim().toLowerCase(),
+        password: data.password,
+      });
+
+      if (error) {
+        return { success: false, error: 'Account created but login failed. Please try signing in.' };
+      }
+
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Signup failed. Please try again.' };
+    }
   };
 
   const logout = () => {
+    supabaseBrowser.auth.signOut();
     setUser(null);
     localStorage.removeItem('mitrai_session');
+    localStorage.removeItem('mitrai_student_id');
+    localStorage.removeItem('mitrai_student_name');
+    // Clean up old localStorage auth data
+    localStorage.removeItem('mitrai_users');
   };
 
   return (

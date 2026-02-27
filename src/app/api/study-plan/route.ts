@@ -5,8 +5,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStudentById } from '@/lib/store';
 import { generateStudyPlan } from '@/lib/gemini';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { studentId, buddyId, weekDates } = await req.json();
 

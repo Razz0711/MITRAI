@@ -9,9 +9,11 @@ import {
   deleteAttendance,
 } from '@/lib/store';
 import { AttendanceRecord } from '@/lib/types';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET /api/attendance?userId=xxx
 export async function GET(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const userId = req.nextUrl.searchParams.get('userId');
     if (!userId) return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
@@ -27,6 +29,7 @@ export async function GET(req: NextRequest) {
 // POST /api/attendance
 // Actions: upsert (create/update), delete
 export async function POST(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await req.json();
     const { action } = body;

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllStudents, addNotification, hasWishedToday, addBirthdayWish, getBirthdayWishesForUser } from '@/lib/store';
 import { BirthdayInfo } from '@/lib/types';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 function getDayMonth(dateStr: string): string {
   const d = new Date(dateStr);
@@ -35,6 +36,7 @@ function getDaysUntilBirthday(dobStr: string): number {
 
 // GET /api/birthday?days=7 — get upcoming birthdays
 export async function GET(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '7');
@@ -110,6 +112,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/birthday — send a birthday wish
 export async function POST(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await request.json();
     const { fromUserId, fromUserName, toUserId } = body;

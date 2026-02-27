@@ -6,9 +6,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserStatus, getAllUserStatuses, updateUserStatus } from '@/lib/store';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET /api/status?userId=xxx or GET /api/status (all)
 export async function GET(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -84,6 +86,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/status — update own status (heartbeat / manual update)
 export async function POST(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await request.json();
     const { userId, status, currentSubject, hideStatus, hideSubject } = body;

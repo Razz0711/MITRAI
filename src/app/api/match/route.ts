@@ -5,8 +5,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllStudents, getStudentById } from '@/lib/store';
 import { findTopMatches } from '@/lib/matching';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { studentId, useAI } = await req.json();
 

@@ -11,9 +11,11 @@ import {
   markSlotEngaged, addNotification
 } from '@/lib/store';
 import { SessionBooking } from '@/lib/types';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET /api/bookings?userId=xxx
 export async function GET(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -32,6 +34,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/bookings — create or update a booking
 export async function POST(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await request.json();
     const { action } = body;

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserAvailability, setUserAvailability, markSlotEngaged } from '@/lib/store';
 import { UserAvailability, TimeSlot, Day } from '@/lib/types';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 const ALL_DAYS: Day[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6AM to 11PM
@@ -24,6 +25,7 @@ function generateDefaultSlots(): TimeSlot[] {
 
 // GET /api/availability?userId=xxx
 export async function GET(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -52,6 +54,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/availability — update user availability
 export async function POST(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await request.json();
     const { userId, slots, action } = body;

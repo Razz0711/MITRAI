@@ -19,9 +19,11 @@ import {
   addRating,
   addNotification,
 } from '@/lib/store';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET /api/friends?userId=xxx
 export async function GET(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   const userId = req.nextUrl.searchParams.get('userId');
   if (!userId) {
     return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
@@ -49,6 +51,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/friends
 export async function POST(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await req.json();
     const { action } = body;

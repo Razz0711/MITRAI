@@ -5,9 +5,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSubscription, setUserSubscription } from '@/lib/store';
 import { Subscription } from '@/lib/types';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET /api/subscription?userId=xxx
 export async function GET(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   const userId = req.nextUrl.searchParams.get('userId');
   if (!userId) {
     return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
@@ -35,13 +37,14 @@ export async function GET(req: NextRequest) {
 
 // POST /api/subscription
 export async function POST(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await req.json();
     const { userId, plan, transactionId, action, targetUserId, adminKey } = body;
 
     // ── Admin actions (approve / reject) ──
     if (action === 'approve' || action === 'reject') {
-      if (adminKey !== (process.env.ADMIN_KEY || 'mitrai-admin-2026')) {
+      if (adminKey !== process.env.ADMIN_KEY) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
       }
       if (!targetUserId) {
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     // ── List pending (admin) ──
     if (action === 'list-pending') {
-      if (adminKey !== (process.env.ADMIN_KEY || 'mitrai-admin-2026')) {
+      if (adminKey !== process.env.ADMIN_KEY) {
         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
       }
       const { getAllPendingSubscriptions } = await import('@/lib/store');

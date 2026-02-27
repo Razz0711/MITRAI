@@ -4,8 +4,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getOnboardingResponse } from '@/lib/gemini';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   // Parse body ONCE before try/catch so it's available in the catch block
   let step = 0;
   let message = '';

@@ -6,9 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllMaterials, createMaterial, saveUploadedFile, addNotification } from '@/lib/store';
 import { StudyMaterial } from '@/lib/types';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET /api/materials — list all materials with optional filters
 export async function GET(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { searchParams } = new URL(request.url);
     const department = searchParams.get('department');
@@ -45,6 +47,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/materials — save material metadata (file already uploaded directly to Supabase Storage)
 export async function POST(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const contentType = request.headers.get('content-type') || '';
     

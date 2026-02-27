@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // Ensure the materials bucket exists (using service role key)
 async function ensureBucket() {
@@ -22,6 +23,7 @@ async function ensureBucket() {
 }
 
 export async function POST(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { fileName } = await request.json();
     

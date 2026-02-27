@@ -6,8 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStudentById } from '@/lib/store';
 import { getSessionAssistantResponse } from '@/lib/gemini';
 import { StudentProfile } from '@/lib/types';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { student1Id, student2Id, topic, goal, message, chatHistory } = await req.json();
 

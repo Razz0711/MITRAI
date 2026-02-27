@@ -285,3 +285,13 @@ CREATE TABLE IF NOT EXISTS attendance (
 );
 CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance(user_id);
 ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
+
+-- 17. OTP Codes (used for email verification)
+CREATE TABLE IF NOT EXISTS otp_codes (
+  email TEXT PRIMARY KEY,
+  code TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  attempts INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE otp_codes DISABLE ROW LEVEL SECURITY;

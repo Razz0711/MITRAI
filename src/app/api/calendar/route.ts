@@ -14,9 +14,11 @@ import {
   deleteCalendarEvent,
 } from '@/lib/store';
 import { CalendarEvent } from '@/lib/types';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET /api/calendar?userId=xxx&start=2026-02-01&end=2026-02-28
 export async function GET(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -43,6 +45,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/calendar
 export async function POST(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await request.json();
     const { action } = body;

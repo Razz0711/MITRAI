@@ -107,7 +107,7 @@ function LoginPageInner() {
 
       // OTP verified — now do actual login/signup
       if (isSignup) {
-        const result = signup({
+        const result = await signup({
           name: name.trim(),
           email: trimmedEmail,
           password,
@@ -122,7 +122,7 @@ function LoginPageInner() {
           setError(result.error || 'Something went wrong');
         }
       } else {
-        const result = login(trimmedEmail, password);
+        const result = await login(trimmedEmail, password);
         if (result.success) {
           router.push('/dashboard');
         } else {

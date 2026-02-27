@@ -6,9 +6,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getNotifications, markNotificationRead, addNotification } from '@/lib/store';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET /api/notifications?userId=xxx
 export async function GET(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
@@ -30,6 +32,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/notifications — mark as read OR create notification
 export async function POST(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await request.json();
     const { action } = body;

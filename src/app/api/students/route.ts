@@ -6,9 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllStudents, createStudent, getStudentById, deleteStudent, updateStudent } from '@/lib/store';
 import { StudentProfile } from '@/lib/types';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET - Fetch all students or a specific student
 export async function GET(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
 
@@ -26,6 +28,7 @@ export async function GET(req: NextRequest) {
 
 // POST - Create a new student profile
 export async function POST(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await req.json();
 
