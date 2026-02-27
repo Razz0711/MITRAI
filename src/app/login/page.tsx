@@ -35,7 +35,6 @@ function LoginPageInner() {
   const [otpCode, setOtpCode] = useState('');
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
-  const [demoCode, setDemoCode] = useState('');
   const [otpResendTimer, setOtpResendTimer] = useState(0);
 
   // Resend timer countdown
@@ -79,7 +78,6 @@ function LoginPageInner() {
       if (data.success) {
         setOtpStep(true);
         setOtpResendTimer(30);
-        if (data.demoCode) setDemoCode(data.demoCode);
       } else {
         setError(data.error || 'Failed to send verification code');
       }
@@ -297,17 +295,6 @@ function LoginPageInner() {
                 </p>
               </div>
 
-              {/* Demo code notice */}
-              {demoCode && (
-                <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
-                  <p className="text-[10px] text-amber-400 font-semibold">DEMO MODE</p>
-                  <p className="text-xs text-[var(--foreground)]">
-                    Your code: <strong className="font-mono text-lg tracking-widest">{demoCode}</strong>
-                  </p>
-                  <p className="text-[10px] text-[var(--muted)] mt-0.5">In production, this would be sent to your email</p>
-                </div>
-              )}
-
               <div className="space-y-3">
                 <input
                   type="text"
@@ -335,7 +322,7 @@ function LoginPageInner() {
 
                 <div className="flex items-center justify-between">
                   <button
-                    onClick={() => { setOtpStep(false); setOtpCode(''); setError(''); setDemoCode(''); }}
+                    onClick={() => { setOtpStep(false); setOtpCode(''); setError(''); }}
                     className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
                   >
                     ← Go back
