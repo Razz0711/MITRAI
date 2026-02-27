@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getAttendanceForUser,
   upsertAttendance,
+  upsertBulkAttendance,
   deleteAttendance,
 } from '@/lib/store';
 import { AttendanceRecord } from '@/lib/types';
@@ -57,6 +58,30 @@ export async function POST(req: NextRequest) {
 
       const result = await upsertAttendance(record);
       return NextResponse.json({ success: true, data: result });
+    }
+
+    if (action === 'bulk-upsert') {
+      const { userId, subjects } = body;
+      if (!userId || !Array.isArray(subjects) || subjects.length === 0) {
+        return NextResponse.json({ success: false, error: 'Missing userId or subjects array' }, { status: 400 });
+      }
+      if (userId !== authUser.id) return forbidden();
+      if (subjects.length > 50) {
+        return NextResponse.json({ success: false, error: 'Maximum 50 subjects per batch' }, { status: 400 });
+      }
+
+      const records: AttendanceRecord[] = subjects.map((subject: string) => ({
+        id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        userId,
+        subject: subject.trim(),
+        totalClasses: 0,
+        attendedClasses: 0,
+        lastUpdated: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      }));
+
+      const results = await upsertBulkAttendance(records);
+      return NextResponse.json({ success: true, data: results });
     }
 
     if (action === 'delete') {

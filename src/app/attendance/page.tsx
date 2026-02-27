@@ -95,21 +95,26 @@ export default function AttendancePage() {
   const handleBulkAdd = async () => {
     if (!bulkText.trim() || !user) return;
     const subjects = bulkText.split('\n').map(s => s.trim()).filter(Boolean);
-    for (const subject of subjects) {
-      // Skip duplicates
-      if (attendance.some(a => a.subject.toLowerCase() === subject.toLowerCase())) continue;
-      await fetch('/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'upsert',
-          userId: user.id,
-          subject,
-          totalClasses: 0,
-          attendedClasses: 0,
-        }),
-      });
+    // Filter out duplicates that already exist
+    const newSubjects = subjects.filter(
+      subject => !attendance.some(a => a.subject.toLowerCase() === subject.toLowerCase())
+    );
+    if (newSubjects.length === 0) {
+      await loadAttendance();
+      setBulkText('');
+      setShowBulkAdd(false);
+      return;
     }
+    // Single batch API call instead of N sequential requests
+    await fetch('/api/attendance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'bulk-upsert',
+        userId: user.id,
+        subjects: newSubjects,
+      }),
+    });
     await loadAttendance();
     setBulkText('');
     setShowBulkAdd(false);

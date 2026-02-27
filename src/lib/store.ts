@@ -105,8 +105,8 @@ function rowToStudent(r: any): StudentProfile {
 // Student CRUD Operations
 // ============================================
 
-export async function getAllStudents(): Promise<StudentProfile[]> {
-  const { data, error } = await supabase.from('students').select('*');
+export async function getAllStudents(limit = 200, offset = 0): Promise<StudentProfile[]> {
+  const { data, error } = await supabase.from('students').select('*').range(offset, offset + limit - 1);
   if (error) { console.error('getAllStudents error:', error); return []; }
   return (data || []).map(rowToStudent);
 }
@@ -159,8 +159,8 @@ function rowToSession(r: any): StudySession {
   };
 }
 
-export async function getAllSessions(): Promise<StudySession[]> {
-  const { data, error } = await supabase.from('sessions').select('*');
+export async function getAllSessions(limit = 100): Promise<StudySession[]> {
+  const { data, error } = await supabase.from('sessions').select('*').limit(limit);
   if (error) { console.error('getAllSessions error:', error); return []; }
   return (data || []).map(rowToSession);
 }
@@ -205,8 +205,8 @@ export async function updateSession(id: string, updates: Partial<StudySession>):
 // Notification Operations
 // ============================================
 
-export async function getNotifications(userId: string): Promise<Notification[]> {
-  const { data, error } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+export async function getNotifications(userId: string, limit = 100, offset = 0): Promise<Notification[]> {
+  const { data, error } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).range(offset, offset + limit - 1);
   if (error) { console.error('getNotifications error:', error); return []; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((r: any) => ({
@@ -263,7 +263,7 @@ function rowToMaterial(r: any): StudyMaterial {
 
 export async function getAllMaterials(filters?: {
   department?: string; type?: string; year?: string; search?: string;
-}): Promise<StudyMaterial[]> {
+}, limit = 50, offset = 0): Promise<StudyMaterial[]> {
   let query = supabase.from('materials').select('*');
   if (filters?.department && filters.department !== 'all') query = query.eq('department', filters.department);
   if (filters?.type && filters.type !== 'all') query = query.eq('type', filters.type);
@@ -273,7 +273,7 @@ export async function getAllMaterials(filters?: {
     const safe = filters.search.replace(/[,().%\\]/g, '');
     if (safe) query = query.or(`title.ilike.%${safe}%,subject.ilike.%${safe}%,description.ilike.%${safe}%`);
   }
-  const { data, error } = await query.order('created_at', { ascending: false });
+  const { data, error } = await query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
   if (error) { console.error('getAllMaterials error:', error); return []; }
   return (data || []).map(rowToMaterial);
 }
@@ -439,8 +439,8 @@ export async function getUserStatus(userId: string): Promise<UserStatus | undefi
   };
 }
 
-export async function getAllUserStatuses(): Promise<UserStatus[]> {
-  const { data, error } = await supabase.from('user_statuses').select('*');
+export async function getAllUserStatuses(limit = 500): Promise<UserStatus[]> {
+  const { data, error } = await supabase.from('user_statuses').select('*').limit(limit);
   if (error) { console.error('getAllUserStatuses error:', error); return []; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((r: any) => ({
@@ -498,14 +498,14 @@ function rowToBooking(r: any): SessionBooking {
   };
 }
 
-export async function getAllBookings(): Promise<SessionBooking[]> {
-  const { data, error } = await supabase.from('bookings').select('*');
+export async function getAllBookings(limit = 100, offset = 0): Promise<SessionBooking[]> {
+  const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false }).range(offset, offset + limit - 1);
   if (error) { console.error('getAllBookings error:', error); return []; }
   return (data || []).map(rowToBooking);
 }
 
-export async function getBookingsForUser(userId: string): Promise<SessionBooking[]> {
-  const { data, error } = await supabase.from('bookings').select('*').or(`requester_id.eq.${userId},target_id.eq.${userId}`);
+export async function getBookingsForUser(userId: string, limit = 100, offset = 0): Promise<SessionBooking[]> {
+  const { data, error } = await supabase.from('bookings').select('*').or(`requester_id.eq.${userId},target_id.eq.${userId}`).order('created_at', { ascending: false }).range(offset, offset + limit - 1);
   if (error) { console.error('getBookingsForUser error:', error); return []; }
   return (data || []).map(rowToBooking);
 }
@@ -583,8 +583,8 @@ export async function addBirthdayWish(wish: BirthdayWish): Promise<void> {
 // Friend Requests Operations
 // ============================================
 
-export async function getFriendRequestsForUser(userId: string): Promise<FriendRequest[]> {
-  const { data, error } = await supabase.from('friend_requests').select('*').or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`);
+export async function getFriendRequestsForUser(userId: string, limit = 100): Promise<FriendRequest[]> {
+  const { data, error } = await supabase.from('friend_requests').select('*').or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`).order('created_at', { ascending: false }).limit(limit);
   if (error) { console.error('getFriendRequestsForUser error:', error); return []; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((r: any) => ({
@@ -598,8 +598,8 @@ export async function getFriendRequestsForUser(userId: string): Promise<FriendRe
   }));
 }
 
-export async function getPendingFriendRequests(userId: string): Promise<FriendRequest[]> {
-  const { data, error } = await supabase.from('friend_requests').select('*').eq('to_user_id', userId).eq('status', 'pending');
+export async function getPendingFriendRequests(userId: string, limit = 50): Promise<FriendRequest[]> {
+  const { data, error } = await supabase.from('friend_requests').select('*').eq('to_user_id', userId).eq('status', 'pending').limit(limit);
   if (error) { console.error('getPendingFriendRequests error:', error); return []; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((r: any) => ({
@@ -650,8 +650,8 @@ export async function getFriendRequestById(requestId: string): Promise<FriendReq
 // Friendships Operations
 // ============================================
 
-export async function getFriendsForUser(userId: string): Promise<Friendship[]> {
-  const { data, error } = await supabase.from('friendships').select('*').or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+export async function getFriendsForUser(userId: string, limit = 200): Promise<Friendship[]> {
+  const { data, error } = await supabase.from('friendships').select('*').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).limit(limit);
   if (error) { console.error('getFriendsForUser error:', error); return []; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((r: any) => ({
@@ -702,8 +702,8 @@ export async function removeFriendship(userId1: string, userId2: string): Promis
 // Buddy Ratings Operations
 // ============================================
 
-export async function getRatingsForUser(userId: string): Promise<BuddyRating[]> {
-  const { data, error } = await supabase.from('ratings').select('*').eq('to_user_id', userId);
+export async function getRatingsForUser(userId: string, limit = 100): Promise<BuddyRating[]> {
+  const { data, error } = await supabase.from('ratings').select('*').eq('to_user_id', userId).limit(limit);
   if (error) { console.error('getRatingsForUser error:', error); return []; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((r: any) => ({
@@ -718,8 +718,8 @@ export async function getRatingsForUser(userId: string): Promise<BuddyRating[]> 
   }));
 }
 
-export async function getRatingsByUser(userId: string): Promise<BuddyRating[]> {
-  const { data, error } = await supabase.from('ratings').select('*').eq('from_user_id', userId);
+export async function getRatingsByUser(userId: string, limit = 100): Promise<BuddyRating[]> {
+  const { data, error } = await supabase.from('ratings').select('*').eq('from_user_id', userId).limit(limit);
   if (error) { console.error('getRatingsByUser error:', error); return []; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((r: any) => ({
@@ -922,8 +922,8 @@ export async function markMessagesRead(chatId: string, userId: string): Promise<
   }
 }
 
-export async function getThreadsForUser(userId: string): Promise<ChatThread[]> {
-  const { data, error } = await supabase.from('chat_threads').select('*').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).order('last_message_at', { ascending: false });
+export async function getThreadsForUser(userId: string, limit = 50): Promise<ChatThread[]> {
+  const { data, error } = await supabase.from('chat_threads').select('*').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).order('last_message_at', { ascending: false }).limit(limit);
   if (error) { console.error('getThreadsForUser error:', error); return []; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []).map((r: any) => ({
@@ -1005,8 +1005,8 @@ function calendarEventToRow(e: CalendarEvent): Record<string, unknown> {
   };
 }
 
-export async function getCalendarEventsForUser(userId: string): Promise<CalendarEvent[]> {
-  const { data, error } = await supabase.from('calendar_events').select('*').eq('user_id', userId).order('date', { ascending: true });
+export async function getCalendarEventsForUser(userId: string, limit = 200): Promise<CalendarEvent[]> {
+  const { data, error } = await supabase.from('calendar_events').select('*').eq('user_id', userId).order('date', { ascending: true }).limit(limit);
   if (error) { console.error('getCalendarEventsForUser error:', error); return []; }
   return (data || []).map(rowToCalendarEvent);
 }
@@ -1089,8 +1089,8 @@ function attendanceToRow(a: AttendanceRecord): Record<string, unknown> {
   };
 }
 
-export async function getAttendanceForUser(userId: string): Promise<AttendanceRecord[]> {
-  const { data, error } = await supabase.from('attendance').select('*').eq('user_id', userId).order('subject');
+export async function getAttendanceForUser(userId: string, limit = 100): Promise<AttendanceRecord[]> {
+  const { data, error } = await supabase.from('attendance').select('*').eq('user_id', userId).order('subject').limit(limit);
   if (error) { console.error('getAttendanceForUser error:', error); return []; }
   return (data || []).map(rowToAttendance);
 }
@@ -1100,6 +1100,14 @@ export async function upsertAttendance(record: AttendanceRecord): Promise<Attend
   const { error } = await supabase.from('attendance').upsert(row, { onConflict: 'id' });
   if (error) console.error('upsertAttendance error:', error);
   return record;
+}
+
+export async function upsertBulkAttendance(records: AttendanceRecord[]): Promise<AttendanceRecord[]> {
+  if (records.length === 0) return [];
+  const rows = records.map(attendanceToRow);
+  const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'id' });
+  if (error) console.error('upsertBulkAttendance error:', error);
+  return records;
 }
 
 export async function deleteAttendance(id: string): Promise<boolean> {

@@ -56,13 +56,23 @@ export default function CalendarPage() {
   const loadEvents = useCallback(async () => {
     if (!user) return;
     try {
-      // Fetch all events (we'll filter client-side for simplicity)
-      const res = await fetch(`/api/calendar?userId=${user.id}`);
+      // Compute date range: first day visible on grid to last day visible
+      const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // day-of-week offset
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      const start = new Date(viewYear, viewMonth, 1 - firstDay); // grid start (prev month overflow)
+      const totalCells = firstDay + daysInMonth;
+      const trailingDays = (7 - (totalCells % 7)) % 7;
+      const end = new Date(viewYear, viewMonth + 1, trailingDays + 1); // day after last visible
+
+      const startStr = start.toISOString().slice(0, 10);
+      const endStr = end.toISOString().slice(0, 10);
+
+      const res = await fetch(`/api/calendar?userId=${user.id}&start=${startStr}&end=${endStr}`);
       const data = await res.json();
       if (data.success) setEvents(data.data || []);
     } catch { /* ignore */ }
     setLoading(false);
-  }, [user]);
+  }, [user, viewYear, viewMonth]);
 
   useEffect(() => {
     if (user) loadEvents();

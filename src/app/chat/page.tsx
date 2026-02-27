@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { DirectMessage, ChatThread, UserStatus } from '@/lib/types';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -21,7 +22,6 @@ export default function ChatPage() {
   const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   const studentId = typeof window !== 'undefined'
     ? localStorage.getItem('mitrai_student_id') || user?.id
@@ -86,19 +86,45 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Polling for new messages every 3 seconds
+  // Supabase Realtime: subscribe to messages & threads instead of polling
   useEffect(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(() => {
-      loadThreads();
-      if (selectedChatId) {
-        loadMessages();
-      }
-    }, 3000);
+    if (!studentId) return;
+
+    // Subscribe to new/updated messages in any chat this user participates in
+    const msgChannel = supabaseBrowser
+      .channel('chat-messages')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'messages' },
+        (payload) => {
+          const row = payload.new as Record<string, string> | undefined;
+          if (!row) { loadThreads(); return; }
+          // Only react to messages in chats involving this user
+          if (row.sender_id === studentId || row.receiver_id === studentId) {
+            loadThreads();
+            if (selectedChatId && row.chat_id === selectedChatId) {
+              loadMessages();
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to thread updates (unread counts, last message)
+    const threadChannel = supabaseBrowser
+      .channel('chat-threads')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'chat_threads' },
+        () => { loadThreads(); }
+      )
+      .subscribe();
+
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      supabaseBrowser.removeChannel(msgChannel);
+      supabaseBrowser.removeChannel(threadChannel);
     };
-  }, [loadThreads, loadMessages, selectedChatId]);
+  }, [studentId, selectedChatId, loadThreads, loadMessages]);
 
   // Send message
   const sendMessage = async () => {
