@@ -50,10 +50,12 @@ export default function LoginPage() {
     return null;
   }
 
+  const isSvnitEmail = (e: string) => /^[^@]+@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(e);
+
   const sendOtp = async () => {
     const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail.endsWith('svnit.ac.in')) {
-      setError('Only SVNIT email addresses are allowed');
+    if (!isSvnitEmail(trimmedEmail)) {
+      setError('Only SVNIT email addresses are allowed (e.g. name@svnit.ac.in or name@amhd.svnit.ac.in)');
       return;
     }
     setOtpSending(true);
@@ -133,8 +135,8 @@ export default function LoginPage() {
 
     const trimmedEmail = email.trim().toLowerCase();
 
-    if (!trimmedEmail.endsWith('svnit.ac.in')) {
-      setError('Only SVNIT email addresses are allowed (e.g. i22ma038@amhd.svnit.ac.in)');
+    if (!isSvnitEmail(trimmedEmail)) {
+      setError('Only SVNIT email addresses are allowed (e.g. name@svnit.ac.in or name@amhd.svnit.ac.in)');
       return;
     }
 
