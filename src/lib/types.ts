@@ -376,6 +376,20 @@ export interface ApiResponse<T> {
 // Calendar Event Types
 // ============================================
 
+// ============================================
+// Attendance Types
+// ============================================
+
+export interface AttendanceRecord {
+  id: string;
+  userId: string;
+  subject: string;
+  totalClasses: number;
+  attendedClasses: number;
+  lastUpdated: string;
+  createdAt: string;
+}
+
 export type CalendarEventType = 'class' | 'study' | 'exam' | 'assignment' | 'meeting' | 'reminder';
 
 export interface CalendarEvent {

@@ -269,3 +269,19 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 
 -- Disable RLS (consistent with other tables — using service role key)
 ALTER TABLE calendar_events DISABLE ROW LEVEL SECURITY;
+
+-- ============================================
+-- Attendance Tracking
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS attendance (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  total_classes INT DEFAULT 0,
+  attended_classes INT DEFAULT 0,
+  last_updated TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance(user_id);
+ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;

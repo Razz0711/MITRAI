@@ -3,7 +3,7 @@
 // Persistent database — data survives deployments
 // ============================================
 
-import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish, FriendRequest, Friendship, BuddyRating, Subscription, DirectMessage, ChatThread, CalendarEvent } from './types';
+import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish, FriendRequest, Friendship, BuddyRating, Subscription, DirectMessage, ChatThread, CalendarEvent, AttendanceRecord } from './types';
 import { supabase } from './supabase';
 
 // ============================================
@@ -991,5 +991,53 @@ export async function updateCalendarEvent(id: string, updates: Partial<CalendarE
 export async function deleteCalendarEvent(id: string): Promise<boolean> {
   const { error } = await supabase.from('calendar_events').delete().eq('id', id);
   if (error) { console.error('deleteCalendarEvent error:', error); return false; }
+  return true;
+}
+
+// ============================================
+// Attendance Functions
+// ============================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToAttendance(r: any): AttendanceRecord {
+  return {
+    id: r.id,
+    userId: r.user_id || '',
+    subject: r.subject || '',
+    totalClasses: r.total_classes || 0,
+    attendedClasses: r.attended_classes || 0,
+    lastUpdated: r.last_updated || '',
+    createdAt: r.created_at || '',
+  };
+}
+
+function attendanceToRow(a: AttendanceRecord): Record<string, unknown> {
+  return {
+    id: a.id,
+    user_id: a.userId,
+    subject: a.subject,
+    total_classes: a.totalClasses,
+    attended_classes: a.attendedClasses,
+    last_updated: a.lastUpdated,
+    created_at: a.createdAt,
+  };
+}
+
+export async function getAttendanceForUser(userId: string): Promise<AttendanceRecord[]> {
+  const { data, error } = await supabase.from('attendance').select('*').eq('user_id', userId).order('subject');
+  if (error) { console.error('getAttendanceForUser error:', error); return []; }
+  return (data || []).map(rowToAttendance);
+}
+
+export async function upsertAttendance(record: AttendanceRecord): Promise<AttendanceRecord> {
+  const row = attendanceToRow(record);
+  const { error } = await supabase.from('attendance').upsert(row, { onConflict: 'id' });
+  if (error) console.error('upsertAttendance error:', error);
+  return record;
+}
+
+export async function deleteAttendance(id: string): Promise<boolean> {
+  const { error } = await supabase.from('attendance').delete().eq('id', id);
+  if (error) { console.error('deleteAttendance error:', error); return false; }
   return true;
 }

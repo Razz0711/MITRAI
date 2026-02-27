@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { StudentProfile, Day, BirthdayInfo, UserStatus, Notification as NotifType } from '@/lib/types';
+import { StudentProfile, Day, BirthdayInfo, UserStatus, Notification as NotifType, AttendanceRecord } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import BirthdayBanner, { UpcomingBirthdays } from '@/components/BirthdayBanner';
 import { StatusDot } from '@/components/StatusIndicator';
@@ -47,10 +47,89 @@ export default function DashboardPage() {
   const [newClassSubject, setNewClassSubject] = useState('');
   const [newClassRoom, setNewClassRoom] = useState('');
 
+  // Attendance tracking
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [showAddSubject, setShowAddSubject] = useState(false);
+  const [newAttSubject, setNewAttSubject] = useState('');
+  const [editingAttId, setEditingAttId] = useState<string | null>(null);
+  const [editTotal, setEditTotal] = useState(0);
+  const [editAttended, setEditAttended] = useState(0);
+
   useEffect(() => {
     loadData();
     loadTodayClasses();
   }, []);
+
+  // Load attendance when user is available
+  const loadAttendance = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/attendance?userId=${user.id}`);
+      const data = await res.json();
+      if (data.success) setAttendance(data.data || []);
+    } catch { /* ignore */ }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) loadAttendance();
+  }, [user, loadAttendance]);
+
+  const handleAttendanceUpdate = async (record: AttendanceRecord, attended: number, total: number) => {
+    try {
+      const res = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'upsert',
+          id: record.id,
+          userId: record.userId,
+          subject: record.subject,
+          totalClasses: total,
+          attendedClasses: attended,
+          createdAt: record.createdAt,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAttendance(prev => prev.map(a => a.id === record.id ? { ...a, totalClasses: total, attendedClasses: attended, lastUpdated: new Date().toISOString() } : a));
+      }
+    } catch { /* ignore */ }
+  };
+
+  const handleAddSubject = async () => {
+    if (!newAttSubject.trim() || !user) return;
+    try {
+      const res = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'upsert',
+          userId: user.id,
+          subject: newAttSubject.trim(),
+          totalClasses: 0,
+          attendedClasses: 0,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadAttendance();
+        setNewAttSubject('');
+        setShowAddSubject(false);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const handleDeleteSubject = async (id: string) => {
+    try {
+      const res = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id }),
+      });
+      const data = await res.json();
+      if (data.success) setAttendance(prev => prev.filter(a => a.id !== id));
+    } catch { /* ignore */ }
+  };
 
   // Load birthdays from registered users
   const loadBirthdays = useCallback(async () => {
@@ -606,6 +685,182 @@ export default function DashboardPage() {
                       {isOngoing && <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 font-medium">Now</span>}
                       {isPast && <span className="text-[10px] text-[var(--muted)]">Done</span>}
                       <button onClick={() => removeClassFromTimetable(i)} className="text-[10px] text-red-400 hover:text-red-300 px-1">✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Attendance Tracker Widget */}
+          <div className="card p-4 mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📊</span>
+                <h2 className="text-sm font-semibold">Attendance Tracker</h2>
+                {attendance.length > 0 && (() => {
+                  const totalAll = attendance.reduce((s, a) => s + a.totalClasses, 0);
+                  const attendedAll = attendance.reduce((s, a) => s + a.attendedClasses, 0);
+                  const pct = totalAll > 0 ? Math.round((attendedAll / totalAll) * 100) : 0;
+                  return (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                      pct >= 75 ? 'bg-green-500/20 text-green-400' :
+                      pct >= 60 ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
+                      Overall: {pct}%
+                    </span>
+                  );
+                })()}
+              </div>
+              <button
+                onClick={() => setShowAddSubject(!showAddSubject)}
+                className="text-[10px] text-[var(--primary-light)] hover:underline"
+              >
+                {showAddSubject ? 'Cancel' : '+ Add Subject'}
+              </button>
+            </div>
+
+            {showAddSubject && (
+              <div className="flex gap-2 mb-3 p-3 rounded-lg bg-white/5">
+                <input
+                  type="text"
+                  value={newAttSubject}
+                  onChange={(e) => setNewAttSubject(e.target.value)}
+                  placeholder="Subject name (e.g. Data Structures)"
+                  className="input-field text-xs flex-1"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddSubject()}
+                />
+                <button onClick={handleAddSubject} className="btn-primary text-xs px-3 whitespace-nowrap">
+                  Add
+                </button>
+              </div>
+            )}
+
+            {attendance.length === 0 ? (
+              <div className="text-center py-6">
+                <span className="text-2xl mb-2 block">📋</span>
+                <p className="text-xs text-[var(--muted)]">No subjects added yet</p>
+                <p className="text-[10px] text-[var(--muted)] mt-0.5">Add your subjects to start tracking attendance</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {attendance.map((a) => {
+                  const pct = a.totalClasses > 0 ? Math.round((a.attendedClasses / a.totalClasses) * 100) : 0;
+                  const isEditing = editingAttId === a.id;
+                  const colorClass = pct >= 75 ? 'bg-green-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500';
+                  const textColor = pct >= 75 ? 'text-green-400' : pct >= 60 ? 'text-amber-400' : 'text-red-400';
+
+                  // Calculate classes needed for 75%
+                  let classesNeeded = '';
+                  if (a.totalClasses > 0 && pct < 75) {
+                    // Need: (attended + x) / (total + x) >= 0.75 => x >= (0.75*total - attended) / 0.25
+                    const x = Math.ceil((0.75 * a.totalClasses - a.attendedClasses) / 0.25);
+                    if (x > 0) classesNeeded = `Need ${x} more to reach 75%`;
+                  }
+                  // Calculate classes can skip
+                  let canSkip = '';
+                  if (a.totalClasses > 0 && pct > 75) {
+                    // (attended) / (total + x) >= 0.75 => x <= attended/0.75 - total
+                    const x = Math.floor(a.attendedClasses / 0.75 - a.totalClasses);
+                    if (x > 0) canSkip = `Can skip ${x} class${x > 1 ? 'es' : ''}`;
+                  }
+
+                  return (
+                    <div key={a.id} className="p-3 rounded-lg bg-white/5 hover:bg-white/[0.07] transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="text-xs font-semibold truncate">{a.subject}</p>
+                          <span className={`text-[10px] font-bold ${textColor}`}>{pct}%</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {!isEditing ? (
+                            <>
+                              <button
+                                onClick={() => handleAttendanceUpdate(a, a.attendedClasses + 1, a.totalClasses + 1)}
+                                className="text-[10px] px-2 py-1 rounded bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors"
+                                title="Mark as attended"
+                              >
+                                ✓ Present
+                              </button>
+                              <button
+                                onClick={() => handleAttendanceUpdate(a, a.attendedClasses, a.totalClasses + 1)}
+                                className="text-[10px] px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                                title="Mark as absent"
+                              >
+                                ✗ Absent
+                              </button>
+                              <button
+                                onClick={() => { setEditingAttId(a.id); setEditTotal(a.totalClasses); setEditAttended(a.attendedClasses); }}
+                                className="text-[10px] px-1.5 py-1 rounded hover:bg-white/10 text-[var(--muted)] transition-colors"
+                                title="Edit manually"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSubject(a.id)}
+                                className="text-[10px] px-1 py-1 rounded hover:bg-red-500/10 text-red-400/60 hover:text-red-400 transition-colors"
+                                title="Remove subject"
+                              >
+                                🗑
+                              </button>
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1">
+                                <label className="text-[9px] text-[var(--muted)]">Attended:</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={editTotal}
+                                  value={editAttended}
+                                  onChange={(e) => setEditAttended(Math.max(0, parseInt(e.target.value) || 0))}
+                                  className="input-field text-xs w-14 text-center py-0.5"
+                                />
+                              </div>
+                              <span className="text-[10px] text-[var(--muted)]">/</span>
+                              <div className="flex items-center gap-1">
+                                <label className="text-[9px] text-[var(--muted)]">Total:</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={editTotal}
+                                  onChange={(e) => setEditTotal(Math.max(0, parseInt(e.target.value) || 0))}
+                                  className="input-field text-xs w-14 text-center py-0.5"
+                                />
+                              </div>
+                              <button
+                                onClick={() => { handleAttendanceUpdate(a, Math.min(editAttended, editTotal), editTotal); setEditingAttId(null); }}
+                                className="text-[10px] px-2 py-1 rounded bg-[var(--primary)]/20 text-[var(--primary-light)] hover:bg-[var(--primary)]/30 transition-colors"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingAttId(null)}
+                                className="text-[10px] px-1.5 py-1 rounded hover:bg-white/10 text-[var(--muted)] transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${colorClass}`}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[10px] text-[var(--muted)]">
+                          {a.attendedClasses}/{a.totalClasses} classes
+                        </span>
+                        {classesNeeded && <span className="text-[10px] text-red-400">{classesNeeded}</span>}
+                        {canSkip && <span className="text-[10px] text-green-400">{canSkip}</span>}
+                      </div>
                     </div>
                   );
                 })}
