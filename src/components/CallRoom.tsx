@@ -42,6 +42,75 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
   const [buddyJoined, setBuddyJoined] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
 
+  // ── Anti-screenshot / anti-recording protections ──
+  useEffect(() => {
+    // 1. Block PrintScreen / screenshot shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === 'PrintScreen' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) || // Win+Shift+S
+        (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5')) // Mac screenshots
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Clear clipboard
+        navigator.clipboard.writeText('').catch(() => {});
+      }
+    };
+
+    // 2. Block right-click context menu
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    // 3. Detect visibility change (screen recording tools sometimes trigger this)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // User switched away — could be recording. We just note it.
+        console.log('[Privacy] Tab switched during call');
+      }
+    };
+
+    // 4. Disable copy/paste of video content
+    const handleCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      e.clipboardData?.setData('text/plain', 'Screenshot disabled for privacy');
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'PrintScreen') {
+        navigator.clipboard.writeText('').catch(() => {});
+      }
+    }, true);
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('copy', handleCopy);
+
+    // 5. Try to block screen capture API if available
+    if (navigator.mediaDevices) {
+      const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
+      navigator.mediaDevices.getDisplayMedia = function() {
+        return Promise.reject(new Error('Screen capture is disabled during calls for privacy'));
+      };
+      // Restore on cleanup
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown, true);
+        document.removeEventListener('contextmenu', handleContextMenu);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        document.removeEventListener('copy', handleCopy);
+        navigator.mediaDevices.getDisplayMedia = originalGetDisplayMedia;
+      };
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('copy', handleCopy);
+    };
+  }, []);
+
   const initJitsi = useCallback(() => {
     if (!containerRef.current || apiRef.current) return;
 
@@ -199,7 +268,13 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
   }
 
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="h-full flex flex-col relative" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+      {/* Privacy protection notice */}
+      {isConnected && (
+        <div className="absolute bottom-2 left-2 z-30 opacity-60">
+          <span className="text-[9px] text-[var(--muted)] flex items-center gap-1">🔒 Screenshot protection active</span>
+        </div>
+      )}
       {/* Loading Overlay */}
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--background)]/90">

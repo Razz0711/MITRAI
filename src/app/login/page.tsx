@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 
@@ -29,11 +29,103 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  // OTP states
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [demoCode, setDemoCode] = useState('');
+  const [otpResendTimer, setOtpResendTimer] = useState(0);
+
+  // Resend timer countdown
+  useEffect(() => {
+    if (otpResendTimer <= 0) return;
+    const t = setTimeout(() => setOtpResendTimer(otpResendTimer - 1), 1000);
+    return () => clearTimeout(t);
+  }, [otpResendTimer]);
+
   // Redirect if already logged in
   if (user) {
     router.push('/dashboard');
     return null;
   }
+
+  const sendOtp = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail.endsWith('svnit.ac.in')) {
+      setError('Only SVNIT email addresses are allowed');
+      return;
+    }
+    setOtpSending(true);
+    setError('');
+    try {
+      const res = await fetch('/api/otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', email: trimmedEmail }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpStep(true);
+        setOtpResendTimer(30);
+        if (data.demoCode) setDemoCode(data.demoCode);
+      } else {
+        setError(data.error || 'Failed to send verification code');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const verifyOtpAndProceed = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    setOtpVerifying(true);
+    setError('');
+    try {
+      const res = await fetch('/api/otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', email: trimmedEmail, code: otpCode.trim() }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || 'Invalid code');
+        setOtpVerifying(false);
+        return;
+      }
+
+      // OTP verified — now do actual login/signup
+      if (isSignup) {
+        const result = signup({
+          name: name.trim(),
+          email: trimmedEmail,
+          password,
+          admissionNumber: admissionNumber.trim().toUpperCase(),
+          department,
+          yearLevel,
+          dob,
+        });
+        if (result.success) {
+          router.push('/onboarding');
+        } else {
+          setError(result.error || 'Something went wrong');
+        }
+      } else {
+        const result = login(trimmedEmail, password);
+        if (result.success) {
+          router.push('/dashboard');
+        } else {
+          setError(result.error || 'Invalid credentials');
+        }
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,31 +145,12 @@ export default function LoginPage() {
       if (!yearLevel) { setError('Please select your year'); return; }
       if (!dob) { setError('Please enter your date of birth'); return; }
       if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
-
-      const result = signup({
-        name: name.trim(),
-        email: trimmedEmail,
-        password,
-        admissionNumber: admissionNumber.trim().toUpperCase(),
-        department,
-        yearLevel,
-        dob,
-      });
-      if (result.success) {
-        router.push('/onboarding');
-      } else {
-        setError(result.error || 'Something went wrong');
-      }
     } else {
       if (!trimmedEmail || !password) { setError('Please enter email and password'); return; }
-
-      const result = login(trimmedEmail, password);
-      if (result.success) {
-        router.push('/dashboard');
-      } else {
-        setError(result.error || 'Invalid credentials');
-      }
     }
+
+    // All validations passed → send OTP
+    sendOtp();
   };
 
   return (
@@ -194,10 +267,80 @@ export default function LoginPage() {
             </p>
           )}
 
-          <button type="submit" className="btn-primary w-full text-sm py-2.5">
-            {isSignup ? 'Create Account' : 'Sign In'}
+          <button type="submit" className="btn-primary w-full text-sm py-2.5" disabled={otpSending}>
+            {otpSending ? 'Sending verification code...' : isSignup ? 'Create Account' : 'Sign In'}
           </button>
         </form>
+
+        {/* OTP Verification Modal */}
+        {otpStep && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+            <div className="card p-6 w-full max-w-sm slide-up">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-[var(--primary)]/20 border border-[var(--primary)]/30 flex items-center justify-center text-2xl">
+                  ✉️
+                </div>
+                <h2 className="text-lg font-bold">Verify Your Email</h2>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  Enter the 6-digit code sent to <strong className="text-[var(--primary-light)]">{email}</strong>
+                </p>
+              </div>
+
+              {/* Demo code notice */}
+              {demoCode && (
+                <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
+                  <p className="text-[10px] text-amber-400 font-semibold">DEMO MODE</p>
+                  <p className="text-xs text-[var(--foreground)]">
+                    Your code: <strong className="font-mono text-lg tracking-widest">{demoCode}</strong>
+                  </p>
+                  <p className="text-[10px] text-[var(--muted)] mt-0.5">In production, this would be sent to your email</p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  className="input-field text-center text-2xl font-mono tracking-[0.5em] py-3"
+                  maxLength={6}
+                  autoFocus
+                />
+
+                {error && (
+                  <p className="text-xs text-[var(--error)] bg-[var(--error)]/10 border border-[var(--error)]/20 rounded-lg px-3 py-2">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  onClick={verifyOtpAndProceed}
+                  disabled={otpCode.length !== 6 || otpVerifying}
+                  className="btn-primary w-full text-sm py-2.5 disabled:opacity-50"
+                >
+                  {otpVerifying ? 'Verifying...' : 'Verify & Continue'}
+                </button>
+
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => { setOtpStep(false); setOtpCode(''); setError(''); setDemoCode(''); }}
+                    className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                  >
+                    ← Go back
+                  </button>
+                  <button
+                    onClick={sendOtp}
+                    disabled={otpResendTimer > 0 || otpSending}
+                    className="text-xs text-[var(--primary-light)] hover:underline disabled:opacity-50 disabled:no-underline"
+                  >
+                    {otpResendTimer > 0 ? `Resend in ${otpResendTimer}s` : 'Resend code'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Toggle */}
         <p className="text-center text-xs text-[var(--muted)] mt-6">

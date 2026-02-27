@@ -27,6 +27,13 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState<NotifType[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
 
+  // Privacy: goals hidden by default
+  const [showGoals, setShowGoals] = useState(false);
+
+  // Delete profile
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -133,6 +140,33 @@ export default function DashboardPage() {
       });
       setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
     } catch { /* ignore */ }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (!student) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/students?id=${student.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        // Remove from local state
+        setAllStudents(prev => prev.filter(s => s.id !== student.id));
+        localStorage.removeItem('mitrai_student_id');
+        localStorage.removeItem('mitrai_student_name');
+        // Select next profile or null
+        const remaining = allStudents.filter(s => s.id !== student.id);
+        if (remaining.length > 0) {
+          setStudent(remaining[0]);
+          setSelectedStudentId(remaining[0].id);
+          localStorage.setItem('mitrai_student_id', remaining[0].id);
+        } else {
+          setStudent(null);
+          setSelectedStudentId('');
+        }
+        setShowDeleteConfirm(false);
+      }
+    } catch { /* ignore */ }
+    setDeleting(false);
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -262,6 +296,16 @@ export default function DashboardPage() {
                   </p>
                 </div>
               )}
+
+              {/* Delete Profile */}
+              <div className="mt-4 pt-3 border-t border-[var(--border)]">
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg py-2 transition-colors"
+                >
+                  🗑️ Delete This Profile
+                </button>
+              </div>
             </div>
 
             {/* Subjects Card */}
@@ -296,27 +340,46 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Goals Card */}
+            {/* Goals Card — Private by default */}
             <div className="card p-4">
-              <h2 className="text-sm font-semibold mb-3">Goals</h2>
-              <div className="space-y-4">
-                <div className="p-3 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/20">
-                  <p className="text-xs text-[var(--primary-light)] mb-1">Short Term</p>
-                  <p className="text-sm font-medium">{student.shortTermGoal || 'Not set'}</p>
-                </div>
-                {student.longTermGoal && (
-                  <div className="p-3 rounded-xl bg-[var(--secondary)]/10 border border-[var(--secondary)]/20">
-                    <p className="text-xs text-[var(--secondary)] mb-1">Long Term</p>
-                    <p className="text-sm font-medium">{student.longTermGoal}</p>
-                  </div>
-                )}
-                {student.weeklyGoals && (
-                  <div className="p-3 rounded-xl bg-white/5">
-                    <p className="text-xs text-[var(--muted)] mb-1">Weekly Goals</p>
-                    <p className="text-sm font-medium">{student.weeklyGoals}</p>
-                  </div>
-                )}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold">Goals</h2>
+                <button
+                  onClick={() => setShowGoals(!showGoals)}
+                  className="flex items-center gap-1.5 text-[10px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                  title={showGoals ? 'Hide goals (private)' : 'Show goals'}
+                >
+                  <span>{showGoals ? '🔓' : '🔒'}</span>
+                  <span>{showGoals ? 'Visible' : 'Private'}</span>
+                </button>
               </div>
+
+              {showGoals ? (
+                <div className="space-y-4">
+                  <div className="p-3 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/20">
+                    <p className="text-xs text-[var(--primary-light)] mb-1">Short Term</p>
+                    <p className="text-sm font-medium">{student.shortTermGoal || 'Not set'}</p>
+                  </div>
+                  {student.longTermGoal && (
+                    <div className="p-3 rounded-xl bg-[var(--secondary)]/10 border border-[var(--secondary)]/20">
+                      <p className="text-xs text-[var(--secondary)] mb-1">Long Term</p>
+                      <p className="text-sm font-medium">{student.longTermGoal}</p>
+                    </div>
+                  )}
+                  {student.weeklyGoals && (
+                    <div className="p-3 rounded-xl bg-white/5">
+                      <p className="text-xs text-[var(--muted)] mb-1">Weekly Goals</p>
+                      <p className="text-sm font-medium">{student.weeklyGoals}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <span className="text-2xl mb-2 block">🔒</span>
+                  <p className="text-xs text-[var(--muted)]">Your goals are private</p>
+                  <p className="text-[10px] text-[var(--muted)] mt-0.5">Tap the lock to view them</p>
+                </div>
+              )}
             </div>
 
             {/* Upcoming Birthdays Widget */}
@@ -390,6 +453,39 @@ export default function DashboardPage() {
           <Link href="/onboarding" className="btn-primary text-sm">
             Start Onboarding
           </Link>
+        </div>
+      )}
+
+      {/* Delete Profile Confirmation Modal */}
+      {showDeleteConfirm && student && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="card p-6 w-full max-w-sm slide-up">
+            <div className="text-center mb-4">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-2xl">
+                ⚠️
+              </div>
+              <h2 className="text-lg font-bold text-red-400">Delete Profile?</h2>
+              <p className="text-xs text-[var(--muted)] mt-1">
+                This will permanently delete your <strong>{student.targetExam}</strong> profile. This cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="btn-secondary flex-1 text-xs"
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProfile}
+                disabled={deleting}
+                className="flex-1 text-xs py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition-all disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Delete Profile'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
