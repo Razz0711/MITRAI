@@ -76,8 +76,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Save file to Supabase Storage
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const storedFileName = await saveUploadedFile(file.name, buffer);
+    let storedFileName: string;
+    try {
+      const arrayBuf = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuf);
+      console.log(`[Upload] File: ${file.name}, Size: ${file.size}, Buffer length: ${buffer.length}`);
+      storedFileName = await saveUploadedFile(file.name, buffer);
+      console.log(`[Upload] Stored as: ${storedFileName}`);
+    } catch (uploadErr) {
+      const msg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
+      console.error('[Upload] Storage error:', msg);
+      return NextResponse.json({ success: false, error: `File upload failed: ${msg}` }, { status: 500 });
+    }
 
     const material: StudyMaterial = {
       id: uuidv4(),
@@ -99,7 +109,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: material });
   } catch (error) {
-    console.error('Materials POST error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to upload material' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('Materials POST error:', msg);
+    return NextResponse.json({ success: false, error: `Failed to upload material: ${msg}` }, { status: 500 });
   }
 }

@@ -305,31 +305,68 @@ export async function deleteMaterial(id: string): Promise<boolean> {
   return true;
 }
 
+const MIME_TYPES: Record<string, string> = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  txt: 'text/plain',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  zip: 'application/zip',
+};
+
+let bucketChecked = false;
+
 async function ensureBucketExists() {
-  const { data } = await supabase.storage.getBucket('materials');
-  if (!data) {
-    const { error: createError } = await supabase.storage.createBucket('materials', {
-      public: true,
-      fileSizeLimit: 10485760, // 10MB
-    });
-    if (createError && !createError.message?.includes('already exists')) {
-      console.error('Failed to create storage bucket:', createError);
+  if (bucketChecked) return;
+  try {
+    const { data, error: getErr } = await supabase.storage.getBucket('materials');
+    console.log('[Storage] getBucket result:', data ? 'exists' : 'not found', getErr?.message || '');
+    if (!data) {
+      const { error: createError } = await supabase.storage.createBucket('materials', {
+        public: true,
+        fileSizeLimit: 10485760, // 10MB
+      });
+      if (createError) {
+        if (createError.message?.includes('already exists')) {
+          console.log('[Storage] Bucket already exists (race condition)');
+        } else {
+          console.error('[Storage] Failed to create bucket:', createError.message);
+          throw new Error('Cannot create storage bucket: ' + createError.message);
+        }
+      } else {
+        console.log('[Storage] Created materials bucket successfully');
+      }
     }
+    bucketChecked = true;
+  } catch (err) {
+    console.error('[Storage] ensureBucketExists error:', err);
+    throw err;
   }
 }
 
 export async function saveUploadedFile(fileName: string, buffer: Buffer): Promise<string> {
   await ensureBucketExists();
-  const ext = fileName.split('.').pop() || 'bin';
+  const ext = (fileName.split('.').pop() || 'bin').toLowerCase();
   const storedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
-  const { error } = await supabase.storage.from('materials').upload(storedName, buffer, {
-    contentType: 'application/octet-stream',
+  const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+  console.log(`[Storage] Uploading ${storedName} (${contentType}, ${buffer.length} bytes)`);
+  
+  const uint8 = new Uint8Array(buffer);
+  const { error } = await supabase.storage.from('materials').upload(storedName, uint8, {
+    contentType,
     upsert: false,
   });
   if (error) {
-    console.error('Supabase storage upload error:', error);
-    throw new Error('Failed to upload file to storage: ' + error.message);
+    console.error('[Storage] Upload error:', error.message, JSON.stringify(error));
+    throw new Error('Storage upload failed: ' + error.message);
   }
+  console.log(`[Storage] Upload success: ${storedName}`);
   return storedName;
 }
 
