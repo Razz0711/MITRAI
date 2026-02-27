@@ -8,7 +8,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { StudyMaterial, MaterialType } from '@/lib/types';
-import { supabaseBrowser } from '@/lib/supabase-browser';
 
 const DEPARTMENTS = [
   'CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics',
@@ -121,25 +120,34 @@ export default function MaterialsPage() {
     setUploadSuccess('');
 
     try {
-      // Step 1: Upload file directly from browser to Supabase Storage
-      // This bypasses Vercel's 4.5MB body limit
-      const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-      const storedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
-      
-      const { error: storageError } = await supabaseBrowser.storage
-        .from('materials')
-        .upload(storedName, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (storageError) {
-        console.error('[Upload] Storage error:', storageError);
-        setUploadError(`File upload failed: ${storageError.message}`);
+      // Step 1: Get a signed upload URL from our API (uses service role key on server)
+      const urlRes = await fetch('/api/materials/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name }),
+      });
+      const urlData = await urlRes.json();
+      if (!urlData.success) {
+        setUploadError(`Upload setup failed: ${urlData.error}`);
         return;
       }
 
-      // Step 2: Save material metadata via API
+      // Step 2: Upload file directly to Supabase via the signed URL
+      // This bypasses Vercel's 4.5MB body limit entirely
+      const uploadRes = await fetch(urlData.signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        console.error('[Upload] Signed URL upload failed:', uploadRes.status, errText);
+        setUploadError(`File upload failed (${uploadRes.status}): ${errText}`);
+        return;
+      }
+
+      // Step 3: Save material metadata via API
       const res = await fetch('/api/materials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -154,7 +162,7 @@ export default function MaterialsPage() {
           uploadedByEmail: user.email,
           fileName: file.name,
           fileSize: file.size,
-          storedFileName: storedName,
+          storedFileName: urlData.storedName,
         }),
       });
 
@@ -175,7 +183,6 @@ export default function MaterialsPage() {
         setSubject('');
         setMaterialType('notes');
         setFile(null);
-        // Reset file input
         const fileInput = document.getElementById('file-input') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
         fetchMaterials();
