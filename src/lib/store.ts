@@ -3,13 +3,15 @@
 // (Data survives server restarts in dev mode)
 // ============================================
 
-import { StudentProfile, StudySession, Notification } from './types';
+import { StudentProfile, StudySession, Notification, StudyMaterial } from './types';
 import fs from 'fs';
 import path from 'path';
 
 // File-based persistence for dev mode
 const DATA_DIR = path.join(process.cwd(), '.data');
 const STUDENTS_FILE = path.join(DATA_DIR, 'students.json');
+const MATERIALS_FILE = path.join(DATA_DIR, 'materials.json');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -500,4 +502,89 @@ export function markNotificationRead(userId: string, notifId: string): void {
     const notif = userNotifs.find(n => n.id === notifId);
     if (notif) notif.read = true;
   }
+}
+
+// ============================================
+// Study Materials Operations (File Persistence)
+// ============================================
+
+function ensureUploadsDir() {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+}
+
+function loadMaterialsFromFile(): Map<string, StudyMaterial> {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(MATERIALS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(MATERIALS_FILE, 'utf-8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    console.error('Failed to load materials from file:', e);
+  }
+  return new Map();
+}
+
+function saveMaterialsToFile() {
+  try {
+    ensureDataDir();
+    const obj: Record<string, StudyMaterial> = {};
+    materials.forEach((v, k) => { obj[k] = v; });
+    fs.writeFileSync(MATERIALS_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error('Failed to save materials to file:', e);
+  }
+}
+
+const materials: Map<string, StudyMaterial> = loadMaterialsFromFile();
+
+export function getAllMaterials(): StudyMaterial[] {
+  return Array.from(materials.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export function getMaterialById(id: string): StudyMaterial | undefined {
+  return materials.get(id);
+}
+
+export function getMaterialsByDepartment(department: string): StudyMaterial[] {
+  return getAllMaterials().filter(m => m.department === department);
+}
+
+export function createMaterial(material: StudyMaterial): StudyMaterial {
+  materials.set(material.id, material);
+  saveMaterialsToFile();
+  return material;
+}
+
+export function deleteMaterial(id: string): boolean {
+  const material = materials.get(id);
+  if (!material) return false;
+  // Delete the file from disk
+  try {
+    const filePath = path.join(UPLOADS_DIR, material.storedFileName);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (e) {
+    console.error('Failed to delete uploaded file:', e);
+  }
+  const result = materials.delete(id);
+  if (result) saveMaterialsToFile();
+  return result;
+}
+
+export function saveUploadedFile(fileName: string, buffer: Buffer): string {
+  ensureUploadsDir();
+  const ext = path.extname(fileName);
+  const storedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
+  fs.writeFileSync(path.join(UPLOADS_DIR, storedName), buffer);
+  return storedName;
+}
+
+export function getUploadedFilePath(storedFileName: string): string {
+  return path.join(UPLOADS_DIR, storedFileName);
 }

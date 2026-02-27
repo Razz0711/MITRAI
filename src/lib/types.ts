@@ -192,6 +192,28 @@ export interface Notification {
 }
 
 // ============================================
+// Study Materials Types
+// ============================================
+
+export type MaterialType = 'notes' | 'question-paper' | 'assignment' | 'reference' | 'other';
+
+export interface StudyMaterial {
+  id: string;
+  title: string;
+  description: string;
+  department: string;
+  yearLevel: string;
+  subject: string;
+  type: MaterialType;
+  uploadedBy: string;       // user name
+  uploadedByEmail: string;  // user email
+  fileName: string;
+  fileSize: number;         // bytes
+  storedFileName: string;   // unique filename on disk
+  createdAt: string;
+}
+
+// ============================================
 // API Response Types
 // ============================================
 

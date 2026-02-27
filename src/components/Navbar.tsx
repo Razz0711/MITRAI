@@ -18,6 +18,7 @@ export default function Navbar() {
     ? [
         { href: '/dashboard', label: 'Dashboard' },
         { href: '/matches', label: 'Matches' },
+        { href: '/materials', label: 'Materials' },
         { href: '/study-plan', label: 'Study Plan' },
         { href: '/session', label: 'Session' },
         { href: '/call', label: 'Call' },
