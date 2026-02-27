@@ -170,19 +170,29 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE - Delete a student profile
+// DELETE - Delete a student profile (ownership verified)
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const requestEmail = searchParams.get('email');
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'Student ID is required' }, { status: 400 });
     }
 
+    if (!requestEmail) {
+      return NextResponse.json({ success: false, error: 'Email is required for verification' }, { status: 400 });
+    }
+
     const student = await getStudentById(id);
     if (!student) {
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
+    }
+
+    // Ownership check: only the profile owner can delete
+    if (student.email.toLowerCase() !== requestEmail.toLowerCase()) {
+      return NextResponse.json({ success: false, error: 'You can only delete your own profile' }, { status: 403 });
     }
 
     const deleted = await deleteStudent(id);

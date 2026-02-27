@@ -15,6 +15,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
+  const [myProfiles, setMyProfiles] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
 
@@ -267,18 +268,25 @@ export default function DashboardPage() {
       if (data.success) {
         setAllStudents(data.data);
 
+        // Filter to only show the current user's own profiles
+        const userEmail = user?.email?.toLowerCase() || '';
+        const mine = (data.data as StudentProfile[]).filter(
+          (s: StudentProfile) => s.email && s.email.toLowerCase() === userEmail
+        );
+        setMyProfiles(mine);
+
         if (savedId) {
-          const found = data.data.find((s: StudentProfile) => s.id === savedId);
+          const found = mine.find((s: StudentProfile) => s.id === savedId);
           if (found) {
             setStudent(found);
             setSelectedStudentId(found.id);
           }
         }
 
-        // If no saved student, use first demo student for demo purposes
-        if (!savedId && data.data.length > 0) {
-          setStudent(data.data[0]);
-          setSelectedStudentId(data.data[0].id);
+        // If no saved student, use first of user's own profiles
+        if (!savedId && mine.length > 0) {
+          setStudent(mine[0]);
+          setSelectedStudentId(mine[0].id);
         }
       }
     } catch (error) {
@@ -289,7 +297,7 @@ export default function DashboardPage() {
   };
 
   const handleStudentSelect = (id: string) => {
-    const found = allStudents.find(s => s.id === id);
+    const found = myProfiles.find(s => s.id === id);
     if (found) {
       setStudent(found);
       setSelectedStudentId(id);
@@ -325,15 +333,16 @@ export default function DashboardPage() {
     if (!student) return;
     setDeleting(true);
     try {
-      const res = await fetch(`/api/students?id=${student.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/students?id=${student.id}&email=${encodeURIComponent(user?.email || '')}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         // Remove from local state
         setAllStudents(prev => prev.filter(s => s.id !== student.id));
+        setMyProfiles(prev => prev.filter(s => s.id !== student.id));
         localStorage.removeItem('mitrai_student_id');
         localStorage.removeItem('mitrai_student_name');
         // Select next profile or null
-        const remaining = allStudents.filter(s => s.id !== student.id);
+        const remaining = myProfiles.filter(s => s.id !== student.id);
         if (remaining.length > 0) {
           setStudent(remaining[0]);
           setSelectedStudentId(remaining[0].id);
@@ -419,8 +428,8 @@ export default function DashboardPage() {
             onChange={(e) => handleStudentSelect(e.target.value)}
             className="input-field text-xs w-40"
           >
-            {allStudents.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+            {myProfiles.map(s => (
+              <option key={s.id} value={s.id}>{s.name} — {s.targetExam || 'Profile'}</option>
             ))}
           </select>
           <Link href="/onboarding" className="btn-primary text-xs">

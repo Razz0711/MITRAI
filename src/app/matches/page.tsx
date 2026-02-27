@@ -245,7 +245,7 @@ export default function MatchesPage() {
                   alert(`Connection request sent to ${match.student.name}. Check the Study Plan page to create a plan together.`);
                 }}
                 onViewProfile={() => {
-                  alert(`${match.student.name}\n\nStudying: ${match.student.currentStudy}\nTarget: ${match.student.targetExam}\nStrong: ${match.student.strongSubjects.join(', ')}\nWeak: ${match.student.weakSubjects.join(', ')}\nSchedule: ${match.student.availableDays.join(', ')} ${match.student.availableTimes}\nGoal: ${match.student.shortTermGoal}`);
+                  alert(`${match.student.name}\n\nStudying: ${match.student.currentStudy}\nTarget: ${match.student.targetExam}\nStrong: ${match.student.strongSubjects.join(', ')}\nWeak: ${match.student.weakSubjects.join(', ')}\nSchedule: ${match.student.availableDays.join(', ')} ${match.student.availableTimes}`);
                 }}
               />
             ))}
