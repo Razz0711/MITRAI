@@ -40,8 +40,8 @@ export default function LoginPage() {
 
     const trimmedEmail = email.trim().toLowerCase();
 
-    if (!trimmedEmail.endsWith('@svnit.ac.in')) {
-      setError('Only SVNIT email addresses are allowed (e.g. u12345@svnit.ac.in)');
+    if (!trimmedEmail.endsWith('svnit.ac.in')) {
+      setError('Only SVNIT email addresses are allowed (e.g. i22ma038@amhd.svnit.ac.in)');
       return;
     }
 
@@ -89,7 +89,7 @@ export default function LoginPage() {
             {isSignup ? 'Join MitrAI' : 'Welcome back'}
           </h1>
           <p className="text-sm text-[var(--muted)] mt-1">
-            {isSignup ? 'Register with your SVNIT email' : 'Sign in with your SVNIT email'}
+            {isSignup ? 'Register with your SVNIT college email' : 'Sign in with your SVNIT college email'}
           </p>
         </div>
 
@@ -156,7 +156,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="yourname@svnit.ac.in"
+              placeholder="i22ma038@amhd.svnit.ac.in"
               className="input-field text-sm"
               autoFocus={!isSignup}
             />

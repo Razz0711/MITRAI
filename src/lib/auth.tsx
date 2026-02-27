@@ -33,7 +33,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const SVNIT_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@svnit\.ac\.in$/;
+const SVNIT_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+\.)?svnit\.ac\.in$/;
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (email: string, password: string): { success: boolean; error?: string } => {
     if (!SVNIT_EMAIL_REGEX.test(email)) {
-      return { success: false, error: 'Please use your SVNIT email (example@svnit.ac.in)' };
+      return { success: false, error: 'Please use your SVNIT email (e.g. i22ma038@amhd.svnit.ac.in)' };
     }
 
     const usersRaw = localStorage.getItem('mitrai_users') || '[]';
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = (data: SignupData): { success: boolean; error?: string } => {
     if (!SVNIT_EMAIL_REGEX.test(data.email)) {
-      return { success: false, error: 'Please use your SVNIT email (example@svnit.ac.in)' };
+      return { success: false, error: 'Please use your SVNIT email (e.g. i22ma038@amhd.svnit.ac.in)' };
     }
 
     const usersRaw = localStorage.getItem('mitrai_users') || '[]';
