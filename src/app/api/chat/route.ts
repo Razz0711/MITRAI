@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           read: false,
           createdAt: new Date().toISOString(),
         });
-      } catch (_) { /* non-critical */ }
+      } catch { /* non-critical */ }
 
       // Update receiver name in thread if provided
       if (receiverName) {

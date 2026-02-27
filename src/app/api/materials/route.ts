@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
         read: false,
         createdAt: new Date().toISOString(),
       });
-    } catch (_) { /* non-critical */ }
+    } catch { /* non-critical */ }
 
     return NextResponse.json({ success: true, data: material });
   } catch (error) {

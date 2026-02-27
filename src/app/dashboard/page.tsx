@@ -97,7 +97,6 @@ export default function DashboardPage() {
     try {
       const streakData = JSON.parse(localStorage.getItem('mitrai_study_streak') || '{"dates":[],"streak":0}');
       const today = new Date().toISOString().slice(0, 10);
-      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
       const dates: string[] = streakData.dates || [];
       
       if (!dates.includes(today)) {

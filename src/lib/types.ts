@@ -371,3 +371,27 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+// ============================================
+// Calendar Event Types
+// ============================================
+
+export type CalendarEventType = 'class' | 'study' | 'exam' | 'assignment' | 'meeting' | 'reminder';
+
+export interface CalendarEvent {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  type: CalendarEventType;
+  date: string;          // YYYY-MM-DD
+  startTime: string;     // HH:mm
+  endTime: string;       // HH:mm
+  room: string;
+  recurring: boolean;    // true = repeats every week on this day
+  recurringDay: string;  // e.g. 'Monday' (only if recurring)
+  color: string;         // hex or tailwind class
+  buddyId: string;       // optional buddy for study sessions
+  buddyName: string;
+  createdAt: string;
+}

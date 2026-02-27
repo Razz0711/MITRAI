@@ -244,3 +244,29 @@ CREATE POLICY "Allow updates" ON storage.objects
 -- Allow anyone to delete files
 CREATE POLICY "Allow deletes" ON storage.objects 
   FOR DELETE USING (bucket_id = 'materials');
+
+-- ============================================
+-- Calendar Events
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  type TEXT DEFAULT 'class',
+  date TEXT NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT DEFAULT '',
+  room TEXT DEFAULT '',
+  recurring BOOLEAN DEFAULT FALSE,
+  recurring_day TEXT DEFAULT '',
+  color TEXT DEFAULT '',
+  buddy_id TEXT DEFAULT '',
+  buddy_name TEXT DEFAULT '',
+  created_at TEXT DEFAULT (now()::text)
+);
+
+-- RLS
+ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "calendar_events_all" ON calendar_events FOR ALL USING (true) WITH CHECK (true);

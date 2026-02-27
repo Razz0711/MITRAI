@@ -3,7 +3,7 @@
 // Persistent database — data survives deployments
 // ============================================
 
-import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish, FriendRequest, Friendship, BuddyRating, Subscription, DirectMessage, ChatThread } from './types';
+import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish, FriendRequest, Friendship, BuddyRating, Subscription, DirectMessage, ChatThread, CalendarEvent } from './types';
 import { supabase } from './supabase';
 
 // ============================================
@@ -898,4 +898,98 @@ export async function updateThreadUserName(chatId: string, userId: string, userN
       await supabase.from('chat_threads').update({ user2_name: userName }).eq('chat_id', chatId);
     }
   }
+}
+
+// ============================================
+// Calendar Events
+// ============================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToCalendarEvent(r: any): CalendarEvent {
+  return {
+    id: r.id,
+    userId: r.user_id || '',
+    title: r.title || '',
+    description: r.description || '',
+    type: r.type || 'class',
+    date: r.date || '',
+    startTime: r.start_time || '',
+    endTime: r.end_time || '',
+    room: r.room || '',
+    recurring: r.recurring || false,
+    recurringDay: r.recurring_day || '',
+    color: r.color || '',
+    buddyId: r.buddy_id || '',
+    buddyName: r.buddy_name || '',
+    createdAt: r.created_at || '',
+  };
+}
+
+function calendarEventToRow(e: CalendarEvent): Record<string, unknown> {
+  return {
+    id: e.id,
+    user_id: e.userId,
+    title: e.title,
+    description: e.description,
+    type: e.type,
+    date: e.date,
+    start_time: e.startTime,
+    end_time: e.endTime,
+    room: e.room,
+    recurring: e.recurring,
+    recurring_day: e.recurringDay,
+    color: e.color,
+    buddy_id: e.buddyId,
+    buddy_name: e.buddyName,
+    created_at: e.createdAt,
+  };
+}
+
+export async function getCalendarEventsForUser(userId: string): Promise<CalendarEvent[]> {
+  const { data, error } = await supabase.from('calendar_events').select('*').eq('user_id', userId).order('date', { ascending: true });
+  if (error) { console.error('getCalendarEventsForUser error:', error); return []; }
+  return (data || []).map(rowToCalendarEvent);
+}
+
+export async function getCalendarEventsByDateRange(userId: string, startDate: string, endDate: string): Promise<CalendarEvent[]> {
+  const { data, error } = await supabase.from('calendar_events')
+    .select('*')
+    .eq('user_id', userId)
+    .or(`and(date.gte.${startDate},date.lte.${endDate}),recurring.eq.true`)
+    .order('date', { ascending: true });
+  if (error) { console.error('getCalendarEventsByDateRange error:', error); return []; }
+  return (data || []).map(rowToCalendarEvent);
+}
+
+export async function createCalendarEvent(event: CalendarEvent): Promise<CalendarEvent> {
+  const row = calendarEventToRow(event);
+  const { error } = await supabase.from('calendar_events').insert(row);
+  if (error) console.error('createCalendarEvent error:', error);
+  return event;
+}
+
+export async function updateCalendarEvent(id: string, updates: Partial<CalendarEvent>): Promise<CalendarEvent | null> {
+  const partial: Record<string, unknown> = {};
+  if (updates.title !== undefined) partial.title = updates.title;
+  if (updates.description !== undefined) partial.description = updates.description;
+  if (updates.type !== undefined) partial.type = updates.type;
+  if (updates.date !== undefined) partial.date = updates.date;
+  if (updates.startTime !== undefined) partial.start_time = updates.startTime;
+  if (updates.endTime !== undefined) partial.end_time = updates.endTime;
+  if (updates.room !== undefined) partial.room = updates.room;
+  if (updates.recurring !== undefined) partial.recurring = updates.recurring;
+  if (updates.recurringDay !== undefined) partial.recurring_day = updates.recurringDay;
+  if (updates.color !== undefined) partial.color = updates.color;
+  if (updates.buddyId !== undefined) partial.buddy_id = updates.buddyId;
+  if (updates.buddyName !== undefined) partial.buddy_name = updates.buddyName;
+
+  const { data, error } = await supabase.from('calendar_events').update(partial).eq('id', id).select().single();
+  if (error) { console.error('updateCalendarEvent error:', error); return null; }
+  return rowToCalendarEvent(data);
+}
+
+export async function deleteCalendarEvent(id: string): Promise<boolean> {
+  const { error } = await supabase.from('calendar_events').delete().eq('id', id);
+  if (error) { console.error('deleteCalendarEvent error:', error); return false; }
+  return true;
 }
