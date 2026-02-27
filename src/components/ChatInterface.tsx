@@ -14,6 +14,7 @@ interface ChatInterfaceProps {
   placeholder?: string;
   title?: string;
   subtitle?: string;
+  quickActions?: React.ReactNode;
 }
 
 export default function ChatInterface({
@@ -23,6 +24,7 @@ export default function ChatInterface({
   placeholder = 'Type your message...',
   title,
   subtitle,
+  quickActions,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -95,6 +97,13 @@ export default function ChatInterface({
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Quick Actions (option buttons) */}
+      {quickActions && (
+        <div className="px-4 py-2 border-t border-[var(--border)]">
+          {quickActions}
+        </div>
+      )}
 
       {/* Input */}
       <div className="p-4 border-t border-[var(--border)]">

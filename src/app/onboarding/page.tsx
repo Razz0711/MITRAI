@@ -187,42 +187,42 @@ export default function OnboardingPage() {
           placeholder={isComplete ? '' : (hasOptions ? 'Or type your answer...' : 'Type your answer...')}
           title="MitrAI Onboarding"
           subtitle="Let's set up your study profile"
+          quickActions={
+            hasOptions && !isComplete && !isLoading ? (
+              <div>
+                <div className="flex flex-wrap gap-2">
+                  {currentStepConfig.options?.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => handleOptionSelect(option)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        isMultiSelect && multiSelectChoices.includes(option)
+                          ? 'bg-[var(--primary)] text-white border border-[var(--primary)]'
+                          : 'bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary-light)]'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+                {isMultiSelect && multiSelectChoices.length > 0 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-[10px] text-[var(--muted)]">
+                      Selected: {multiSelectChoices.join(', ')}
+                    </span>
+                    <button
+                      onClick={handleMultiSelectConfirm}
+                      className="btn-primary text-xs px-4 py-1.5"
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : undefined
+          }
         />
       </div>
-
-      {/* Option Buttons */}
-      {hasOptions && !isComplete && !isLoading && (
-        <div className="px-4 pb-2 border-t border-[var(--border)] fade-in">
-          <div className="flex flex-wrap gap-2 pt-3">
-            {currentStepConfig.options?.map((option) => (
-              <button
-                key={option}
-                onClick={() => handleOptionSelect(option)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  isMultiSelect && multiSelectChoices.includes(option)
-                    ? 'bg-[var(--primary)] text-white border border-[var(--primary)]'
-                    : 'bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary-light)]'
-                }`}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-          {isMultiSelect && multiSelectChoices.length > 0 && (
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-[10px] text-[var(--muted)]">
-                Selected: {multiSelectChoices.join(', ')}
-              </span>
-              <button
-                onClick={handleMultiSelectConfirm}
-                className="btn-primary text-xs px-4 py-1.5"
-              >
-                Confirm
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Complete Banner */}
       {isComplete && (
