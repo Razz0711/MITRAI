@@ -104,7 +104,7 @@ export default function DashboardPage() {
           {/* Quick Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             <StatCard label="Target Exam" value={student.targetExam} color="primary" />
-            <StatCard label="Studying" value={student.currentlyStudying || 'Not set'} color="secondary" />
+            <StatCard label="Studying" value={student.currentStudy || 'Not set'} color="secondary" />
             <StatCard label="Daily Target" value={`${student.studyHoursTarget}h`} color="success" />
             <StatCard label="Sessions/Week" value={`${student.sessionsPerWeek}`} color="accent" />
           </div>
@@ -121,7 +121,7 @@ export default function DashboardPage() {
                 <ProfileRow label="Year" value={student.yearLevel} />
                 <ProfileRow label="Institution" value={student.institution || 'SVNIT Surat'} />
                 <ProfileRow label="Location" value={`${student.city}, ${student.country}`} />
-                <ProfileRow label="Exam Date" value={student.targetDate || 'Not set'} />
+                {student.targetDate && <ProfileRow label="Exam Date" value={student.targetDate} />}
               </div>
             </div>
 
@@ -165,14 +165,18 @@ export default function DashboardPage() {
                   <p className="text-xs text-[var(--primary-light)] mb-1">Short Term</p>
                   <p className="text-sm font-medium">{student.shortTermGoal || 'Not set'}</p>
                 </div>
-                <div className="p-3 rounded-xl bg-[var(--secondary)]/10 border border-[var(--secondary)]/20">
-                  <p className="text-xs text-[var(--secondary)] mb-1">Long Term</p>
-                  <p className="text-sm font-medium">{student.longTermGoal || 'Not set'}</p>
-                </div>
-                <div className="p-3 rounded-xl bg-white/5">
-                  <p className="text-xs text-[var(--muted)] mb-1">Weekly Goals</p>
-                  <p className="text-sm font-medium">{student.weeklyGoals || 'Not set'}</p>
-                </div>
+                {student.longTermGoal && (
+                  <div className="p-3 rounded-xl bg-[var(--secondary)]/10 border border-[var(--secondary)]/20">
+                    <p className="text-xs text-[var(--secondary)] mb-1">Long Term</p>
+                    <p className="text-sm font-medium">{student.longTermGoal}</p>
+                  </div>
+                )}
+                {student.weeklyGoals && (
+                  <div className="p-3 rounded-xl bg-white/5">
+                    <p className="text-xs text-[var(--muted)] mb-1">Weekly Goals</p>
+                    <p className="text-sm font-medium">{student.weeklyGoals}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

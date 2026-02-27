@@ -203,11 +203,26 @@ export function parseOnboardingData(
 
   if (rawData.shortTermGoal) parsed.shortTermGoal = rawData.shortTermGoal;
 
-  // Parse personality
+  // Parse personality & study preferences
   if (rawData.personality) {
     const p = rawData.personality.toLowerCase();
     parsed.studyStyle = p.includes('strict') ? 'strict' : 'flexible';
-    parsed.accountabilityNeed = p.includes('accountability') || p.includes('yes') ? 'high' : 'medium';
+    parsed.accountabilityNeed = (p.includes('accountability') || p.includes('yes') || p.includes('partner')) ? 'high' : 'medium';
+    // Derive communication style
+    if (p.includes('introvert') || p.includes('quiet') || p.includes('alone') || p.includes('solo')) {
+      parsed.communication = 'introvert';
+    } else if (p.includes('extrovert') || p.includes('group') || p.includes('social') || p.includes('talk')) {
+      parsed.communication = 'extrovert';
+    }
+  }
+
+  // Derive learning type from study method
+  if (rawData.studyMethod) {
+    const m = rawData.studyMethod.toLowerCase();
+    if (m.includes('video')) parsed.learningType = 'visual';
+    else if (m.includes('reading') || m.includes('notes')) parsed.learningType = 'reading';
+    else if (m.includes('problem') || m.includes('solving')) parsed.learningType = 'practical';
+    else if (m.includes('discussion') || m.includes('group')) parsed.learningType = 'auditory';
   }
 
   return parsed;

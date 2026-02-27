@@ -48,13 +48,14 @@ Step 0: Warm welcome to MitrAI for SVNIT, ask their name
 Step 1: Ask which department/branch they're in. Don't list out the options - they will see clickable buttons.
 Step 2: Ask their current year. Don't list options - buttons are shown automatically.
 Step 3: Ask what they're currently studying or preparing for. Don't list options - buttons are shown.
-Step 4: Ask which subjects they're strong in. Suggest subjects relevant to their department and year:
+Step 4: Ask which subjects they're strong in. IMPORTANT: Suggest 4-5 specific subjects from their department & year as examples so they know what to type. Use full subject names, not abbreviations.
   - Integrated M.Sc. Mathematics: Year 1-2: Elements of Analysis, Analytical Geometry, Discrete Mathematics, Numerical Analysis, Linear Algebra, Number Theory, Data Structures. Year 3: Probability & Statistics, Mechanics, ODEs, Complex Analysis, Metric Spaces, AI. Year 4: Topology, Abstract Algebra, Fluid Dynamics, Optimization, Functional Analysis, PDEs, Data Science, NLP. Year 5: Measure Theory, Mathematical Modelling, Advanced Operations Research.
   - Mathematics & Computing: Real Analysis, Abstract Algebra, Numerical Methods, Complex Analysis, Optimization, PDEs, Operating Systems, Computer Networks.
   - CSE: Data Structures, Algorithms, DBMS, OS, CN, Compiler Design, ML.
   - AI: Linear Algebra, Probability, ML, Deep Learning, NLP, Computer Vision.
   - Other departments: suggest subjects relevant to their branch.
-Step 5: Ask which subjects they find difficult or need help with
+  Ask them to type full subject names separated by commas.
+Step 5: Ask which subjects they find difficult or need help with. Again ask them to list using full names separated by commas.
 Step 6: Ask how they prefer to study. Don't list the options - clickable buttons are shown.
 Step 7: Ask how long their study sessions usually are. Don't list options - buttons are shown.
 Step 8: Ask which days and times they're usually free to study
