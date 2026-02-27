@@ -257,8 +257,15 @@ function rowToMaterial(r: any): StudyMaterial {
   };
 }
 
-export async function getAllMaterials(): Promise<StudyMaterial[]> {
-  const { data, error } = await supabase.from('materials').select('*').order('created_at', { ascending: false });
+export async function getAllMaterials(filters?: {
+  department?: string; type?: string; year?: string; search?: string;
+}): Promise<StudyMaterial[]> {
+  let query = supabase.from('materials').select('*');
+  if (filters?.department && filters.department !== 'all') query = query.eq('department', filters.department);
+  if (filters?.type && filters.type !== 'all') query = query.eq('type', filters.type);
+  if (filters?.year && filters.year !== 'all') query = query.eq('year_level', filters.year);
+  if (filters?.search) query = query.or(`title.ilike.%${filters.search}%,subject.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+  const { data, error } = await query.order('created_at', { ascending: false });
   if (error) { console.error('getAllMaterials error:', error); return []; }
   return (data || []).map(rowToMaterial);
 }
@@ -270,8 +277,7 @@ export async function getMaterialById(id: string): Promise<StudyMaterial | undef
 }
 
 export async function getMaterialsByDepartment(department: string): Promise<StudyMaterial[]> {
-  const all = await getAllMaterials();
-  return all.filter(m => m.department === department);
+  return getAllMaterials({ department });
 }
 
 export async function createMaterial(material: StudyMaterial): Promise<StudyMaterial> {
@@ -1000,6 +1006,12 @@ export async function createCalendarEvent(event: CalendarEvent): Promise<Calenda
   const { error } = await supabase.from('calendar_events').insert(row);
   if (error) console.error('createCalendarEvent error:', error);
   return event;
+}
+
+export async function getCalendarEventById(id: string): Promise<CalendarEvent | null> {
+  const { data, error } = await supabase.from('calendar_events').select().eq('id', id).single();
+  if (error || !data) return null;
+  return rowToCalendarEvent(data);
 }
 
 export async function updateCalendarEvent(id: string, updates: Partial<CalendarEvent>): Promise<CalendarEvent | null> {

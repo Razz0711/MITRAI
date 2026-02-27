@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserStatus, getAllUserStatuses, updateUserStatus } from '@/lib/store';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // GET /api/status?userId=xxx or GET /api/status (all)
 export async function GET(request: NextRequest) {
@@ -94,6 +94,9 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
     }
+
+    // Ownership: can only update own status
+    if (userId !== authUser.id) return forbidden();
 
     const updates: Record<string, unknown> = {
       lastSeen: new Date().toISOString(),

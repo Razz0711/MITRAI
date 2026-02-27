@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getNotifications, markNotificationRead, addNotification } from '@/lib/store';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // GET /api/notifications?userId=xxx
 export async function GET(request: NextRequest) {
@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
     }
+
+    // Ownership: can only read own notifications
+    if (userId !== authUser.id) return forbidden();
 
     const notifs = await getNotifications(userId);
     // Sort newest first
@@ -60,6 +63,8 @@ export async function POST(request: NextRequest) {
     if (!userId || !notificationId) {
       return NextResponse.json({ success: false, error: 'Missing userId or notificationId' }, { status: 400 });
     }
+    // Ownership: can only mark own notifications as read
+    if (userId !== authUser.id) return forbidden();
 
     await markNotificationRead(userId, notificationId);
     return NextResponse.json({ success: true });

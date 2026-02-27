@@ -12,7 +12,7 @@ import {
   addNotification,
 } from '@/lib/store';
 import { DirectMessage } from '@/lib/types';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 export async function GET(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'userId required' }, { status: 400 });
     }
+
+    // Ownership: can only read own threads/unread
+    if (userId !== authUser.id) return forbidden();
 
     // Get unread count
     if (action === 'unread') {
@@ -58,6 +61,11 @@ export async function POST(request: NextRequest) {
       if (!senderId || !receiverId || !text) {
         return NextResponse.json({ error: 'senderId, receiverId, text required' }, { status: 400 });
       }
+      if (text.length > 2000) {
+        return NextResponse.json({ error: 'Message too long (max 2000 chars)' }, { status: 400 });
+      }
+      // Ownership: can only send as yourself
+      if (senderId !== authUser.id) return forbidden();
 
       const chatId = getChatId(senderId, receiverId);
       const message: DirectMessage = {
@@ -103,6 +111,8 @@ export async function POST(request: NextRequest) {
       if (!chatId || !userId) {
         return NextResponse.json({ error: 'chatId, userId required' }, { status: 400 });
       }
+      // Ownership: can only mark own messages as read
+      if (userId !== authUser.id) return forbidden();
       await markMessagesRead(chatId, userId);
       return NextResponse.json({ success: true });
     }
@@ -112,6 +122,8 @@ export async function POST(request: NextRequest) {
       if (!messageId || !userId) {
         return NextResponse.json({ error: 'messageId, userId required' }, { status: 400 });
       }
+      // Ownership: can only delete own messages
+      if (userId !== authUser.id) return forbidden();
       const success = await deleteMessage(messageId, userId);
       if (!success) {
         return NextResponse.json({ error: 'Could not delete message' }, { status: 403 });

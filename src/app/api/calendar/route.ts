@@ -9,12 +9,13 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   getCalendarEventsForUser,
   getCalendarEventsByDateRange,
+  getCalendarEventById,
   createCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
 } from '@/lib/store';
 import { CalendarEvent } from '@/lib/types';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // GET /api/calendar?userId=xxx&start=2026-02-01&end=2026-02-28
 export async function GET(request: NextRequest) {
@@ -28,6 +29,9 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
     }
+
+    // Ownership: can only view own calendar
+    if (userId !== authUser.id) return forbidden();
 
     let events: CalendarEvent[];
     if (start && end) {
@@ -56,6 +60,8 @@ export async function POST(request: NextRequest) {
         if (!userId || !title || !date || !startTime) {
           return NextResponse.json({ success: false, error: 'userId, title, date, and startTime required' }, { status: 400 });
         }
+        // Ownership: can only create events for yourself
+        if (userId !== authUser.id) return forbidden();
 
         const event: CalendarEvent = {
           id: uuidv4(),
@@ -84,6 +90,11 @@ export async function POST(request: NextRequest) {
         if (!eventId) {
           return NextResponse.json({ success: false, error: 'eventId required' }, { status: 400 });
         }
+        // Ownership: verify event belongs to current user
+        const eventToUpdate = await getCalendarEventById(eventId);
+        if (!eventToUpdate) return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
+        if (eventToUpdate.userId !== authUser.id) return forbidden();
+
         const updated = await updateCalendarEvent(eventId, updates || {});
         return NextResponse.json({ success: true, data: updated });
       }
@@ -93,6 +104,11 @@ export async function POST(request: NextRequest) {
         if (!eventId) {
           return NextResponse.json({ success: false, error: 'eventId required' }, { status: 400 });
         }
+        // Ownership: verify event belongs to current user
+        const eventToDelete = await getCalendarEventById(eventId);
+        if (!eventToDelete) return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
+        if (eventToDelete.userId !== authUser.id) return forbidden();
+
         const deleted = await deleteCalendarEvent(eventId);
         return NextResponse.json({ success: true, data: { deleted } });
       }

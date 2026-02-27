@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllStudents, addNotification, hasWishedToday, addBirthdayWish, getBirthdayWishesForUser } from '@/lib/store';
 import { BirthdayInfo } from '@/lib/types';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 function getDayMonth(dateStr: string): string {
   const d = new Date(dateStr);
@@ -120,6 +120,8 @@ export async function POST(request: NextRequest) {
     if (!fromUserId || !toUserId) {
       return NextResponse.json({ success: false, error: 'Missing user IDs' }, { status: 400 });
     }
+    // Ownership: can only send wishes from yourself
+    if (fromUserId !== authUser.id) return forbidden();
 
     // Check if already wished today
     if (await hasWishedToday(fromUserId, toUserId)) {

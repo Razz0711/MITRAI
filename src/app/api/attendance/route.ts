@@ -9,7 +9,7 @@ import {
   deleteAttendance,
 } from '@/lib/store';
 import { AttendanceRecord } from '@/lib/types';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // GET /api/attendance?userId=xxx
 export async function GET(req: NextRequest) {
@@ -17,6 +17,9 @@ export async function GET(req: NextRequest) {
   try {
     const userId = req.nextUrl.searchParams.get('userId');
     if (!userId) return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
+
+    // Ownership: can only view own attendance
+    if (userId !== authUser.id) return forbidden();
 
     const records = await getAttendanceForUser(userId);
     return NextResponse.json({ success: true, data: records });
@@ -39,6 +42,8 @@ export async function POST(req: NextRequest) {
       if (!userId || !subject) {
         return NextResponse.json({ success: false, error: 'Missing userId or subject' }, { status: 400 });
       }
+      // Ownership: can only modify own attendance
+      if (userId !== authUser.id) return forbidden();
 
       const record: AttendanceRecord = {
         id: id || `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,

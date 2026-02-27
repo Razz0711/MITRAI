@@ -6,37 +6,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllMaterials, createMaterial, saveUploadedFile, addNotification } from '@/lib/store';
 import { StudyMaterial } from '@/lib/types';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // GET /api/materials — list all materials with optional filters
 export async function GET(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { searchParams } = new URL(request.url);
-    const department = searchParams.get('department');
-    const type = searchParams.get('type');
-    const year = searchParams.get('year');
-    const search = searchParams.get('search')?.toLowerCase();
+    const department = searchParams.get('department') || undefined;
+    const type = searchParams.get('type') || undefined;
+    const year = searchParams.get('year') || undefined;
+    const search = searchParams.get('search')?.toLowerCase() || undefined;
 
-    let materials = await getAllMaterials();
-
-    if (department && department !== 'all') {
-      materials = materials.filter(m => m.department === department);
-    }
-    if (type && type !== 'all') {
-      materials = materials.filter(m => m.type === type);
-    }
-    if (year && year !== 'all') {
-      materials = materials.filter(m => m.yearLevel === year);
-    }
-    if (search) {
-      materials = materials.filter(
-        m =>
-          m.title.toLowerCase().includes(search) ||
-          m.subject.toLowerCase().includes(search) ||
-          m.description.toLowerCase().includes(search)
-      );
-    }
+    const materials = await getAllMaterials({ department, type, year, search });
 
     return NextResponse.json({ success: true, data: materials });
   } catch (error) {
@@ -76,6 +58,8 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      // Ownership: can only upload as yourself
+      if (uploadedBy !== authUser.id) return forbidden();
     } else {
       // Legacy flow: file uploaded via FormData through the API
       const formData = await request.formData();
@@ -95,6 +79,8 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      // Ownership: can only upload as yourself
+      if (uploadedBy !== authUser.id) return forbidden();
 
       const MAX_SIZE = 10 * 1024 * 1024;
       if (file.size > MAX_SIZE) {

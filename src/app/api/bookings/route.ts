@@ -11,7 +11,7 @@ import {
   markSlotEngaged, addNotification
 } from '@/lib/store';
 import { SessionBooking } from '@/lib/types';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // GET /api/bookings?userId=xxx
 export async function GET(request: NextRequest) {
@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
     }
+
+    // Ownership: can only view own bookings
+    if (userId !== authUser.id) return forbidden();
 
     const bookings = await getBookingsForUser(userId);
     return NextResponse.json({ success: true, data: bookings });
@@ -46,6 +49,8 @@ export async function POST(request: NextRequest) {
       if (!requesterId || !targetId || !day || hour === undefined) {
         return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
       }
+      // Ownership: can only create bookings as yourself
+      if (requesterId !== authUser.id) return forbidden();
 
       const booking: SessionBooking = {
         id: uuidv4(),
@@ -83,6 +88,8 @@ export async function POST(request: NextRequest) {
       if (!booking) {
         return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
       }
+      // Ownership: only the target can accept
+      if (booking.targetId !== authUser.id) return forbidden();
 
       await updateBooking(bookingId, { status: 'accepted' });
 
@@ -111,6 +118,8 @@ export async function POST(request: NextRequest) {
       if (!booking) {
         return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
       }
+      // Ownership: only the target can decline
+      if (booking.targetId !== authUser.id) return forbidden();
 
       await updateBooking(bookingId, { status: 'declined' });
 

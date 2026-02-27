@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserAvailability, setUserAvailability, markSlotEngaged } from '@/lib/store';
 import { UserAvailability, TimeSlot, Day } from '@/lib/types';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 const ALL_DAYS: Day[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6AM to 11PM

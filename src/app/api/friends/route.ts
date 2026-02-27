@@ -19,7 +19,7 @@ import {
   addRating,
   addNotification,
 } from '@/lib/store';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // GET /api/friends?userId=xxx
 export async function GET(req: NextRequest) {
@@ -63,6 +63,8 @@ export async function POST(req: NextRequest) {
         if (!fromUserId || !toUserId) {
           return NextResponse.json({ success: false, error: 'fromUserId and toUserId required' }, { status: 400 });
         }
+        // Ownership: can only send requests from yourself
+        if (fromUserId !== authUser.id) return forbidden();
         // Already friends?
         if (await areFriends(fromUserId, toUserId)) {
           return NextResponse.json({ success: false, error: 'Already friends' }, { status: 409 });
@@ -99,6 +101,8 @@ export async function POST(req: NextRequest) {
         if (!updated) {
           return NextResponse.json({ success: false, error: 'Request not found' }, { status: 404 });
         }
+        // Ownership: only the recipient can respond
+        if (updated.toUserId !== authUser.id) return forbidden();
         // If accepted, create friendship
         if (status === 'accepted') {
           await addFriendship({
@@ -129,6 +133,8 @@ export async function POST(req: NextRequest) {
         if (!userId1 || !userId2) {
           return NextResponse.json({ success: false, error: 'userId1 and userId2 required' }, { status: 400 });
         }
+        // Ownership: only a party in the friendship can remove it
+        if (userId1 !== authUser.id && userId2 !== authUser.id) return forbidden();
         const removed = await removeFriendship(userId1, userId2);
         return NextResponse.json({ success: true, data: { removed } });
       }
@@ -139,6 +145,8 @@ export async function POST(req: NextRequest) {
         if (!fromUserId || !toUserId || !rating || rating < 1 || rating > 10) {
           return NextResponse.json({ success: false, error: 'Valid fromUserId, toUserId and rating (1-10) required' }, { status: 400 });
         }
+        // Ownership: can only rate from yourself
+        if (fromUserId !== authUser.id) return forbidden();
         const newRating = await addRating({
           id: uuidv4(),
           fromUserId,

@@ -6,7 +6,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllStudents, createStudent, getStudentById, deleteStudent, updateStudent } from '@/lib/store';
 import { StudentProfile } from '@/lib/types';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+
+// Strip sensitive fields when viewing other users' profiles
+function stripSensitive(student: StudentProfile): Partial<StudentProfile> {
+  const { email, admissionNumber, ...safe } = student;
+  return safe;
+}
 
 // GET - Fetch all students or a specific student
 export async function GET(req: NextRequest) {
@@ -19,11 +25,14 @@ export async function GET(req: NextRequest) {
     if (!student) {
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
     }
-    return NextResponse.json({ success: true, data: student });
+    // Return full data for own profile, stripped for others
+    const data = id === authUser.id ? student : stripSensitive(student);
+    return NextResponse.json({ success: true, data });
   }
 
   const students = await getAllStudents();
-  return NextResponse.json({ success: true, data: students });
+  const data = students.map(s => s.id === authUser.id ? s : stripSensitive(s));
+  return NextResponse.json({ success: true, data });
 }
 
 // POST - Create a new student profile
@@ -62,9 +71,9 @@ export async function POST(req: NextRequest) {
     const student: StudentProfile = {
       id: body.id || uuidv4(),
       createdAt: new Date().toISOString(),
-      name: body.name || 'Unknown',
-      age: body.age || 17,
-      email: body.email || '',
+      name: String(body.name || 'Unknown').slice(0, 100),
+      age: Math.min(Math.max(Number(body.age) || 17, 10), 100),
+      email: String(body.email || '').slice(0, 200),
       admissionNumber: body.admissionNumber || '',
       city: body.city || '',
       country: body.country || 'India',
@@ -110,6 +119,7 @@ export async function POST(req: NextRequest) {
 
 // PUT - Update an existing student profile (used by onboarding to fill in details)
 export async function PUT(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await req.json();
     const { id, ...updates } = body;
@@ -117,6 +127,9 @@ export async function PUT(req: NextRequest) {
     if (!id) {
       return NextResponse.json({ success: false, error: 'Student ID is required' }, { status: 400 });
     }
+
+    // Ownership check: can only update own profile
+    if (id !== authUser.id) return forbidden();
 
     const existing = await getStudentById(id);
     if (!existing) {
@@ -175,27 +188,21 @@ export async function PUT(req: NextRequest) {
 
 // DELETE - Delete a student profile (ownership verified)
 export async function DELETE(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    const requestEmail = searchParams.get('email');
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'Student ID is required' }, { status: 400 });
     }
 
-    if (!requestEmail) {
-      return NextResponse.json({ success: false, error: 'Email is required for verification' }, { status: 400 });
-    }
+    // Ownership check: only the profile owner can delete
+    if (id !== authUser.id) return forbidden();
 
     const student = await getStudentById(id);
     if (!student) {
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
-    }
-
-    // Ownership check: only the profile owner can delete
-    if (student.email.toLowerCase() !== requestEmail.toLowerCase()) {
-      return NextResponse.json({ success: false, error: 'You can only delete your own profile' }, { status: 403 });
     }
 
     const deleted = await deleteStudent(id);

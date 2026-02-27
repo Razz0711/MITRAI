@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSubscription, setUserSubscription } from '@/lib/store';
 import { Subscription } from '@/lib/types';
-import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // GET /api/subscription?userId=xxx
 export async function GET(req: NextRequest) {
@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
   }
+  // Ownership: can only view own subscription
+  if (userId !== authUser.id) return forbidden();
 
   const sub = await getUserSubscription(userId);
 
@@ -75,6 +77,8 @@ export async function POST(req: NextRequest) {
     if (!userId || !plan) {
       return NextResponse.json({ success: false, error: 'userId and plan required' }, { status: 400 });
     }
+    // Ownership: can only modify own subscription
+    if (userId !== authUser.id) return forbidden();
 
     if (!['free', 'monthly', 'yearly'].includes(plan)) {
       return NextResponse.json({ success: false, error: 'Invalid plan. Must be free, monthly, or yearly' }, { status: 400 });
