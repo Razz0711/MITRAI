@@ -201,31 +201,25 @@ export default function FeedbackPage() {
         </button>
       </form>
 
-      {/* Developer Info */}
+      {/* Contact for Queries */}
       <div className="mt-6 card p-4">
-        <h3 className="text-sm font-semibold mb-3 text-center">About the Developer</h3>
-        <div className="flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-xl bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-sm font-bold text-[var(--primary-light)] mb-3">
-            RS
-          </div>
-          <h4 className="text-sm font-semibold gradient-text mb-0.5">Raj Singh</h4>
-          <p className="text-xs text-[var(--muted)] mb-3">Full-Stack Developer, Creator of MitrAI</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <a
-              href="https://github.com/Razz0711"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-lg bg-white/5 border border-[var(--border)] text-xs hover:bg-white/10 hover:border-[var(--primary)] transition-all"
-            >
-              GitHub
-            </a>
-            <a
-              href="mailto:rajsinghrazz786@gmail.com"
-              className="px-3 py-1.5 rounded-lg bg-white/5 border border-[var(--border)] text-xs hover:bg-white/10 hover:border-[var(--primary)] transition-all"
-            >
-              Email
-            </a>
-          </div>
+        <h3 className="text-sm font-semibold mb-3 text-center">Have a Query?</h3>
+        <p className="text-xs text-[var(--muted)] text-center mb-3">Reach out to us anytime</p>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <a
+            href="https://wa.me/917061001946?text=Hi%2C%20I%20have%20a%20query%20about%20MitrAI"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/15 border border-green-500/30 text-xs font-medium text-green-400 hover:bg-green-500/25 transition-all"
+          >
+            💬 WhatsApp
+          </a>
+          <a
+            href="mailto:rajsinghrazz786@gmail.com?subject=MitrAI%20Query"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/15 border border-blue-500/30 text-xs font-medium text-blue-400 hover:bg-blue-500/25 transition-all"
+          >
+            ✉️ Email
+          </a>
         </div>
       </div>
 
