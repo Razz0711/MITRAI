@@ -1,7 +1,6 @@
 // ============================================
 // MitrAI - Session Bookings API
-// GET: list bookings for a user
-// POST: create / accept / decline booking
+// GET: list | POST: create | PATCH: accept/decline
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -36,112 +35,69 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/bookings — create or update a booking
+// POST /api/bookings — create a new session request
 export async function POST(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   if (!rateLimit(`bookings:${authUser.id}`, 20, 60_000)) return rateLimitExceeded();
   try {
     const body = await request.json();
-    const { action } = body;
-
-    // CREATE a new session request
-    if (action === 'create') {
-      const { requesterId, requesterName, targetId, targetName, day, hour, topic } = body;
-
-      if (!requesterId || !targetId || !day || hour === undefined) {
-        return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
-      }
-      // Ownership: can only create bookings as yourself
-      if (requesterId !== authUser.id) return forbidden();
-
-      const booking: SessionBooking = {
-        id: uuidv4(),
-        requesterId,
-        requesterName: requesterName || 'Someone',
-        targetId,
-        targetName: targetName || 'Student',
-        day,
-        hour,
-        topic: topic || 'Study Session',
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      };
-
-      await createBooking(booking);
-
-      // Notify target
-      await addNotification({
-        id: uuidv4(),
-        userId: targetId,
-        type: 'session_request',
-        title: '📅 Session Request',
-        message: `${requesterName} wants to study "${topic || 'together'}" on ${day} at ${hour > 12 ? hour - 12 : hour}${hour >= 12 ? 'PM' : 'AM'}`,
-        read: false,
-        createdAt: new Date().toISOString(),
-      });
-
-      return NextResponse.json({ success: true, data: booking });
+    const { requesterId, requesterName, targetId, targetName, day, hour, topic } = body;
+    if (!requesterId || !targetId || !day || hour === undefined) {
+      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
-
-    // ACCEPT a session request
-    if (action === 'accept') {
-      const { bookingId } = body;
-      const booking = await getBookingById(bookingId);
-      if (!booking) {
-        return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
-      }
-      // Ownership: only the target can accept
-      if (booking.targetId !== authUser.id) return forbidden();
-
-      await updateBooking(bookingId, { status: 'accepted' });
-
-      // Mark both users as engaged for that slot
-      await markSlotEngaged(booking.requesterId, booking.day, booking.hour, bookingId, booking.targetName);
-      await markSlotEngaged(booking.targetId, booking.day, booking.hour, bookingId, booking.requesterName);
-
-      // Notify requester
-      await addNotification({
-        id: uuidv4(),
-        userId: booking.requesterId,
-        type: 'session_accepted',
-        title: '✅ Session Accepted!',
-        message: `${booking.targetName} accepted your session request for ${booking.day} at ${booking.hour > 12 ? booking.hour - 12 : booking.hour}${booking.hour >= 12 ? 'PM' : 'AM'}`,
-        read: false,
-        createdAt: new Date().toISOString(),
-      });
-
-      return NextResponse.json({ success: true });
-    }
-
-    // DECLINE a session request
-    if (action === 'decline') {
-      const { bookingId } = body;
-      const booking = await getBookingById(bookingId);
-      if (!booking) {
-        return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
-      }
-      // Ownership: only the target can decline
-      if (booking.targetId !== authUser.id) return forbidden();
-
-      await updateBooking(bookingId, { status: 'declined' });
-
-      // Notify requester
-      await addNotification({
-        id: uuidv4(),
-        userId: booking.requesterId,
-        type: 'session_declined',
-        title: '❌ Session Declined',
-        message: `${booking.targetName} declined your session request for ${booking.day}`,
-        read: false,
-        createdAt: new Date().toISOString(),
-      });
-
-      return NextResponse.json({ success: true });
-    }
-
-    return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
+    if (requesterId !== authUser.id) return forbidden();
+    const booking: SessionBooking = {
+      id: uuidv4(), requesterId, requesterName: requesterName || 'Someone',
+      targetId, targetName: targetName || 'Student', day, hour,
+      topic: topic || 'Study Session', status: 'pending', createdAt: new Date().toISOString(),
+    };
+    await createBooking(booking);
+    await addNotification({
+      id: uuidv4(), userId: targetId, type: 'session_request', title: '📅 Session Request',
+      message: `${requesterName} wants to study "${topic || 'together'}" on ${day} at ${hour > 12 ? hour - 12 : hour}${hour >= 12 ? 'PM' : 'AM'}`,
+      read: false, createdAt: new Date().toISOString(),
+    });
+    return NextResponse.json({ success: true, data: booking });
   } catch (error) {
     console.error('Bookings POST error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to process booking' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to create booking' }, { status: 500 });
+  }
+}
+
+// PATCH /api/bookings — accept or decline a session request
+export async function PATCH(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`bookings:${authUser.id}`, 20, 60_000)) return rateLimitExceeded();
+  try {
+    const body = await request.json();
+    const { bookingId, action } = body;
+    if (!bookingId || !['accept', 'decline'].includes(action)) {
+      return NextResponse.json({ success: false, error: 'bookingId and valid action required' }, { status: 400 });
+    }
+    const booking = await getBookingById(bookingId);
+    if (!booking) return NextResponse.json({ success: false, error: 'Booking not found' }, { status: 404 });
+    if (booking.targetId !== authUser.id) return forbidden();
+
+    if (action === 'accept') {
+      await updateBooking(bookingId, { status: 'accepted' });
+      await markSlotEngaged(booking.requesterId, booking.day, booking.hour, bookingId, booking.targetName);
+      await markSlotEngaged(booking.targetId, booking.day, booking.hour, bookingId, booking.requesterName);
+      await addNotification({
+        id: uuidv4(), userId: booking.requesterId, type: 'session_accepted', title: '✅ Session Accepted!',
+        message: `${booking.targetName} accepted your session request for ${booking.day} at ${booking.hour > 12 ? booking.hour - 12 : booking.hour}${booking.hour >= 12 ? 'PM' : 'AM'}`,
+        read: false, createdAt: new Date().toISOString(),
+      });
+    } else {
+      await updateBooking(bookingId, { status: 'declined' });
+      await addNotification({
+        id: uuidv4(), userId: booking.requesterId, type: 'session_declined', title: '❌ Session Declined',
+        message: `${booking.targetName} declined your session request for ${booking.day}`,
+        read: false, createdAt: new Date().toISOString(),
+      });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Bookings PATCH error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to update booking' }, { status: 500 });
   }
 }

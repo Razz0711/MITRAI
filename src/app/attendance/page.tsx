@@ -44,10 +44,9 @@ export default function AttendancePage() {
   const handleUpsert = async (record: AttendanceRecord, attended: number, total: number) => {
     try {
       const res = await fetch('/api/attendance', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'upsert',
           id: record.id,
           userId: record.userId,
           subject: record.subject,
@@ -76,7 +75,6 @@ export default function AttendancePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'upsert',
           userId: user.id,
           subject: newSubject.trim(),
           totalClasses: 0,
@@ -110,7 +108,6 @@ export default function AttendancePage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'bulk-upsert',
         userId: user.id,
         subjects: newSubjects,
       }),
@@ -123,9 +120,9 @@ export default function AttendancePage() {
   const handleDelete = async (id: string) => {
     try {
       const res = await fetch('/api/attendance', {
-        method: 'POST',
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', id }),
+        body: JSON.stringify({ id }),
       });
       const data = await res.json();
       if (data.success) setAttendance(prev => prev.filter(a => a.id !== id));

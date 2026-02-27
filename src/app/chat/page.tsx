@@ -63,9 +63,9 @@ export default function ChatPage() {
     if (!selectedChatId || !studentId) return;
     try {
       await fetch('/api/chat', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'read', chatId: selectedChatId, userId: studentId }),
+        body: JSON.stringify({ chatId: selectedChatId, userId: studentId }),
       });
     } catch { /* ignore */ }
   }, [selectedChatId, studentId]);
@@ -146,7 +146,6 @@ export default function ChatPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'send',
           senderId: studentId,
           senderName: user?.name || 'Unknown',
           receiverId,
@@ -167,9 +166,9 @@ export default function ChatPage() {
     if (!studentId || !confirm('Delete this message?')) return;
     try {
       const res = await fetch('/api/chat', {
-        method: 'POST',
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', messageId, userId: studentId }),
+        body: JSON.stringify({ messageId, userId: studentId }),
       });
       const data = await res.json();
       if (data.success) {
@@ -199,7 +198,6 @@ export default function ChatPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'send',
             senderId: studentId,
             senderName: user?.name || 'Unknown',
             receiverId: friendId,

@@ -21,30 +21,23 @@ export default function FeedbackPage() {
 
     setSending(true);
 
-    // Build mailto link as a simple no-backend solution
-    const subject = encodeURIComponent(`[MitrAI ${type.toUpperCase()}] from ${name || 'Anonymous'}`);
-    const body = encodeURIComponent(
-      `Name: ${name || 'Anonymous'}\nEmail: ${email || 'Not provided'}\nType: ${type}\nRating: ${rating > 0 ? '⭐'.repeat(rating) + ` (${rating}/5)` : 'Not rated'}\n\nMessage:\n${message}`
-    );
-
-    // Open mail client
-    window.open(`mailto:rajkumaratsvnit@gmail.com?subject=${subject}&body=${body}`, '_blank');
-
-    // Also save to localStorage as backup
-    const feedbackList = JSON.parse(localStorage.getItem('mitrai_feedback') || '[]');
-    feedbackList.push({
-      id: Date.now(),
-      name,
-      email,
-      type,
-      rating,
-      message,
-      timestamp: new Date().toISOString(),
-    });
-    localStorage.setItem('mitrai_feedback', JSON.stringify(feedbackList));
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, type, rating, message }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSubmitted(true);
+      } else {
+        alert(data.error || 'Failed to submit feedback');
+      }
+    } catch {
+      alert('Something went wrong. Please try again.');
+    }
 
     setSending(false);
-    setSubmitted(true);
   };
 
   if (submitted) {

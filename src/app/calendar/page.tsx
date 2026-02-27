@@ -159,10 +159,9 @@ export default function CalendarPage() {
       if (editingEvent) {
         // Update
         await fetch('/api/calendar', {
-          method: 'POST',
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'update',
             eventId: editingEvent.id,
             updates: {
               title: formTitle,
@@ -183,7 +182,6 @@ export default function CalendarPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'create',
             userId: user.id,
             title: formTitle,
             description: formDesc,
@@ -207,9 +205,9 @@ export default function CalendarPage() {
   async function handleDeleteEvent(eventId: string) {
     try {
       await fetch('/api/calendar', {
-        method: 'POST',
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', eventId }),
+        body: JSON.stringify({ eventId }),
       });
       await loadEvents();
     } catch { /* ignore */ }

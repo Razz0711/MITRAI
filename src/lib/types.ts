@@ -370,6 +370,17 @@ export interface ChatThread {
 // API Response Types
 // ============================================
 
+export interface Feedback {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  type: 'feedback' | 'bug' | 'feature' | 'contact';
+  rating: number;
+  message: string;
+  createdAt: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;

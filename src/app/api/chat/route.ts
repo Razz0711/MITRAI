@@ -51,91 +51,79 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST /api/chat — send a message
 export async function POST(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await request.json();
-    const { action } = body;
-
-    if (action === 'send') {
-      const { senderId, senderName, receiverId, receiverName, text } = body;
-      if (!senderId || !receiverId || !text) {
-        return NextResponse.json({ error: 'senderId, receiverId, text required' }, { status: 400 });
-      }
-      if (!rateLimit(`chat:${authUser.id}`, 30, 60_000)) return rateLimitExceeded();
-      if (text.length > 2000) {
-        return NextResponse.json({ error: 'Message too long (max 2000 chars)' }, { status: 400 });
-      }
-      // Ownership: can only send as yourself
-      if (senderId !== authUser.id) return forbidden();
-
-      const chatId = getChatId(senderId, receiverId);
-      const message: DirectMessage = {
-        id: uuidv4(),
-        chatId,
-        senderId,
-        senderName: senderName || 'Unknown',
-        receiverId,
-        text: text.trim(),
-        read: false,
-        createdAt: new Date().toISOString(),
-      };
-
-      await addMessage(message);
-
-      // Notify the receiver about the new message
-      try {
-        await addNotification({
-          id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-          userId: receiverId,
-          type: 'session_request',
-          title: 'New Message',
-          message: `${senderName || 'Someone'}: ${text.trim().slice(0, 50)}${text.length > 50 ? '...' : ''}`,
-          read: false,
-          createdAt: new Date().toISOString(),
-        });
-      } catch { /* non-critical */ }
-
-      // Update receiver name in thread if provided
-      if (receiverName) {
-        await updateThreadUserName(chatId, receiverId, receiverName);
-      }
-      // Update sender name too
-      if (senderName) {
-        await updateThreadUserName(chatId, senderId, senderName);
-      }
-
-      return NextResponse.json({ message });
+    const { senderId, senderName, receiverId, receiverName, text } = body;
+    if (!senderId || !receiverId || !text) {
+      return NextResponse.json({ error: 'senderId, receiverId, text required' }, { status: 400 });
     }
-
-    if (action === 'read') {
-      const { chatId, userId } = body;
-      if (!chatId || !userId) {
-        return NextResponse.json({ error: 'chatId, userId required' }, { status: 400 });
-      }
-      // Ownership: can only mark own messages as read
-      if (userId !== authUser.id) return forbidden();
-      await markMessagesRead(chatId, userId);
-      return NextResponse.json({ success: true });
+    if (!rateLimit(`chat:${authUser.id}`, 30, 60_000)) return rateLimitExceeded();
+    if (text.length > 2000) {
+      return NextResponse.json({ error: 'Message too long (max 2000 chars)' }, { status: 400 });
     }
+    if (senderId !== authUser.id) return forbidden();
 
-    if (action === 'delete') {
-      const { messageId, userId } = body;
-      if (!messageId || !userId) {
-        return NextResponse.json({ error: 'messageId, userId required' }, { status: 400 });
-      }
-      // Ownership: can only delete own messages
-      if (userId !== authUser.id) return forbidden();
-      const success = await deleteMessage(messageId, userId);
-      if (!success) {
-        return NextResponse.json({ error: 'Could not delete message' }, { status: 403 });
-      }
-      return NextResponse.json({ success: true });
-    }
-
-    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+    const chatId = getChatId(senderId, receiverId);
+    const message: DirectMessage = {
+      id: uuidv4(), chatId, senderId, senderName: senderName || 'Unknown',
+      receiverId, text: text.trim(), read: false, createdAt: new Date().toISOString(),
+    };
+    await addMessage(message);
+    try {
+      await addNotification({
+        id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        userId: receiverId, type: 'session_request', title: 'New Message',
+        message: `${senderName || 'Someone'}: ${text.trim().slice(0, 50)}${text.length > 50 ? '...' : ''}`,
+        read: false, createdAt: new Date().toISOString(),
+      });
+    } catch { /* non-critical */ }
+    if (receiverName) await updateThreadUserName(chatId, receiverId, receiverName);
+    if (senderName) await updateThreadUserName(chatId, senderId, senderName);
+    return NextResponse.json({ message });
   } catch (error) {
     console.error('Chat POST error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PATCH /api/chat — mark messages as read
+export async function PATCH(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  try {
+    const body = await request.json();
+    const { chatId, userId } = body;
+    if (!chatId || !userId) {
+      return NextResponse.json({ error: 'chatId, userId required' }, { status: 400 });
+    }
+    if (userId !== authUser.id) return forbidden();
+    await markMessagesRead(chatId, userId);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Chat PATCH error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// DELETE /api/chat — delete a message
+export async function DELETE(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  try {
+    const body = await request.json();
+    const { messageId, userId } = body;
+    if (!messageId || !userId) {
+      return NextResponse.json({ error: 'messageId, userId required' }, { status: 400 });
+    }
+    if (userId !== authUser.id) return forbidden();
+    const success = await deleteMessage(messageId, userId);
+    if (!success) {
+      return NextResponse.json({ error: 'Could not delete message' }, { status: 403 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Chat DELETE error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

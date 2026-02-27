@@ -3,103 +3,80 @@
 // Persistent database — data survives deployments
 // ============================================
 
-import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish, FriendRequest, Friendship, BuddyRating, Subscription, DirectMessage, ChatThread, CalendarEvent, AttendanceRecord } from './types';
+import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish, FriendRequest, Friendship, BuddyRating, Subscription, DirectMessage, ChatThread, CalendarEvent, AttendanceRecord, Feedback } from './types';
 import { supabase } from './supabase';
 
 // ============================================
-// Helper: Convert between camelCase ↔ snake_case
+// Generic camelCase ↔ snake_case converters
+// Eliminates ~500 lines of manual field-by-field mapping
 // ============================================
 
-function studentToRow(s: StudentProfile): Record<string, unknown> {
-  return {
-    id: s.id,
-    created_at: s.createdAt,
-    name: s.name,
-    age: s.age,
-    email: s.email,
-    admission_number: s.admissionNumber,
-    city: s.city,
-    country: s.country,
-    timezone: s.timezone,
-    preferred_language: s.preferredLanguage,
-    department: s.department,
-    current_study: s.currentStudy,
-    institution: s.institution,
-    year_level: s.yearLevel,
-    target_exam: s.targetExam,
-    target_date: s.targetDate,
-    strong_subjects: s.strongSubjects || [],
-    weak_subjects: s.weakSubjects || [],
-    currently_studying: s.currentlyStudying,
-    upcoming_topics: s.upcomingTopics || [],
-    learning_type: s.learningType,
-    study_method: s.studyMethod || [],
-    session_length: s.sessionLength,
-    break_pattern: s.breakPattern,
-    pace: s.pace,
-    available_days: s.availableDays || [],
-    available_times: s.availableTimes,
-    sessions_per_week: s.sessionsPerWeek,
-    session_type: s.sessionType,
-    study_style: s.studyStyle,
-    communication: s.communication,
-    teaching_ability: s.teachingAbility,
-    accountability_need: s.accountabilityNeed,
-    video_call_comfort: s.videoCallComfort,
-    short_term_goal: s.shortTermGoal,
-    long_term_goal: s.longTermGoal,
-    study_hours_target: s.studyHoursTarget,
-    weekly_goals: s.weeklyGoals,
-    dob: s.dob,
-    show_birthday: s.showBirthday,
-  };
+function camelToSnakeKey(s: string): string {
+  return s.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToStudent(r: any): StudentProfile {
-  return {
-    id: r.id,
-    createdAt: r.created_at,
-    name: r.name || '',
-    age: r.age || 0,
-    email: r.email || '',
-    admissionNumber: r.admission_number || '',
-    city: r.city || '',
-    country: r.country || '',
-    timezone: r.timezone || '',
-    preferredLanguage: r.preferred_language || '',
-    department: r.department || '',
-    currentStudy: r.current_study || '',
-    institution: r.institution || '',
-    yearLevel: r.year_level || '',
-    targetExam: r.target_exam || '',
-    targetDate: r.target_date || '',
-    strongSubjects: r.strong_subjects || [],
-    weakSubjects: r.weak_subjects || [],
-    currentlyStudying: r.currently_studying || '',
-    upcomingTopics: r.upcoming_topics || [],
-    learningType: r.learning_type || 'practical',
-    studyMethod: r.study_method || [],
-    sessionLength: r.session_length || '1hr',
-    breakPattern: r.break_pattern || 'flexible',
-    pace: r.pace || 'medium',
-    availableDays: r.available_days || [],
-    availableTimes: r.available_times || '',
-    sessionsPerWeek: r.sessions_per_week || 0,
-    sessionType: r.session_type || 'both',
-    studyStyle: r.study_style || 'flexible',
-    communication: r.communication || 'introvert',
-    teachingAbility: r.teaching_ability || 'average',
-    accountabilityNeed: r.accountability_need || 'medium',
-    videoCallComfort: r.video_call_comfort || false,
-    shortTermGoal: r.short_term_goal || '',
-    longTermGoal: r.long_term_goal || '',
-    studyHoursTarget: r.study_hours_target || 0,
-    weeklyGoals: r.weekly_goals || '',
-    dob: r.dob || '',
-    showBirthday: r.show_birthday !== false,
-  };
+function snakeToCamelKey(s: string): string {
+  return s.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 }
+
+/** Convert a camelCase TS object → snake_case DB row (skips undefined values) */
+function toRow(obj: object): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) row[camelToSnakeKey(k)] = v;
+  }
+  return row;
+}
+
+/** Convert a snake_case DB row → camelCase TS object, applying optional defaults */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fromRow<T>(row: any, defaults: Record<string, unknown> = {}): T {
+  const obj: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row as Record<string, unknown>)) {
+    const ck = snakeToCamelKey(k);
+    if (ck in defaults) {
+      const d = defaults[ck];
+      // Boolean defaults use ?? (preserve false); others use || (treat empty/0 as missing)
+      obj[ck] = typeof d === 'boolean' ? (v ?? d) : (v || d);
+    } else {
+      obj[ck] = v;
+    }
+  }
+  return obj as T;
+}
+
+// Per-type defaults (applied when DB value is null/undefined/empty)
+const STUDENT_DEFAULTS: Record<string, unknown> = {
+  name: '', age: 0, email: '', admissionNumber: '', city: '', country: '',
+  timezone: '', preferredLanguage: '', department: '', currentStudy: '',
+  institution: '', yearLevel: '', targetExam: '', targetDate: '',
+  strongSubjects: [], weakSubjects: [], currentlyStudying: '', upcomingTopics: [],
+  learningType: 'practical', studyMethod: [], sessionLength: '1hr',
+  breakPattern: 'flexible', pace: 'medium', availableDays: [], availableTimes: '',
+  sessionsPerWeek: 0, sessionType: 'both', studyStyle: 'flexible',
+  communication: 'introvert', teachingAbility: 'average', accountabilityNeed: 'medium',
+  videoCallComfort: false, shortTermGoal: '', longTermGoal: '', studyHoursTarget: 0,
+  weeklyGoals: '', dob: '', showBirthday: true,
+};
+
+const CALENDAR_DEFAULTS: Record<string, unknown> = {
+  userId: '', title: '', description: '', type: 'class', date: '',
+  startTime: '', endTime: '', room: '', recurring: false, recurringDay: '',
+  color: '', buddyId: '', buddyName: '', createdAt: '',
+};
+
+const ATTENDANCE_DEFAULTS: Record<string, unknown> = {
+  userId: '', subject: '', totalClasses: 0, attendedClasses: 0,
+  lastUpdated: '', createdAt: '',
+};
+
+// ============================================
+// Student ↔ Row converters
+// ============================================
+
+function studentToRow(s: StudentProfile): Record<string, unknown> { return toRow(s); }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToStudent(r: any): StudentProfile { return fromRow<StudentProfile>(r, STUDENT_DEFAULTS); }
 
 // ============================================
 // Student CRUD Operations
@@ -145,19 +122,7 @@ export async function deleteStudent(id: string): Promise<boolean> {
 // ============================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToSession(r: any): StudySession {
-  return {
-    id: r.id,
-    student1Id: r.student1_id,
-    student2Id: r.student2_id,
-    topic: r.topic,
-    goal: r.goal,
-    startTime: r.start_time,
-    endTime: r.end_time,
-    status: r.status,
-    summary: r.summary,
-  };
-}
+function rowToSession(r: any): StudySession { return fromRow<StudySession>(r); }
 
 export async function getAllSessions(limit = 100): Promise<StudySession[]> {
   const { data, error } = await supabase.from('sessions').select('*').limit(limit);
@@ -172,31 +137,13 @@ export async function getSessionsByStudent(studentId: string): Promise<StudySess
 }
 
 export async function createSession(session: StudySession): Promise<StudySession> {
-  const { error } = await supabase.from('sessions').upsert({
-    id: session.id,
-    student1_id: session.student1Id,
-    student2_id: session.student2Id,
-    topic: session.topic,
-    goal: session.goal,
-    start_time: session.startTime,
-    end_time: session.endTime,
-    status: session.status,
-    summary: session.summary || null,
-  });
+  const { error } = await supabase.from('sessions').upsert(toRow(session));
   if (error) console.error('createSession error:', error);
   return session;
 }
 
 export async function updateSession(id: string, updates: Partial<StudySession>): Promise<StudySession | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const row: any = {};
-  if (updates.topic !== undefined) row.topic = updates.topic;
-  if (updates.goal !== undefined) row.goal = updates.goal;
-  if (updates.startTime !== undefined) row.start_time = updates.startTime;
-  if (updates.endTime !== undefined) row.end_time = updates.endTime;
-  if (updates.status !== undefined) row.status = updates.status;
-  if (updates.summary !== undefined) row.summary = updates.summary;
-  const { error } = await supabase.from('sessions').update(row).eq('id', id);
+  const { error } = await supabase.from('sessions').update(toRow(updates)).eq('id', id);
   if (error) { console.error('updateSession error:', error); return null; }
   return { id, ...updates } as StudySession;
 }
@@ -208,28 +155,11 @@ export async function updateSession(id: string, updates: Partial<StudySession>):
 export async function getNotifications(userId: string, limit = 100, offset = 0): Promise<Notification[]> {
   const { data, error } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).range(offset, offset + limit - 1);
   if (error) { console.error('getNotifications error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    id: r.id,
-    userId: r.user_id,
-    type: r.type,
-    title: r.title,
-    message: r.message,
-    read: r.read,
-    createdAt: r.created_at,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<Notification>(r));
 }
 
 export async function addNotification(notification: Notification): Promise<void> {
-  const { error } = await supabase.from('notifications').insert({
-    id: notification.id,
-    user_id: notification.userId,
-    type: notification.type,
-    title: notification.title,
-    message: notification.message,
-    read: notification.read,
-    created_at: notification.createdAt,
-  });
+  const { error } = await supabase.from('notifications').insert(toRow(notification));
   if (error) console.error('addNotification error:', error);
 }
 
@@ -243,23 +173,7 @@ export async function markNotificationRead(userId: string, notifId: string): Pro
 // ============================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToMaterial(r: any): StudyMaterial {
-  return {
-    id: r.id,
-    title: r.title,
-    description: r.description,
-    department: r.department,
-    yearLevel: r.year_level,
-    subject: r.subject,
-    type: r.type,
-    uploadedBy: r.uploaded_by,
-    uploadedByEmail: r.uploaded_by_email,
-    fileName: r.file_name,
-    fileSize: r.file_size,
-    storedFileName: r.stored_file_name,
-    createdAt: r.created_at,
-  };
-}
+function rowToMaterial(r: any): StudyMaterial { return fromRow<StudyMaterial>(r); }
 
 export async function getAllMaterials(filters?: {
   department?: string; type?: string; year?: string; search?: string;
@@ -289,21 +203,7 @@ export async function getMaterialsByDepartment(department: string): Promise<Stud
 }
 
 export async function createMaterial(material: StudyMaterial): Promise<StudyMaterial> {
-  const { error } = await supabase.from('materials').insert({
-    id: material.id,
-    title: material.title,
-    description: material.description,
-    department: material.department,
-    year_level: material.yearLevel,
-    subject: material.subject,
-    type: material.type,
-    uploaded_by: material.uploadedBy,
-    uploaded_by_email: material.uploadedByEmail,
-    file_name: material.fileName,
-    file_size: material.fileSize,
-    stored_file_name: material.storedFileName,
-    created_at: material.createdAt,
-  });
+  const { error } = await supabase.from('materials').insert(toRow(material));
   if (error) console.error('createMaterial error:', error);
   return material;
 }
@@ -400,11 +300,7 @@ export async function getUserAvailability(userId: string): Promise<UserAvailabil
 }
 
 export async function setUserAvailability(avail: UserAvailability): Promise<void> {
-  const { error } = await supabase.from('availability').upsert({
-    user_id: avail.userId,
-    slots: avail.slots,
-    updated_at: avail.updatedAt,
-  });
+  const { error } = await supabase.from('availability').upsert(toRow(avail));
   if (error) console.error('setUserAvailability error:', error);
 }
 
@@ -442,16 +338,7 @@ export async function getUserStatus(userId: string): Promise<UserStatus | undefi
 export async function getAllUserStatuses(limit = 500): Promise<UserStatus[]> {
   const { data, error } = await supabase.from('user_statuses').select('*').limit(limit);
   if (error) { console.error('getAllUserStatuses error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    userId: r.user_id,
-    status: r.status,
-    lastSeen: r.last_seen,
-    currentSubject: r.current_subject || undefined,
-    sessionStartedAt: r.session_started_at || undefined,
-    hideStatus: r.hide_status,
-    hideSubject: r.hide_subject,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<UserStatus>(r));
 }
 
 export async function updateUserStatus(userId: string, updates: Partial<UserStatus>): Promise<UserStatus> {
@@ -465,15 +352,7 @@ export async function updateUserStatus(userId: string, updates: Partial<UserStat
     hideStatus: updates.hideStatus ?? existing?.hideStatus ?? false,
     hideSubject: updates.hideSubject ?? existing?.hideSubject ?? false,
   };
-  const { error } = await supabase.from('user_statuses').upsert({
-    user_id: merged.userId,
-    status: merged.status,
-    last_seen: merged.lastSeen,
-    current_subject: merged.currentSubject || '',
-    session_started_at: merged.sessionStartedAt || null,
-    hide_status: merged.hideStatus,
-    hide_subject: merged.hideSubject,
-  });
+  const { error } = await supabase.from('user_statuses').upsert(toRow(merged));
   if (error) console.error('updateUserStatus error:', error);
   return merged;
 }
@@ -483,20 +362,7 @@ export async function updateUserStatus(userId: string, updates: Partial<UserStat
 // ============================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToBooking(r: any): SessionBooking {
-  return {
-    id: r.id,
-    requesterId: r.requester_id,
-    requesterName: r.requester_name,
-    targetId: r.target_id,
-    targetName: r.target_name,
-    day: r.day,
-    hour: r.hour,
-    topic: r.topic,
-    status: r.status,
-    createdAt: r.created_at,
-  };
-}
+function rowToBooking(r: any): SessionBooking { return fromRow<SessionBooking>(r); }
 
 export async function getAllBookings(limit = 100, offset = 0): Promise<SessionBooking[]> {
   const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false }).range(offset, offset + limit - 1);
@@ -517,30 +383,13 @@ export async function getBookingById(id: string): Promise<SessionBooking | undef
 }
 
 export async function createBooking(booking: SessionBooking): Promise<SessionBooking> {
-  const { error } = await supabase.from('bookings').insert({
-    id: booking.id,
-    requester_id: booking.requesterId,
-    requester_name: booking.requesterName,
-    target_id: booking.targetId,
-    target_name: booking.targetName,
-    day: booking.day,
-    hour: booking.hour,
-    topic: booking.topic,
-    status: booking.status,
-    created_at: booking.createdAt,
-  });
+  const { error } = await supabase.from('bookings').insert(toRow(booking));
   if (error) console.error('createBooking error:', error);
   return booking;
 }
 
 export async function updateBooking(id: string, updates: Partial<SessionBooking>): Promise<SessionBooking | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const row: any = {};
-  if (updates.status !== undefined) row.status = updates.status;
-  if (updates.day !== undefined) row.day = updates.day;
-  if (updates.hour !== undefined) row.hour = updates.hour;
-  if (updates.topic !== undefined) row.topic = updates.topic;
-  const { error } = await supabase.from('bookings').update(row).eq('id', id);
+  const { error } = await supabase.from('bookings').update(toRow(updates)).eq('id', id);
   if (error) { console.error('updateBooking error:', error); return null; }
   return { id, ...updates } as SessionBooking;
 }
@@ -552,14 +401,7 @@ export async function updateBooking(id: string, updates: Partial<SessionBooking>
 export async function getBirthdayWishesForUser(userId: string): Promise<BirthdayWish[]> {
   const { data, error } = await supabase.from('birthday_wishes').select('*').eq('to_user_id', userId);
   if (error) { console.error('getBirthdayWishesForUser error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    id: r.id,
-    fromUserId: r.from_user_id,
-    fromUserName: r.from_user_name,
-    toUserId: r.to_user_id,
-    createdAt: r.created_at,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<BirthdayWish>(r));
 }
 
 export async function hasWishedToday(fromUserId: string, toUserId: string): Promise<boolean> {
@@ -569,13 +411,7 @@ export async function hasWishedToday(fromUserId: string, toUserId: string): Prom
 }
 
 export async function addBirthdayWish(wish: BirthdayWish): Promise<void> {
-  const { error } = await supabase.from('birthday_wishes').insert({
-    id: wish.id,
-    from_user_id: wish.fromUserId,
-    from_user_name: wish.fromUserName,
-    to_user_id: wish.toUserId,
-    created_at: wish.createdAt,
-  });
+  const { error } = await supabase.from('birthday_wishes').insert(toRow(wish));
   if (error) console.error('addBirthdayWish error:', error);
 }
 
@@ -586,31 +422,13 @@ export async function addBirthdayWish(wish: BirthdayWish): Promise<void> {
 export async function getFriendRequestsForUser(userId: string, limit = 100): Promise<FriendRequest[]> {
   const { data, error } = await supabase.from('friend_requests').select('*').or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`).order('created_at', { ascending: false }).limit(limit);
   if (error) { console.error('getFriendRequestsForUser error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    id: r.id,
-    fromUserId: r.from_user_id,
-    fromUserName: r.from_user_name,
-    toUserId: r.to_user_id,
-    toUserName: r.to_user_name,
-    status: r.status,
-    createdAt: r.created_at,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<FriendRequest>(r));
 }
 
 export async function getPendingFriendRequests(userId: string, limit = 50): Promise<FriendRequest[]> {
   const { data, error } = await supabase.from('friend_requests').select('*').eq('to_user_id', userId).eq('status', 'pending').limit(limit);
   if (error) { console.error('getPendingFriendRequests error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    id: r.id,
-    fromUserId: r.from_user_id,
-    fromUserName: r.from_user_name,
-    toUserId: r.to_user_id,
-    toUserName: r.to_user_name,
-    status: r.status,
-    createdAt: r.created_at,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<FriendRequest>(r));
 }
 
 export async function createFriendRequest(req: FriendRequest): Promise<FriendRequest> {
@@ -618,18 +436,9 @@ export async function createFriendRequest(req: FriendRequest): Promise<FriendReq
   const { data: existing } = await supabase.from('friend_requests').select('*')
     .or(`and(from_user_id.eq.${req.fromUserId},to_user_id.eq.${req.toUserId}),and(from_user_id.eq.${req.toUserId},to_user_id.eq.${req.fromUserId})`);
   if (existing && existing.length > 0) {
-    const r = existing[0];
-    return { id: r.id, fromUserId: r.from_user_id, fromUserName: r.from_user_name, toUserId: r.to_user_id, toUserName: r.to_user_name, status: r.status, createdAt: r.created_at };
+    return fromRow<FriendRequest>(existing[0]);
   }
-  const { error } = await supabase.from('friend_requests').insert({
-    id: req.id,
-    from_user_id: req.fromUserId,
-    from_user_name: req.fromUserName,
-    to_user_id: req.toUserId,
-    to_user_name: req.toUserName,
-    status: req.status,
-    created_at: req.createdAt,
-  });
+  const { error } = await supabase.from('friend_requests').insert(toRow(req));
   if (error) console.error('createFriendRequest error:', error);
   return req;
 }
@@ -637,13 +446,13 @@ export async function createFriendRequest(req: FriendRequest): Promise<FriendReq
 export async function updateFriendRequestStatus(requestId: string, status: 'accepted' | 'declined'): Promise<FriendRequest | null> {
   const { data, error } = await supabase.from('friend_requests').update({ status }).eq('id', requestId).select().single();
   if (error || !data) { console.error('updateFriendRequestStatus error:', error); return null; }
-  return { id: data.id, fromUserId: data.from_user_id, fromUserName: data.from_user_name, toUserId: data.to_user_id, toUserName: data.to_user_name, status: data.status, createdAt: data.created_at };
+  return fromRow<FriendRequest>(data);
 }
 
 export async function getFriendRequestById(requestId: string): Promise<FriendRequest | null> {
   const { data, error } = await supabase.from('friend_requests').select('*').eq('id', requestId).single();
   if (error || !data) return null;
-  return { id: data.id, fromUserId: data.from_user_id, fromUserName: data.from_user_name, toUserId: data.to_user_id, toUserName: data.to_user_name, status: data.status, createdAt: data.created_at };
+  return fromRow<FriendRequest>(data);
 }
 
 // ============================================
@@ -653,15 +462,7 @@ export async function getFriendRequestById(requestId: string): Promise<FriendReq
 export async function getFriendsForUser(userId: string, limit = 200): Promise<Friendship[]> {
   const { data, error } = await supabase.from('friendships').select('*').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).limit(limit);
   if (error) { console.error('getFriendsForUser error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    id: r.id,
-    user1Id: r.user1_id,
-    user1Name: r.user1_name,
-    user2Id: r.user2_id,
-    user2Name: r.user2_name,
-    createdAt: r.created_at,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<Friendship>(r));
 }
 
 export async function areFriends(userId1: string, userId2: string): Promise<boolean> {
@@ -679,14 +480,7 @@ export async function addFriendship(friendship: Friendship): Promise<Friendship>
       (f.user1Id === friendship.user2Id && f.user2Id === friendship.user1Id)
     ) || friendship;
   }
-  const { error } = await supabase.from('friendships').insert({
-    id: friendship.id,
-    user1_id: friendship.user1Id,
-    user1_name: friendship.user1Name,
-    user2_id: friendship.user2Id,
-    user2_name: friendship.user2Name,
-    created_at: friendship.createdAt,
-  });
+  const { error } = await supabase.from('friendships').insert(toRow(friendship));
   if (error) console.error('addFriendship error:', error);
   return friendship;
 }
@@ -705,33 +499,13 @@ export async function removeFriendship(userId1: string, userId2: string): Promis
 export async function getRatingsForUser(userId: string, limit = 100): Promise<BuddyRating[]> {
   const { data, error } = await supabase.from('ratings').select('*').eq('to_user_id', userId).limit(limit);
   if (error) { console.error('getRatingsForUser error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    id: r.id,
-    fromUserId: r.from_user_id,
-    fromUserName: r.from_user_name,
-    toUserId: r.to_user_id,
-    toUserName: r.to_user_name,
-    rating: r.rating,
-    review: r.review,
-    createdAt: r.created_at,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<BuddyRating>(r));
 }
 
 export async function getRatingsByUser(userId: string, limit = 100): Promise<BuddyRating[]> {
   const { data, error } = await supabase.from('ratings').select('*').eq('from_user_id', userId).limit(limit);
   if (error) { console.error('getRatingsByUser error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    id: r.id,
-    fromUserId: r.from_user_id,
-    fromUserName: r.from_user_name,
-    toUserId: r.to_user_id,
-    toUserName: r.to_user_name,
-    rating: r.rating,
-    review: r.review,
-    createdAt: r.created_at,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<BuddyRating>(r));
 }
 
 export async function getAverageRating(userId: string): Promise<number> {
@@ -748,16 +522,7 @@ export async function getAverageRating(userId: string): Promise<number> {
 }
 
 export async function addRating(rating: BuddyRating): Promise<BuddyRating> {
-  const { error } = await supabase.from('ratings').insert({
-    id: rating.id,
-    from_user_id: rating.fromUserId,
-    from_user_name: rating.fromUserName,
-    to_user_id: rating.toUserId,
-    to_user_name: rating.toUserName,
-    rating: rating.rating,
-    review: rating.review,
-    created_at: rating.createdAt,
-  });
+  const { error } = await supabase.from('ratings').insert(toRow(rating));
   if (error) console.error('addRating error:', error);
   return rating;
 }
@@ -773,15 +538,7 @@ export async function getUserSubscription(userId: string): Promise<Subscription 
 }
 
 export async function setUserSubscription(sub: Subscription): Promise<Subscription> {
-  const { error } = await supabase.from('subscriptions').upsert({
-    user_id: sub.userId,
-    plan: sub.plan,
-    start_date: sub.startDate,
-    end_date: sub.endDate,
-    status: sub.status,
-    transaction_id: sub.transactionId || '',
-    created_at: sub.createdAt,
-  });
+  const { error } = await supabase.from('subscriptions').upsert(toRow(sub));
   if (error) console.error('setUserSubscription error:', error);
   return sub;
 }
@@ -824,30 +581,11 @@ export async function getMessagesForChat(chatId: string, limit = 50, before?: st
   query = query.limit(limit);
   const { data, error } = await query;
   if (error) { console.error('getMessagesForChat error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    id: r.id,
-    chatId: r.chat_id,
-    senderId: r.sender_id,
-    senderName: r.sender_name,
-    receiverId: r.receiver_id,
-    text: r.text,
-    read: r.read,
-    createdAt: r.created_at,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<DirectMessage>(r));
 }
 
 export async function addMessage(msg: DirectMessage): Promise<DirectMessage> {
-  const { error } = await supabase.from('messages').insert({
-    id: msg.id,
-    chat_id: msg.chatId,
-    sender_id: msg.senderId,
-    sender_name: msg.senderName,
-    receiver_id: msg.receiverId,
-    text: msg.text,
-    read: msg.read,
-    created_at: msg.createdAt,
-  });
+  const { error } = await supabase.from('messages').insert(toRow(msg));
   if (error) console.error('addMessage error:', error);
 
   // Update or create chat thread
@@ -925,18 +663,7 @@ export async function markMessagesRead(chatId: string, userId: string): Promise<
 export async function getThreadsForUser(userId: string, limit = 50): Promise<ChatThread[]> {
   const { data, error } = await supabase.from('chat_threads').select('*').or(`user1_id.eq.${userId},user2_id.eq.${userId}`).order('last_message_at', { ascending: false }).limit(limit);
   if (error) { console.error('getThreadsForUser error:', error); return []; }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []).map((r: any) => ({
-    chatId: r.chat_id,
-    user1Id: r.user1_id,
-    user1Name: r.user1_name,
-    user2Id: r.user2_id,
-    user2Name: r.user2_name,
-    lastMessage: r.last_message,
-    lastMessageAt: r.last_message_at,
-    unreadCount1: r.unread_count1,
-    unreadCount2: r.unread_count2,
-  }));
+  return (data || []).map((r: Record<string, unknown>) => fromRow<ChatThread>(r));
 }
 
 export async function getUnreadCountForUser(userId: string): Promise<number> {
@@ -965,45 +692,8 @@ export async function updateThreadUserName(chatId: string, userId: string, userN
 // ============================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToCalendarEvent(r: any): CalendarEvent {
-  return {
-    id: r.id,
-    userId: r.user_id || '',
-    title: r.title || '',
-    description: r.description || '',
-    type: r.type || 'class',
-    date: r.date || '',
-    startTime: r.start_time || '',
-    endTime: r.end_time || '',
-    room: r.room || '',
-    recurring: r.recurring || false,
-    recurringDay: r.recurring_day || '',
-    color: r.color || '',
-    buddyId: r.buddy_id || '',
-    buddyName: r.buddy_name || '',
-    createdAt: r.created_at || '',
-  };
-}
-
-function calendarEventToRow(e: CalendarEvent): Record<string, unknown> {
-  return {
-    id: e.id,
-    user_id: e.userId,
-    title: e.title,
-    description: e.description,
-    type: e.type,
-    date: e.date,
-    start_time: e.startTime,
-    end_time: e.endTime,
-    room: e.room,
-    recurring: e.recurring,
-    recurring_day: e.recurringDay,
-    color: e.color,
-    buddy_id: e.buddyId,
-    buddy_name: e.buddyName,
-    created_at: e.createdAt,
-  };
-}
+function rowToCalendarEvent(r: any): CalendarEvent { return fromRow<CalendarEvent>(r, CALENDAR_DEFAULTS); }
+function calendarEventToRow(e: CalendarEvent): Record<string, unknown> { return toRow(e); }
 
 export async function getCalendarEventsForUser(userId: string, limit = 200): Promise<CalendarEvent[]> {
   const { data, error } = await supabase.from('calendar_events').select('*').eq('user_id', userId).order('date', { ascending: true }).limit(limit);
@@ -1035,20 +725,7 @@ export async function getCalendarEventById(id: string): Promise<CalendarEvent | 
 }
 
 export async function updateCalendarEvent(id: string, updates: Partial<CalendarEvent>): Promise<CalendarEvent | null> {
-  const partial: Record<string, unknown> = {};
-  if (updates.title !== undefined) partial.title = updates.title;
-  if (updates.description !== undefined) partial.description = updates.description;
-  if (updates.type !== undefined) partial.type = updates.type;
-  if (updates.date !== undefined) partial.date = updates.date;
-  if (updates.startTime !== undefined) partial.start_time = updates.startTime;
-  if (updates.endTime !== undefined) partial.end_time = updates.endTime;
-  if (updates.room !== undefined) partial.room = updates.room;
-  if (updates.recurring !== undefined) partial.recurring = updates.recurring;
-  if (updates.recurringDay !== undefined) partial.recurring_day = updates.recurringDay;
-  if (updates.color !== undefined) partial.color = updates.color;
-  if (updates.buddyId !== undefined) partial.buddy_id = updates.buddyId;
-  if (updates.buddyName !== undefined) partial.buddy_name = updates.buddyName;
-
+  const partial = toRow(updates);
   const { data, error } = await supabase.from('calendar_events').update(partial).eq('id', id).select().single();
   if (error) { console.error('updateCalendarEvent error:', error); return null; }
   return rowToCalendarEvent(data);
@@ -1065,29 +742,8 @@ export async function deleteCalendarEvent(id: string): Promise<boolean> {
 // ============================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function rowToAttendance(r: any): AttendanceRecord {
-  return {
-    id: r.id,
-    userId: r.user_id || '',
-    subject: r.subject || '',
-    totalClasses: r.total_classes || 0,
-    attendedClasses: r.attended_classes || 0,
-    lastUpdated: r.last_updated || '',
-    createdAt: r.created_at || '',
-  };
-}
-
-function attendanceToRow(a: AttendanceRecord): Record<string, unknown> {
-  return {
-    id: a.id,
-    user_id: a.userId,
-    subject: a.subject,
-    total_classes: a.totalClasses,
-    attended_classes: a.attendedClasses,
-    last_updated: a.lastUpdated,
-    created_at: a.createdAt,
-  };
-}
+function rowToAttendance(r: any): AttendanceRecord { return fromRow<AttendanceRecord>(r, ATTENDANCE_DEFAULTS); }
+function attendanceToRow(a: AttendanceRecord): Record<string, unknown> { return toRow(a); }
 
 export async function getAttendanceForUser(userId: string, limit = 100): Promise<AttendanceRecord[]> {
   const { data, error } = await supabase.from('attendance').select('*').eq('user_id', userId).order('subject').limit(limit);
@@ -1120,4 +776,20 @@ export async function getAttendanceRecordById(id: string): Promise<AttendanceRec
   const { data, error } = await supabase.from('attendance').select('*').eq('id', id).single();
   if (error || !data) return null;
   return rowToAttendance(data);
+}
+
+// ============================================
+// Feedback Operations
+// ============================================
+
+export async function createFeedback(fb: Feedback): Promise<Feedback> {
+  const { error } = await supabase.from('feedback').insert(toRow(fb));
+  if (error) { console.error('createFeedback error:', error); }
+  return fb;
+}
+
+export async function getAllFeedback(limit = 100): Promise<Feedback[]> {
+  const { data, error } = await supabase.from('feedback').select('*').order('created_at', { ascending: false }).limit(limit);
+  if (error) { console.error('getAllFeedback error:', error); return []; }
+  return (data || []).map((r: any) => fromRow<Feedback>(r));
 }

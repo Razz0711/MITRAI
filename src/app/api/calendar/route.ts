@@ -1,7 +1,6 @@
 // ============================================
 // MitrAI - Calendar API
-// GET: get events for a user (with optional date range)
-// POST: create / update / delete events
+// GET: get events | POST: create | PUT: update | DELETE: delete
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -48,78 +47,67 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/calendar
+// POST /api/calendar — create a new event
 export async function POST(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   if (!rateLimit(`calendar:${authUser.id}`, 30, 60_000)) return rateLimitExceeded();
   try {
     const body = await request.json();
-    const { action } = body;
-
-    switch (action) {
-      case 'create': {
-        const { userId, title, description, type, date, startTime, endTime, room, recurring, recurringDay, color, buddyId, buddyName } = body;
-        if (!userId || !title || !date || !startTime) {
-          return NextResponse.json({ success: false, error: 'userId, title, date, and startTime required' }, { status: 400 });
-        }
-        // Ownership: can only create events for yourself
-        if (userId !== authUser.id) return forbidden();
-
-        const event: CalendarEvent = {
-          id: uuidv4(),
-          userId,
-          title,
-          description: description || '',
-          type: type || 'class',
-          date,
-          startTime,
-          endTime: endTime || '',
-          room: room || '',
-          recurring: recurring || false,
-          recurringDay: recurringDay || '',
-          color: color || '',
-          buddyId: buddyId || '',
-          buddyName: buddyName || '',
-          createdAt: new Date().toISOString(),
-        };
-
-        await createCalendarEvent(event);
-        return NextResponse.json({ success: true, data: event });
-      }
-
-      case 'update': {
-        const { eventId, updates } = body;
-        if (!eventId) {
-          return NextResponse.json({ success: false, error: 'eventId required' }, { status: 400 });
-        }
-        // Ownership: verify event belongs to current user
-        const eventToUpdate = await getCalendarEventById(eventId);
-        if (!eventToUpdate) return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
-        if (eventToUpdate.userId !== authUser.id) return forbidden();
-
-        const updated = await updateCalendarEvent(eventId, updates || {});
-        return NextResponse.json({ success: true, data: updated });
-      }
-
-      case 'delete': {
-        const { eventId } = body;
-        if (!eventId) {
-          return NextResponse.json({ success: false, error: 'eventId required' }, { status: 400 });
-        }
-        // Ownership: verify event belongs to current user
-        const eventToDelete = await getCalendarEventById(eventId);
-        if (!eventToDelete) return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
-        if (eventToDelete.userId !== authUser.id) return forbidden();
-
-        const deleted = await deleteCalendarEvent(eventId);
-        return NextResponse.json({ success: true, data: { deleted } });
-      }
-
-      default:
-        return NextResponse.json({ success: false, error: `Unknown action: ${action}` }, { status: 400 });
+    const { userId, title, description, type, date, startTime, endTime, room, recurring, recurringDay, color, buddyId, buddyName } = body;
+    if (!userId || !title || !date || !startTime) {
+      return NextResponse.json({ success: false, error: 'userId, title, date, and startTime required' }, { status: 400 });
     }
+    if (userId !== authUser.id) return forbidden();
+
+    const event: CalendarEvent = {
+      id: uuidv4(), userId, title, description: description || '', type: type || 'class',
+      date, startTime, endTime: endTime || '', room: room || '',
+      recurring: recurring || false, recurringDay: recurringDay || '',
+      color: color || '', buddyId: buddyId || '', buddyName: buddyName || '',
+      createdAt: new Date().toISOString(),
+    };
+    await createCalendarEvent(event);
+    return NextResponse.json({ success: true, data: event });
   } catch (error) {
     console.error('Calendar POST error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to process calendar action' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to create event' }, { status: 500 });
+  }
+}
+
+// PUT /api/calendar — update an existing event
+export async function PUT(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`calendar:${authUser.id}`, 30, 60_000)) return rateLimitExceeded();
+  try {
+    const body = await request.json();
+    const { eventId, updates } = body;
+    if (!eventId) return NextResponse.json({ success: false, error: 'eventId required' }, { status: 400 });
+    const eventToUpdate = await getCalendarEventById(eventId);
+    if (!eventToUpdate) return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
+    if (eventToUpdate.userId !== authUser.id) return forbidden();
+    const updated = await updateCalendarEvent(eventId, updates || {});
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Calendar PUT error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to update event' }, { status: 500 });
+  }
+}
+
+// DELETE /api/calendar — delete an event
+export async function DELETE(request: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`calendar:${authUser.id}`, 30, 60_000)) return rateLimitExceeded();
+  try {
+    const body = await request.json();
+    const { eventId } = body;
+    if (!eventId) return NextResponse.json({ success: false, error: 'eventId required' }, { status: 400 });
+    const eventToDelete = await getCalendarEventById(eventId);
+    if (!eventToDelete) return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
+    if (eventToDelete.userId !== authUser.id) return forbidden();
+    const deleted = await deleteCalendarEvent(eventId);
+    return NextResponse.json({ success: true, data: { deleted } });
+  } catch (error) {
+    console.error('Calendar DELETE error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to delete event' }, { status: 500 });
   }
 }

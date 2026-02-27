@@ -57,9 +57,9 @@ export default function FriendsPage() {
   const handleRespondRequest = async (requestId: string, status: 'accepted' | 'declined') => {
     try {
       await fetch('/api/friends', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'respond_request', requestId, status }),
+        body: JSON.stringify({ requestId, status }),
       });
       loadData();
     } catch { /* ignore */ }
@@ -69,9 +69,9 @@ export default function FriendsPage() {
     if (!user) return;
     try {
       await fetch('/api/friends', {
-        method: 'POST',
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'remove_friend', userId1: user.id, userId2: friendUserId }),
+        body: JSON.stringify({ userId1: user.id, userId2: friendUserId }),
       });
       loadData();
     } catch { /* ignore */ }
