@@ -10,6 +10,7 @@ import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // Strip sensitive fields when viewing other users' profiles
 function stripSensitive(student: StudentProfile): Partial<StudentProfile> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { email, admissionNumber, ...safe } = student;
   return safe;
 }

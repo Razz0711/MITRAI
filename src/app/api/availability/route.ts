@@ -63,6 +63,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
     }
 
+    // Ownership: can only update own availability
+    if (action === 'update' || action === 'engage') {
+      if (userId !== authUser.id) return forbidden();
+    }
+
     // Action: 'update' — bulk update slots
     if (action === 'update' && slots) {
       const avail: UserAvailability = {
