@@ -203,22 +203,6 @@ export default function SessionPage() {
             Start Session
           </button>
         </div>
-
-        {/* Quick Topics */}
-        <div className="mt-4">
-          <p className="text-xs text-[var(--muted)] mb-2">Quick start:</p>
-          <div className="flex flex-wrap gap-1.5">
-            {['Calculus', 'Organic Chemistry', 'Physics - Mechanics', 'Trigonometry', 'Thermodynamics', 'Genetics'].map(t => (
-              <button
-                key={t}
-                onClick={() => setTopic(t)}
-                className="px-3 py-1.5 rounded-lg bg-white/5 border border-[var(--border)] text-xs hover:bg-white/10 hover:border-[var(--primary)] transition-all"
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     );
   }
