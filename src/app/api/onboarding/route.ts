@@ -43,13 +43,13 @@ function getFallbackResponse(step: number, _message: string, data: Record<string
 
   const responses: Record<number, string> = {
     0: `Hey! Welcome to MitrAI for SVNIT!\nI'm your study buddy matching agent. Let's find you the perfect partner.\nWhat's your name?`,
-    1: `Nice to meet you, ${name}!\nWhich department/branch are you in at SVNIT?\n(CSE, AI, Mechanical, Civil, Electrical, Electronics, Chemical, Integrated M.Sc. Mathematics, Integrated M.Sc. Physics, Integrated M.Sc. Chemistry, B.Tech Physics, Mathematics & Computing)`,
-    2: `Got it! What year are you in? (1st / 2nd / 3rd / 4th / 5th)`,
-    3: `What are you currently studying or preparing for?\n(Semester exams, GATE, placements, projects, etc.)`,
+    1: `Nice to meet you, ${name}!\nWhich department/branch are you in at SVNIT?`,
+    2: `Got it! What year are you in?`,
+    3: `What are you currently studying or preparing for?`,
     4: `Which subjects are you strong in?\n(List them separated by commas)`,
     5: `And which subjects do you need help with? That's exactly what a study buddy is for.`,
-    6: `How do you prefer to study?\nReading notes / Watching videos / Solving problems / Group discussion\n(Pick one or more)`,
-    7: `How long are your study sessions usually?\n30 minutes / 1 hour / 2 hours`,
+    6: `How do you prefer to study? Pick one or more.`,
+    7: `How long are your study sessions usually?`,
     8: `Which days and times work best for you?\n(e.g., Mon, Wed, Fri evenings 7-10 PM)`,
     9: `What's your main goal right now, ${name}?\n(e.g., Score 9+ SGPA, GATE prep, complete project, etc.)`,
     10: `Last question! Do you prefer a strict study schedule or flexible one? And do you need someone to keep you accountable?`,
