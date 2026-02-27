@@ -22,6 +22,7 @@ export default function Navbar() {
         { href: '/chat', label: 'Chat', icon: '💬' },
         { href: '/materials', label: 'Materials', icon: '📚' },
         { href: '/calendar', label: 'Calendar', icon: '📅' },
+        { href: '/call', label: 'Call', icon: '📞' },
         { href: '/session', label: 'Session', icon: '📖' },
       ]
     : [];
