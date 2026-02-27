@@ -4,6 +4,7 @@ import {
   getChatId,
   getMessagesForChat,
   addMessage,
+  deleteMessage,
   markMessagesRead,
   getThreadsForUser,
   getUnreadCountForUser,
@@ -100,6 +101,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'chatId, userId required' }, { status: 400 });
       }
       await markMessagesRead(chatId, userId);
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'delete') {
+      const { messageId, userId } = body;
+      if (!messageId || !userId) {
+        return NextResponse.json({ error: 'messageId, userId required' }, { status: 400 });
+      }
+      const success = await deleteMessage(messageId, userId);
+      if (!success) {
+        return NextResponse.json({ error: 'Could not delete message' }, { status: 403 });
+      }
       return NextResponse.json({ success: true });
     }
 

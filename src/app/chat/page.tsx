@@ -136,6 +136,23 @@ export default function ChatPage() {
     setSending(false);
   };
 
+  // Delete message
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!studentId || !confirm('Delete this message?')) return;
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', messageId, userId: studentId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadMessages();
+        await loadThreads();
+      }
+    } catch { /* ignore */ }
+  };
+
   // Open a chat (from friends page redirect with query params)
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -344,8 +361,17 @@ export default function ChatPage() {
                     return (
                       <div
                         key={msg.id}
-                        className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${isMine ? 'justify-end' : 'justify-start'} group`}
                       >
+                        {isMine && (
+                          <button
+                            onClick={() => handleDeleteMessage(msg.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity self-center mr-1 text-red-400 hover:text-red-500 text-xs px-1.5 py-0.5 rounded hover:bg-red-500/10"
+                            title="Delete message"
+                          >
+                            🗑️
+                          </button>
+                        )}
                         <div
                           className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
                             isMine

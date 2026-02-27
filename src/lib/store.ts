@@ -850,6 +850,40 @@ export async function addMessage(msg: DirectMessage): Promise<DirectMessage> {
   return msg;
 }
 
+export async function deleteMessage(messageId: string, userId: string): Promise<boolean> {
+  // Only allow sender to delete their own message
+  const { data: msg } = await supabase.from('messages').select('*').eq('id', messageId).single();
+  if (!msg || msg.sender_id !== userId) return false;
+
+  const { error } = await supabase.from('messages').delete().eq('id', messageId);
+  if (error) { console.error('deleteMessage error:', error); return false; }
+
+  // Update thread's last message if this was the latest
+  const chatId = msg.chat_id;
+  const { data: latest } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('chat_id', chatId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (latest) {
+    await supabase.from('chat_threads').update({
+      last_message: latest.text,
+      last_message_at: latest.created_at,
+    }).eq('chat_id', chatId);
+  } else {
+    // No messages left — update thread to show empty
+    await supabase.from('chat_threads').update({
+      last_message: '',
+      last_message_at: new Date().toISOString(),
+    }).eq('chat_id', chatId);
+  }
+
+  return true;
+}
+
 export async function markMessagesRead(chatId: string, userId: string): Promise<void> {
   await supabase.from('messages').update({ read: true }).eq('chat_id', chatId).eq('receiver_id', userId).eq('read', false);
   const { data: thread } = await supabase.from('chat_threads').select('*').eq('chat_id', chatId).single();
