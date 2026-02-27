@@ -77,6 +77,8 @@ export async function POST(req: NextRequest) {
           admission_number: admissionNumber.trim().toUpperCase(),
           department,
           year_level: yearLevel,
+          dob: dob || '',
+          show_birthday: true,
           current_study: currentStudy,
           institution: 'SVNIT Surat',
           city: 'Surat',

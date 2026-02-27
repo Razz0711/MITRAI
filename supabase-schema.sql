@@ -43,7 +43,9 @@ CREATE TABLE IF NOT EXISTS students (
   short_term_goal TEXT DEFAULT '',
   long_term_goal TEXT DEFAULT '',
   study_hours_target INT DEFAULT 0,
-  weekly_goals TEXT DEFAULT ''
+  weekly_goals TEXT DEFAULT '',
+  dob TEXT DEFAULT '',
+  show_birthday BOOLEAN DEFAULT TRUE
 );
 
 -- 2. Sessions

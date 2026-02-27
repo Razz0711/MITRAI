@@ -5,9 +5,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOnboardingResponse } from '@/lib/gemini';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`onboarding:${authUser.id}`, 20, 60_000)) return rateLimitExceeded();
   // Parse body ONCE before try/catch so it's available in the catch block
   let step = 0;
   let message = '';

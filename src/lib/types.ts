@@ -55,6 +55,10 @@ export interface StudentProfile {
   longTermGoal: string;
   studyHoursTarget: number;
   weeklyGoals: string;
+
+  // Birthday (stored server-side, no longer leaked via URL)
+  dob: string;           // YYYY-MM-DD
+  showBirthday: boolean; // privacy toggle
 }
 
 export type LearningType = 'visual' | 'auditory' | 'reading' | 'practical';

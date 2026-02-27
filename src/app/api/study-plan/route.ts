@@ -6,9 +6,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStudentById } from '@/lib/store';
 import { generateStudyPlan } from '@/lib/gemini';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`studyplan:${authUser.id}`, 5, 60_000)) return rateLimitExceeded();
   try {
     const { studentId, buddyId, weekDates } = await req.json();
 

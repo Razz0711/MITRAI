@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getAllStudents, createStudent, getStudentById, deleteStudent, updateStudent } from '@/lib/store';
 import { StudentProfile } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 // Strip sensitive fields when viewing other users' profiles
 function stripSensitive(student: StudentProfile): Partial<StudentProfile> {
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
 // POST - Create a new student profile
 export async function POST(req: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`students-create:${authUser.id}`, 10, 60_000)) return rateLimitExceeded();
   try {
     const body = await req.json();
 
@@ -108,6 +110,8 @@ export async function POST(req: NextRequest) {
       longTermGoal: body.longTermGoal || '',
       studyHoursTarget: body.studyHoursTarget || 4,
       weeklyGoals: body.weeklyGoals || '',
+      dob: body.dob || '',
+      showBirthday: body.showBirthday !== false,
     };
 
     const created = await createStudent(student);
@@ -121,6 +125,7 @@ export async function POST(req: NextRequest) {
 // PUT - Update an existing student profile (used by onboarding to fill in details)
 export async function PUT(req: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`students-update:${authUser.id}`, 20, 60_000)) return rateLimitExceeded();
   try {
     const body = await req.json();
     const { id, ...updates } = body;
@@ -174,6 +179,8 @@ export async function PUT(req: NextRequest) {
         longTermGoal: updates.longTermGoal || '',
         studyHoursTarget: updates.studyHoursTarget || 4,
         weeklyGoals: updates.weeklyGoals || '',
+        dob: updates.dob || '',
+        showBirthday: updates.showBirthday !== false,
       };
       const created = await createStudent(student);
       return NextResponse.json({ success: true, data: created }, { status: 201 });

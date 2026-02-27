@@ -12,6 +12,7 @@ import {
 } from '@/lib/store';
 import { SessionBooking } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 // GET /api/bookings?userId=xxx
 export async function GET(request: NextRequest) {
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
 // POST /api/bookings — create or update a booking
 export async function POST(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`bookings:${authUser.id}`, 20, 60_000)) return rateLimitExceeded();
   try {
     const body = await request.json();
     const { action } = body;

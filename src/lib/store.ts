@@ -50,6 +50,8 @@ function studentToRow(s: StudentProfile): Record<string, unknown> {
     long_term_goal: s.longTermGoal,
     study_hours_target: s.studyHoursTarget,
     weekly_goals: s.weeklyGoals,
+    dob: s.dob,
+    show_birthday: s.showBirthday,
   };
 }
 
@@ -94,6 +96,8 @@ function rowToStudent(r: any): StudentProfile {
     longTermGoal: r.long_term_goal || '',
     studyHoursTarget: r.study_hours_target || 0,
     weeklyGoals: r.weekly_goals || '',
+    dob: r.dob || '',
+    showBirthday: r.show_birthday !== false,
   };
 }
 

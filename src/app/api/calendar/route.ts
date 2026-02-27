@@ -16,6 +16,7 @@ import {
 } from '@/lib/store';
 import { CalendarEvent } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 // GET /api/calendar?userId=xxx&start=2026-02-01&end=2026-02-28
 export async function GET(request: NextRequest) {
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
 // POST /api/calendar
 export async function POST(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`calendar:${authUser.id}`, 30, 60_000)) return rateLimitExceeded();
   try {
     const body = await request.json();
     const { action } = body;

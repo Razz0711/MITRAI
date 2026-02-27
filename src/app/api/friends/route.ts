@@ -20,6 +20,7 @@ import {
   addNotification,
 } from '@/lib/store';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 // GET /api/friends?userId=xxx
 export async function GET(req: NextRequest) {
@@ -54,6 +55,7 @@ export async function GET(req: NextRequest) {
 // POST /api/friends
 export async function POST(req: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`friends:${authUser.id}`, 20, 60_000)) return rateLimitExceeded();
   try {
     const body = await req.json();
     const { action } = body;

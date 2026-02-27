@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getAllStudents, addNotification, hasWishedToday, addBirthdayWish, getBirthdayWishesForUser } from '@/lib/store';
 import { BirthdayInfo } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
 function getDayMonth(dateStr: string): string {
   const d = new Date(dateStr);
@@ -37,45 +38,27 @@ function getDaysUntilBirthday(dobStr: string): number {
 // GET /api/birthday?days=7 — get upcoming birthdays
 export async function GET(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`birthday:${authUser.id}`, 30, 60_000)) return rateLimitExceeded();
   try {
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '7');
     const userId = searchParams.get('userId');
 
-    // Get all users from localStorage (passed via query) or from students store
-    // We check both registered users and student profiles
+    // Fetch all students from DB — DOBs are now stored server-side
     const students = await getAllStudents();
-
-    // Parse users from query if provided (from localStorage on client)
-    const usersParam = searchParams.get('users');
-    let allUsers: Array<{ id: string; name: string; department: string; dob: string; showBirthday: boolean }> = [];
-
-    if (usersParam) {
-      try {
-        allUsers = JSON.parse(decodeURIComponent(usersParam));
-      } catch { /* ignore parsing errors */ }
-    }
-
-    // Also include students that have DOBs
-    students.forEach(s => {
-      if (!allUsers.find(u => u.id === s.id)) {
-        // Students don't have DOB in profile currently, skip
-      }
-    });
-
     const birthdays: BirthdayInfo[] = [];
 
-    for (const user of allUsers) {
-      if (!user.dob || !user.showBirthday) continue;
+    for (const student of students) {
+      if (!student.dob || !student.showBirthday) continue;
 
-      const daysUntil = getDaysUntilBirthday(user.dob);
+      const daysUntil = getDaysUntilBirthday(student.dob);
 
       if (daysUntil <= days) {
         birthdays.push({
-          userId: user.id,
-          userName: user.name,
-          department: user.department || '',
-          dayMonth: getDayMonth(user.dob),
+          userId: student.id,
+          userName: student.name,
+          department: student.department || '',
+          dayMonth: getDayMonth(student.dob),
           isToday: daysUntil === 0,
           daysUntil,
         });
@@ -113,6 +96,7 @@ export async function GET(request: NextRequest) {
 // POST /api/birthday — send a birthday wish
 export async function POST(request: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  if (!rateLimit(`birthday-wish:${authUser.id}`, 10, 60_000)) return rateLimitExceeded();
   try {
     const body = await request.json();
     const { fromUserId, fromUserName, toUserId } = body;

@@ -44,15 +44,11 @@ export default function DashboardPage() {
     loadData();
   }, []);
 
-  // Load birthdays from registered users
+  // Load birthdays from server (DOBs are stored in students table)
   const loadBirthdays = useCallback(async () => {
     if (!user) return;
     try {
-      const usersRaw = localStorage.getItem('mitrai_users') || '[]';
-      const users = JSON.parse(usersRaw).map((u: { id: string; name: string; department: string; dob: string; showBirthday?: boolean }) => ({
-        id: u.id, name: u.name, department: u.department || '', dob: u.dob || '', showBirthday: u.showBirthday !== false,
-      }));
-      const params = new URLSearchParams({ days: '7', userId: user.id, users: encodeURIComponent(JSON.stringify(users)) });
+      const params = new URLSearchParams({ days: '7', userId: user.id });
       const res = await fetch(`/api/birthday?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
