@@ -116,6 +116,7 @@ export default function DashboardPage() {
               <h2 className="text-sm font-semibold mb-3">Profile</h2>
               <div className="space-y-3">
                 <ProfileRow label="Name" value={student.name} />
+                {student.admissionNumber && <ProfileRow label="Admission No." value={student.admissionNumber} />}
                 <ProfileRow label="Department" value={student.department || 'Not set'} />
                 <ProfileRow label="Study" value={student.currentStudy} />
                 <ProfileRow label="Year" value={student.yearLevel} />

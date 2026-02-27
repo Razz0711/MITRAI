@@ -8,11 +8,22 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 
+const DEPARTMENTS = [
+  'CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics', 'Chemical',
+  'Integrated M.Sc. Mathematics', 'Integrated M.Sc. Physics', 'Integrated M.Sc. Chemistry',
+  'B.Tech Physics', 'Mathematics & Computing',
+];
+
+const YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
+
 export default function LoginPage() {
   const router = useRouter();
   const { login, signup, user } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
   const [name, setName] = useState('');
+  const [admissionNumber, setAdmissionNumber] = useState('');
+  const [department, setDepartment] = useState('');
+  const [yearLevel, setYearLevel] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,21 +38,37 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedEmail.endsWith('@svnit.ac.in')) {
+      setError('Only SVNIT email addresses are allowed (e.g. u12345@svnit.ac.in)');
+      return;
+    }
+
     if (isSignup) {
       if (!name.trim()) { setError('Name is required'); return; }
-      if (!email.trim()) { setError('Email is required'); return; }
+      if (!admissionNumber.trim()) { setError('Admission number is required'); return; }
+      if (!department) { setError('Please select your department'); return; }
+      if (!yearLevel) { setError('Please select your year'); return; }
       if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
 
-      const result = signup(name.trim(), email.trim().toLowerCase(), password);
+      const result = signup({
+        name: name.trim(),
+        email: trimmedEmail,
+        password,
+        admissionNumber: admissionNumber.trim().toUpperCase(),
+        department,
+        yearLevel,
+      });
       if (result.success) {
         router.push('/onboarding');
       } else {
         setError(result.error || 'Something went wrong');
       }
     } else {
-      if (!email.trim() || !password) { setError('Please enter email and password'); return; }
+      if (!trimmedEmail || !password) { setError('Please enter email and password'); return; }
 
-      const result = login(email.trim().toLowerCase(), password);
+      const result = login(trimmedEmail, password);
       if (result.success) {
         router.push('/dashboard');
       } else {
@@ -59,36 +86,77 @@ export default function LoginPage() {
             M
           </div>
           <h1 className="text-xl font-bold text-[var(--foreground)]">
-            {isSignup ? 'Create your account' : 'Welcome back'}
+            {isSignup ? 'Join MitrAI' : 'Welcome back'}
           </h1>
           <p className="text-sm text-[var(--muted)] mt-1">
-            {isSignup ? 'Start finding your study partner' : 'Sign in to continue'}
+            {isSignup ? 'Register with your SVNIT email' : 'Sign in with your SVNIT email'}
           </p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {isSignup && (
-            <div>
-              <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Full Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                className="input-field text-sm"
-                autoFocus
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your full name"
+                  className="input-field text-sm"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Admission Number</label>
+                <input
+                  type="text"
+                  value={admissionNumber}
+                  onChange={(e) => setAdmissionNumber(e.target.value)}
+                  placeholder="e.g. U22MA001"
+                  className="input-field text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Department</label>
+                <select
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  className="input-field text-sm"
+                >
+                  <option value="">Select department</option>
+                  {DEPARTMENTS.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Year</label>
+                <select
+                  value={yearLevel}
+                  onChange={(e) => setYearLevel(e.target.value)}
+                  className="input-field text-sm"
+                >
+                  <option value="">Select year</option>
+                  {YEARS.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Email</label>
+            <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">SVNIT Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="yourname@svnit.ac.in"
               className="input-field text-sm"
               autoFocus={!isSignup}
             />

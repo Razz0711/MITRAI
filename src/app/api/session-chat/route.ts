@@ -29,6 +29,8 @@ export async function POST(req: NextRequest) {
 
     const defaultProfile: StudentProfile = {
       name: 'Student',
+      email: '',
+      admissionNumber: '',
       strongSubjects: [],
       weakSubjects: [],
       learningType: 'practical',

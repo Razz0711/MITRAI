@@ -7,30 +7,6 @@ import { OnboardingStep } from './types';
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: 0,
-    phase: 'Welcome',
-    question: '',
-    field: 'name',
-    type: 'text',
-    placeholder: 'Type your name...',
-  },
-  {
-    id: 1,
-    phase: 'Academic',
-    question: '',
-    field: 'department',
-    type: 'select',
-    options: ['CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics', 'Chemical', 'Integrated M.Sc. Mathematics', 'Integrated M.Sc. Physics', 'Integrated M.Sc. Chemistry', 'B.Tech Physics', 'Mathematics & Computing'],
-  },
-  {
-    id: 2,
-    phase: 'Academic',
-    question: '',
-    field: 'yearLevel',
-    type: 'select',
-    options: ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'],
-  },
-  {
-    id: 3,
     phase: 'Academic',
     question: '',
     field: 'targetExam',
@@ -38,7 +14,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     options: ['Semester Exams', 'GATE', 'Placements', 'GRE', 'CAT', 'Projects', 'Other'],
   },
   {
-    id: 4,
+    id: 1,
     phase: 'Subjects',
     question: '',
     field: 'strongSubjects',
@@ -46,7 +22,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'e.g. DSA, Thermodynamics, Circuit Theory...',
   },
   {
-    id: 5,
+    id: 2,
     phase: 'Subjects',
     question: '',
     field: 'weakSubjects',
@@ -54,7 +30,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'e.g. OS, Fluid Mechanics, Control Systems...',
   },
   {
-    id: 6,
+    id: 3,
     phase: 'Study Style',
     question: '',
     field: 'studyMethod',
@@ -62,7 +38,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     options: ['Reading notes', 'Watching videos', 'Solving problems', 'Group discussion'],
   },
   {
-    id: 7,
+    id: 4,
     phase: 'Study Style',
     question: '',
     field: 'sessionLength',
@@ -70,7 +46,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     options: ['30 minutes', '1 hour', '2 hours'],
   },
   {
-    id: 8,
+    id: 5,
     phase: 'Schedule',
     question: '',
     field: 'schedule',
@@ -78,7 +54,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'e.g. Mon, Wed, Fri evenings 7-10 PM',
   },
   {
-    id: 9,
+    id: 6,
     phase: 'Goals',
     question: '',
     field: 'shortTermGoal',
@@ -86,7 +62,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'e.g. Score 9+ SGPA, clear GATE, etc.',
   },
   {
-    id: 10,
+    id: 7,
     phase: 'Personality',
     question: '',
     field: 'personality',
@@ -94,7 +70,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     placeholder: 'Strict or flexible? Need accountability partner?',
   },
   {
-    id: 11,
+    id: 8,
     phase: 'Complete',
     question: '',
     field: 'complete',
@@ -103,12 +79,17 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
 ];
 
 // Parse raw onboarding data into a StudentProfile shape
+// authData comes from registration (name, department, yearLevel, email, admissionNumber)
 export function parseOnboardingData(
-  rawData: Record<string, string>
+  rawData: Record<string, string>,
+  authData?: { name: string; department: string; yearLevel: string; email: string; admissionNumber: string }
 ): Record<string, unknown> {
   const parsed: Record<string, unknown> = {};
 
-  if (rawData.name) parsed.name = rawData.name.trim();
+  // From registration
+  parsed.name = authData?.name || rawData.name || 'Unknown';
+  parsed.email = authData?.email || '';
+  parsed.admissionNumber = authData?.admissionNumber || '';
   parsed.age = 19; // default age
 
   // SVNIT defaults
@@ -118,11 +99,11 @@ export function parseOnboardingData(
   parsed.preferredLanguage = 'English';
   parsed.timezone = 'IST';
 
-  // Department
-  if (rawData.department) {
-    parsed.department = rawData.department.trim();
+  // Department from registration
+  const dept = authData?.department || rawData.department || '';
+  if (dept) {
+    parsed.department = dept;
     // Auto-generate currentStudy from department
-    const dept = rawData.department.trim();
     if (dept.startsWith('Integrated')) {
       parsed.currentStudy = dept;
     } else if (dept === 'Mathematics & Computing') {
@@ -132,8 +113,10 @@ export function parseOnboardingData(
     }
   }
 
+  // Year from registration
+  parsed.yearLevel = authData?.yearLevel || rawData.yearLevel || '';
+
   if (rawData.targetExam) parsed.targetExam = rawData.targetExam;
-  if (rawData.yearLevel) parsed.yearLevel = rawData.yearLevel;
 
   // Parse subjects (comma separated)
   if (rawData.strongSubjects) {

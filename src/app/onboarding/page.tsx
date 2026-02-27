@@ -10,39 +10,49 @@ import { v4 as uuidv4 } from 'uuid';
 import ChatInterface from '@/components/ChatInterface';
 import { ChatMessage } from '@/lib/types';
 import { ONBOARDING_STEPS, parseOnboardingData } from '@/lib/onboarding';
+import { useAuth } from '@/lib/auth';
 
-const TOTAL_STEPS = 12;
+const TOTAL_STEPS = 9;
 
 // Map step numbers to field names for data collection
-// STEP_FIELDS[N] = the field the user answers at step N
+// Name, department, yearLevel come from registration — not asked here
 const STEP_FIELDS: Record<number, string> = {
-  0: 'name',           // user answers: their name
-  1: 'department',     // user answers: department/branch
-  2: 'yearLevel',      // user answers: year
-  3: 'targetExam',     // user answers: what they're preparing for
-  4: 'strongSubjects', // user answers: strong subjects
-  5: 'weakSubjects',   // user answers: weak subjects
-  6: 'studyMethod',    // user answers: study method
-  7: 'sessionLength',  // user answers: session length
-  8: 'schedule',       // user answers: days and times
-  9: 'shortTermGoal',  // user answers: main goal
-  10: 'personality',   // user answers: study style + accountability
-  11: '',              // wrap up - no data to save
+  0: 'targetExam',     // user answers: what they're preparing for
+  1: 'strongSubjects', // user answers: strong subjects
+  2: 'weakSubjects',   // user answers: weak subjects
+  3: 'studyMethod',    // user answers: study method
+  4: 'sessionLength',  // user answers: session length
+  5: 'schedule',       // user answers: days and times
+  6: 'shortTermGoal',  // user answers: main goal
+  7: 'personality',    // user answers: study style + accountability
+  8: '',               // wrap up - no data to save
 };
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const userName = user?.name || 'there';
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: uuidv4(),
       role: 'assistant',
-      content: "Hey, welcome to MitrAI. I'll help you find your ideal study partner.\n\nLet's start — what's your name?",
+      content: `Hey ${userName}! Welcome to MitrAI. I already have your basic info from registration.\n\nLet's set up your study preferences so I can find you the perfect study buddy at SVNIT!\n\nWhat are you currently preparing for?`,
       timestamp: Date.now(),
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [collectedData, setCollectedData] = useState<Record<string, string>>({});
+  // Pre-populate with registration data so Gemini knows the student's context
+  const [collectedData, setCollectedData] = useState<Record<string, string>>(() => {
+    if (user) {
+      return {
+        name: user.name,
+        department: user.department,
+        yearLevel: user.yearLevel,
+      };
+    }
+    return {} as Record<string, string>;
+  });
   const [isComplete, setIsComplete] = useState(false);
   const [multiSelectChoices, setMultiSelectChoices] = useState<string[]>([]);
 
@@ -142,7 +152,14 @@ export default function OnboardingPage() {
 
   const createProfile = async (data: Record<string, string>) => {
     try {
-      const parsed = parseOnboardingData(data);
+      const authData = user ? {
+        name: user.name,
+        department: user.department,
+        yearLevel: user.yearLevel,
+        email: user.email,
+        admissionNumber: user.admissionNumber,
+      } : undefined;
+      const parsed = parseOnboardingData(data, authData);
       const response = await fetch('/api/students', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -153,7 +170,7 @@ export default function OnboardingPage() {
       if (result.success && result.data?.id) {
         // Store the student ID for later use
         localStorage.setItem('mitrai_student_id', result.data.id);
-        localStorage.setItem('mitrai_student_name', result.data.name || data.name || '');
+        localStorage.setItem('mitrai_student_name', result.data.name || user?.name || '');
       }
     } catch (error) {
       console.error('Profile creation error:', error);

@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
       name: body.name || 'Unknown',
       age: body.age || 17,
+      email: body.email || '',
+      admissionNumber: body.admissionNumber || '',
       city: body.city || '',
       country: body.country || 'India',
       timezone: body.timezone || 'IST',

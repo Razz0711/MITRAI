@@ -41,19 +41,17 @@ export async function POST(req: NextRequest) {
 function getFallbackResponse(step: number, _message: string, data: Record<string, string>): string {
   const name = data.name || 'there';
 
+  // Steps are renumbered: name/dept/year come from registration, not onboarding
   const responses: Record<number, string> = {
-    0: `Hey! Welcome to MitrAI for SVNIT!\nI'm your study buddy matching agent. Let's find you the perfect partner.\nWhat's your name?`,
-    1: `Nice to meet you, ${name}!\nWhich department/branch are you in at SVNIT?`,
-    2: `Got it! What year are you in?`,
-    3: `What are you currently studying or preparing for?`,
-    4: `Which subjects are you strong in?\n(List them separated by commas)`,
-    5: `And which subjects do you need help with? That's exactly what a study buddy is for.`,
-    6: `How do you prefer to study? Pick one or more.`,
-    7: `How long are your study sessions usually?`,
-    8: `Which days and times work best for you?\n(e.g., Mon, Wed, Fri evenings 7-10 PM)`,
-    9: `What's your main goal right now, ${name}?\n(e.g., Score 9+ SGPA, GATE prep, complete project, etc.)`,
-    10: `Last question! Do you prefer a strict study schedule or flexible one? And do you need someone to keep you accountable?`,
-    11: `All set, ${name}! Creating your profile now.\nI'll match you with the best study buddies from SVNIT.\n\nHead to the dashboard to see your matches!`,
+    0: `Great choice! Now tell me — which subjects are you strong in?\n(List them separated by commas, e.g., Linear Algebra, Probability)`,
+    1: `Nice! Which subjects are you strong in?\n(List them separated by commas)`,
+    2: `And which subjects do you need help with? That's exactly what a study buddy is for.\n(Separate with commas)`,
+    3: `How do you prefer to study? Pick one or more.`,
+    4: `How long are your study sessions usually?`,
+    5: `Which days and times work best for you?\n(e.g., Mon, Wed, Fri evenings 7-10 PM)`,
+    6: `What's your main goal right now?\n(e.g., Score 9+ SGPA, GATE prep, complete project, etc.)`,
+    7: `Last question! Do you prefer a strict study schedule or flexible one? And do you need someone to keep you accountable?`,
+    8: `All set, ${name}! Creating your profile now.\nI'll match you with the best study buddies from SVNIT.\n\nHead to the dashboard to see your matches!`,
   };
 
   return responses[step] || responses[0];
