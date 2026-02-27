@@ -13,6 +13,8 @@ interface User {
   admissionNumber: string;
   department: string;
   yearLevel: string;
+  dob: string;            // YYYY-MM-DD
+  showBirthday: boolean;  // privacy toggle
   createdAt: string;
 }
 
@@ -23,6 +25,7 @@ interface SignupData {
   admissionNumber: string;
   department: string;
   yearLevel: string;
+  dob: string;
 }
 
 interface AuthContextType {
@@ -75,6 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       admissionNumber: found.admissionNumber || '',
       department: found.department || '',
       yearLevel: found.yearLevel || '',
+      dob: found.dob || '',
+      showBirthday: found.showBirthday !== false,
       createdAt: found.createdAt,
     };
     setUser(userData);
@@ -106,6 +111,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       admissionNumber: data.admissionNumber,
       department: data.department,
       yearLevel: data.yearLevel,
+      dob: data.dob,
+      showBirthday: true,
       createdAt: new Date().toISOString(),
     };
 
@@ -119,6 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       admissionNumber: newUser.admissionNumber,
       department: newUser.department,
       yearLevel: newUser.yearLevel,
+      dob: newUser.dob,
+      showBirthday: true,
       createdAt: newUser.createdAt,
     };
     setUser(userData);

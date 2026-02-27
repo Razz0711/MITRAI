@@ -184,11 +184,81 @@ export interface SessionSummary {
 export interface Notification {
   id: string;
   userId: string;
-  type: 'session_reminder' | 'streak' | 'missed_session' | 'goal_achievement' | 'weekly_report' | 'match_found';
+  type: 'session_reminder' | 'streak' | 'missed_session' | 'goal_achievement' | 'weekly_report' | 'match_found' | 'birthday_wish' | 'session_request' | 'session_accepted' | 'session_declined';
   title: string;
   message: string;
   read: boolean;
   createdAt: string;
+}
+
+// ============================================
+// Birthday Types
+// ============================================
+
+export interface BirthdayWish {
+  id: string;
+  fromUserId: string;
+  fromUserName: string;
+  toUserId: string;
+  createdAt: string;
+}
+
+export interface BirthdayInfo {
+  userId: string;
+  userName: string;
+  department: string;
+  dayMonth: string;        // "DD-MM" for display (no year)
+  isToday: boolean;
+  daysUntil: number;       // 0 = today, 1 = tomorrow, etc.
+}
+
+// ============================================
+// Availability & Session Booking Types
+// ============================================
+
+export type SlotStatus = 'available' | 'tentative' | 'engaged' | 'unavailable';
+
+export interface TimeSlot {
+  day: Day;
+  hour: number;            // 6-23 (6AM to 11PM)
+  status: SlotStatus;
+  sessionId?: string;      // if engaged, references the session
+  buddyName?: string;      // who they're studying with
+}
+
+export interface UserAvailability {
+  userId: string;
+  slots: TimeSlot[];
+  updatedAt: string;
+}
+
+export interface SessionBooking {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  targetId: string;
+  targetName: string;
+  day: Day;
+  hour: number;
+  topic: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  createdAt: string;
+}
+
+// ============================================
+// Online Status Types
+// ============================================
+
+export type OnlineStatusType = 'online' | 'in-session' | 'offline';
+
+export interface UserStatus {
+  userId: string;
+  status: OnlineStatusType;
+  lastSeen: string;
+  currentSubject?: string;  // what they're studying (optional)
+  sessionStartedAt?: string;
+  hideStatus: boolean;       // privacy: appear offline
+  hideSubject: boolean;      // privacy: hide what studying
 }
 
 // ============================================

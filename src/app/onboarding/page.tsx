@@ -148,6 +148,7 @@ export default function OnboardingPage() {
     } finally {
       setIsLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, collectedData, messages]);
 
   const createProfile = async (data: Record<string, string>) => {

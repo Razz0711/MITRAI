@@ -1,13 +1,13 @@
 // ============================================
-// MitrAI - Matches Page
+// MitrAI - Matches Page (with Status & Birthday indicators)
 // ============================================
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import MatchCard from '@/components/MatchCard';
-import { MatchResult, StudentProfile } from '@/lib/types';
+import { MatchResult, StudentProfile, UserStatus, BirthdayInfo } from '@/lib/types';
 
 export default function MatchesPage() {
   const [matches, setMatches] = useState<MatchResult[]>([]);
@@ -17,8 +17,43 @@ export default function MatchesPage() {
   const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
 
+  // Status & birthday data
+  const [statusMap, setStatusMap] = useState<Record<string, UserStatus>>({});
+  const [birthdayUserIds, setBirthdayUserIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     loadStudents();
+    loadStatuses();
+    loadBirthdays();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadStatuses = async () => {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        const map: Record<string, UserStatus> = {};
+        data.data.forEach((s: UserStatus) => { map[s.userId] = s; });
+        setStatusMap(map);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const loadBirthdays = useCallback(async () => {
+    try {
+      const usersRaw = localStorage.getItem('mitrai_users') || '[]';
+      const users = JSON.parse(usersRaw).map((u: { id: string; name: string; department: string; dob: string; showBirthday?: boolean }) => ({
+        id: u.id, name: u.name, department: u.department || '', dob: u.dob || '', showBirthday: u.showBirthday !== false,
+      }));
+      const params = new URLSearchParams({ days: '3', users: encodeURIComponent(JSON.stringify(users)) });
+      const res = await fetch(`/api/birthday?${params.toString()}`);
+      const data = await res.json();
+      if (data.success) {
+        const ids = new Set<string>((data.data.birthdays || []).map((b: BirthdayInfo) => b.userId));
+        setBirthdayUserIds(ids);
+      }
+    } catch { /* ignore */ }
   }, []);
 
   const loadStudents = async () => {
@@ -148,6 +183,8 @@ export default function MatchesPage() {
                 key={match.student.id}
                 match={match}
                 rank={index + 1}
+                userStatus={statusMap[match.student.id]}
+                isBirthday={birthdayUserIds.has(match.student.id)}
                 onConnect={() => {
                   localStorage.setItem('mitrai_buddy_id', match.student.id);
                   localStorage.setItem('mitrai_buddy_name', match.student.name);

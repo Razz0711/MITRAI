@@ -3,7 +3,7 @@
 // (Data survives server restarts in dev mode)
 // ============================================
 
-import { StudentProfile, StudySession, Notification, StudyMaterial } from './types';
+import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish } from './types';
 import fs from 'fs';
 import path from 'path';
 
@@ -12,6 +12,10 @@ const DATA_DIR = path.join(process.cwd(), '.data');
 const STUDENTS_FILE = path.join(DATA_DIR, 'students.json');
 const MATERIALS_FILE = path.join(DATA_DIR, 'materials.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+const AVAILABILITY_FILE = path.join(DATA_DIR, 'availability.json');
+const STATUS_FILE = path.join(DATA_DIR, 'status.json');
+const BOOKINGS_FILE = path.join(DATA_DIR, 'bookings.json');
+const BIRTHDAY_WISHES_FILE = path.join(DATA_DIR, 'birthday_wishes.json');
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -587,4 +591,210 @@ export function saveUploadedFile(fileName: string, buffer: Buffer): string {
 
 export function getUploadedFilePath(storedFileName: string): string {
   return path.join(UPLOADS_DIR, storedFileName);
+}
+
+// ============================================
+// User Availability Operations (File Persistence)
+// ============================================
+
+function loadAvailabilityFromFile(): Map<string, UserAvailability> {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(AVAILABILITY_FILE)) {
+      const data = JSON.parse(fs.readFileSync(AVAILABILITY_FILE, 'utf-8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    console.error('Failed to load availability from file:', e);
+  }
+  return new Map();
+}
+
+function saveAvailabilityToFile() {
+  try {
+    ensureDataDir();
+    const obj: Record<string, UserAvailability> = {};
+    availability.forEach((v, k) => { obj[k] = v; });
+    fs.writeFileSync(AVAILABILITY_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error('Failed to save availability to file:', e);
+  }
+}
+
+const availability: Map<string, UserAvailability> = loadAvailabilityFromFile();
+
+export function getUserAvailability(userId: string): UserAvailability | undefined {
+  return availability.get(userId);
+}
+
+export function setUserAvailability(data: UserAvailability): void {
+  availability.set(data.userId, data);
+  saveAvailabilityToFile();
+}
+
+export function markSlotEngaged(userId: string, day: string, hour: number, sessionId: string, buddyName: string): void {
+  const ua = availability.get(userId);
+  if (ua) {
+    const slot = ua.slots.find(s => s.day === day && s.hour === hour);
+    if (slot) {
+      slot.status = 'engaged';
+      slot.sessionId = sessionId;
+      slot.buddyName = buddyName;
+    }
+    saveAvailabilityToFile();
+  }
+}
+
+// ============================================
+// User Status Operations (File Persistence)
+// ============================================
+
+function loadStatusFromFile(): Map<string, UserStatus> {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(STATUS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(STATUS_FILE, 'utf-8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    console.error('Failed to load status from file:', e);
+  }
+  return new Map();
+}
+
+function saveStatusToFile() {
+  try {
+    ensureDataDir();
+    const obj: Record<string, UserStatus> = {};
+    userStatuses.forEach((v, k) => { obj[k] = v; });
+    fs.writeFileSync(STATUS_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error('Failed to save status to file:', e);
+  }
+}
+
+const userStatuses: Map<string, UserStatus> = loadStatusFromFile();
+
+export function getUserStatus(userId: string): UserStatus | undefined {
+  return userStatuses.get(userId);
+}
+
+export function getAllUserStatuses(): UserStatus[] {
+  return Array.from(userStatuses.values());
+}
+
+export function updateUserStatus(userId: string, updates: Partial<UserStatus>): UserStatus {
+  const existing = userStatuses.get(userId) || {
+    userId,
+    status: 'offline' as const,
+    lastSeen: new Date().toISOString(),
+    hideStatus: false,
+    hideSubject: false,
+  };
+  const updated = { ...existing, ...updates };
+  userStatuses.set(userId, updated);
+  saveStatusToFile();
+  return updated;
+}
+
+// ============================================
+// Session Bookings Operations (File Persistence)
+// ============================================
+
+function loadBookingsFromFile(): Map<string, SessionBooking> {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(BOOKINGS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(BOOKINGS_FILE, 'utf-8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    console.error('Failed to load bookings from file:', e);
+  }
+  return new Map();
+}
+
+function saveBookingsToFile() {
+  try {
+    ensureDataDir();
+    const obj: Record<string, SessionBooking> = {};
+    bookings.forEach((v, k) => { obj[k] = v; });
+    fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) {
+    console.error('Failed to save bookings to file:', e);
+  }
+}
+
+const bookings: Map<string, SessionBooking> = loadBookingsFromFile();
+
+export function getAllBookings(): SessionBooking[] {
+  return Array.from(bookings.values());
+}
+
+export function getBookingsForUser(userId: string): SessionBooking[] {
+  return Array.from(bookings.values()).filter(
+    b => b.requesterId === userId || b.targetId === userId
+  );
+}
+
+export function getBookingById(id: string): SessionBooking | undefined {
+  return bookings.get(id);
+}
+
+export function createBooking(booking: SessionBooking): SessionBooking {
+  bookings.set(booking.id, booking);
+  saveBookingsToFile();
+  return booking;
+}
+
+export function updateBooking(id: string, updates: Partial<SessionBooking>): SessionBooking | null {
+  const existing = bookings.get(id);
+  if (!existing) return null;
+  const updated = { ...existing, ...updates };
+  bookings.set(id, updated);
+  saveBookingsToFile();
+  return updated;
+}
+
+// ============================================
+// Birthday Wishes Operations (File Persistence)
+// ============================================
+
+function loadBirthdayWishesFromFile(): BirthdayWish[] {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(BIRTHDAY_WISHES_FILE)) {
+      return JSON.parse(fs.readFileSync(BIRTHDAY_WISHES_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Failed to load birthday wishes from file:', e);
+  }
+  return [];
+}
+
+function saveBirthdayWishesToFile() {
+  try {
+    ensureDataDir();
+    fs.writeFileSync(BIRTHDAY_WISHES_FILE, JSON.stringify(birthdayWishes, null, 2));
+  } catch (e) {
+    console.error('Failed to save birthday wishes to file:', e);
+  }
+}
+
+const birthdayWishes: BirthdayWish[] = loadBirthdayWishesFromFile();
+
+export function getBirthdayWishesForUser(userId: string): BirthdayWish[] {
+  return birthdayWishes.filter(w => w.toUserId === userId);
+}
+
+export function hasWishedToday(fromUserId: string, toUserId: string): boolean {
+  const today = new Date().toISOString().split('T')[0];
+  return birthdayWishes.some(
+    w => w.fromUserId === fromUserId && w.toUserId === toUserId && w.createdAt.startsWith(today)
+  );
+}
+
+export function addBirthdayWish(wish: BirthdayWish): void {
+  birthdayWishes.push(wish);
+  saveBirthdayWishesToFile();
 }

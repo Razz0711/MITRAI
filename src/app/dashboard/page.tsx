@@ -1,22 +1,75 @@
 // ============================================
-// MitrAI - Dashboard Page
+// MitrAI - Dashboard Page (with Birthday, Status, Notifications)
 // ============================================
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { StudentProfile, Day } from '@/lib/types';
+import { StudentProfile, Day, BirthdayInfo, UserStatus, Notification as NotifType } from '@/lib/types';
+import { useAuth } from '@/lib/auth';
+import BirthdayBanner, { UpcomingBirthdays } from '@/components/BirthdayBanner';
+import { StatusDot } from '@/components/StatusIndicator';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
 
+  // Birthday state
+  const [birthdays, setBirthdays] = useState<BirthdayInfo[]>([]);
+  const [wishedMap, setWishedMap] = useState<Record<string, boolean>>({});
+
+  // Status & Notifications
+  const [myStatus, setMyStatus] = useState<UserStatus | null>(null);
+  const [notifications, setNotifications] = useState<NotifType[]>([]);
+  const [showNotifs, setShowNotifs] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
+
+  // Load birthdays from registered users
+  const loadBirthdays = useCallback(async () => {
+    if (!user) return;
+    try {
+      const usersRaw = localStorage.getItem('mitrai_users') || '[]';
+      const users = JSON.parse(usersRaw).map((u: { id: string; name: string; department: string; dob: string; showBirthday?: boolean }) => ({
+        id: u.id, name: u.name, department: u.department || '', dob: u.dob || '', showBirthday: u.showBirthday !== false,
+      }));
+      const params = new URLSearchParams({ days: '7', userId: user.id, users: encodeURIComponent(JSON.stringify(users)) });
+      const res = await fetch(`/api/birthday?${params.toString()}`);
+      const data = await res.json();
+      if (data.success) {
+        setBirthdays(data.data.birthdays || []);
+        setWishedMap(data.data.wishedMap || {});
+      }
+    } catch { /* ignore */ }
+  }, [user]);
+
+  const loadNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/notifications?userId=${user.id}`);
+      const data = await res.json();
+      if (data.success) setNotifications(data.data || []);
+    } catch { /* ignore */ }
+  }, [user]);
+
+  const loadStatus = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/status?userId=${user.id}`);
+      const data = await res.json();
+      if (data.success) setMyStatus(data.data);
+    } catch { /* ignore */ }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) { loadBirthdays(); loadNotifications(); loadStatus(); }
+  }, [user, loadBirthdays, loadNotifications, loadStatus]);
 
   const loadData = async () => {
     try {
@@ -59,6 +112,31 @@ export default function DashboardPage() {
     }
   };
 
+  const handleWish = async (toUserId: string, toUserName: string) => {
+    if (!user) return;
+    try {
+      await fetch('/api/birthday', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromUserId: user.id, fromUserName: user.name, toUserId, toUserName }),
+      });
+    } catch { /* ignore */ }
+  };
+
+  const handleMarkNotifRead = async (notifId: string) => {
+    if (!user) return;
+    try {
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, notificationId: notifId }),
+      });
+      setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+    } catch { /* ignore */ }
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -77,13 +155,52 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
         <div>
-          <h1 className="text-xl font-bold">
-            Welcome back, <span className="gradient-text">{student?.name || 'Student'}</span>
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold">
+              Welcome back, <span className="gradient-text">{student?.name || user?.name || 'Student'}</span>
+            </h1>
+            {myStatus && <StatusDot status={myStatus.status} size="md" />}
+          </div>
           <p className="text-xs text-[var(--muted)] mt-0.5">Your study overview</p>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Notifications Bell */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifs(!showNotifs)}
+              className="relative p-2 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <span className="text-sm">🔔</span>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            {showNotifs && (
+              <div className="absolute right-0 top-10 w-72 max-h-80 overflow-y-auto card p-2 z-50 shadow-xl fade-in">
+                <p className="text-xs font-semibold px-2 py-1.5 border-b border-[var(--border)]">Notifications</p>
+                {notifications.length === 0 ? (
+                  <p className="text-xs text-[var(--muted)] p-3 text-center">No notifications yet</p>
+                ) : (
+                  notifications.slice(0, 15).map(n => (
+                    <div
+                      key={n.id}
+                      onClick={() => !n.read && handleMarkNotifRead(n.id)}
+                      className={`p-2 rounded-lg text-xs cursor-pointer transition-colors ${
+                        n.read ? 'opacity-60' : 'bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <p className="font-medium">{n.title}</p>
+                      <p className="text-[var(--muted)] text-[10px] mt-0.5">{n.message}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
           <select
             value={selectedStudentId}
             onChange={(e) => handleStudentSelect(e.target.value)}
@@ -98,6 +215,16 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Birthday Banner */}
+      {user && (
+        <BirthdayBanner
+          birthdays={birthdays}
+          currentUserId={user.id}
+          wishedMap={wishedMap}
+          onWish={handleWish}
+        />
+      )}
 
       {student ? (
         <>
@@ -124,6 +251,17 @@ export default function DashboardPage() {
                 <ProfileRow label="Location" value={`${student.city}, ${student.country}`} />
                 {student.targetDate && <ProfileRow label="Exam Date" value={student.targetDate} />}
               </div>
+
+              {/* Current Status */}
+              {myStatus && (
+                <div className="mt-4 pt-3 border-t border-[var(--border)]">
+                  <h3 className="text-xs font-semibold text-[var(--muted)] mb-2">Current Status</h3>
+                  <StatusDot status={myStatus.status} showLabel currentSubject={myStatus.currentSubject} lastSeen={myStatus.lastSeen} size="md" />
+                  <p className="text-[10px] text-[var(--muted)] mt-2">
+                    Free: {student.availableTimes} on {student.availableDays.map(d => d.slice(0, 3)).join(', ')}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Subjects Card */}
@@ -180,6 +318,9 @@ export default function DashboardPage() {
                 )}
               </div>
             </div>
+
+            {/* Upcoming Birthdays Widget */}
+            {user && <UpcomingBirthdays birthdays={birthdays} currentUserId={user.id} />}
           </div>
 
           {/* Schedule & Study Style */}

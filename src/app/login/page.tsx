@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [admissionNumber, setAdmissionNumber] = useState('');
   const [department, setDepartment] = useState('');
   const [yearLevel, setYearLevel] = useState('');
+  const [dob, setDob] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -50,6 +51,7 @@ export default function LoginPage() {
       if (!admissionNumber.trim()) { setError('Admission number is required'); return; }
       if (!department) { setError('Please select your department'); return; }
       if (!yearLevel) { setError('Please select your year'); return; }
+      if (!dob) { setError('Please enter your date of birth'); return; }
       if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
 
       const result = signup({
@@ -59,6 +61,7 @@ export default function LoginPage() {
         admissionNumber: admissionNumber.trim().toUpperCase(),
         department,
         yearLevel,
+        dob,
       });
       if (result.success) {
         router.push('/onboarding');
@@ -146,6 +149,18 @@ export default function LoginPage() {
                     <option key={y} value={y}>{y}</option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Date of Birth</label>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="input-field text-sm"
+                  max={new Date().toISOString().split('T')[0]}
+                />
+                <p className="text-[10px] text-[var(--muted)] mt-0.5">Only day & month shown publicly for birthday celebrations</p>
               </div>
             </>
           )}

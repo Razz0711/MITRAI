@@ -1,20 +1,23 @@
 // ============================================
-// MitrAI - Match Card Component
+// MitrAI - Match Card Component (with Status & Birthday)
 // ============================================
 
 'use client';
 
 import Link from 'next/link';
-import { MatchResult } from '@/lib/types';
+import { MatchResult, UserStatus } from '@/lib/types';
+import { StatusDot } from '@/components/StatusIndicator';
 
 interface MatchCardProps {
   match: MatchResult;
   rank: number;
+  userStatus?: UserStatus;
+  isBirthday?: boolean;
   onViewProfile?: () => void;
   onConnect?: () => void;
 }
 
-export default function MatchCard({ match, rank, onViewProfile, onConnect }: MatchCardProps) {
+export default function MatchCard({ match, rank, userStatus, isBirthday, onViewProfile, onConnect }: MatchCardProps) {
   const { student, score, whyItWorks, potentialChallenges, recommendedFirstTopic, bestFormat, complementaryFactors } = match;
 
   const rankLabel: Record<number, string> = { 1: '#1', 2: '#2', 3: '#3' };
@@ -24,12 +27,24 @@ export default function MatchCard({ match, rank, onViewProfile, onConnect }: Mat
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-xs font-bold text-[var(--primary-light)]">
-            {rankLabel[rank] || `#${rank}`}
+          <div className="relative">
+            <div className="w-9 h-9 rounded-lg bg-[var(--primary)]/15 border border-[var(--primary)]/25 flex items-center justify-center text-xs font-bold text-[var(--primary-light)]">
+              {rankLabel[rank] || `#${rank}`}
+            </div>
+            {/* Status dot */}
+            <div className="absolute -bottom-0.5 -right-0.5">
+              <StatusDot status={userStatus?.status || 'offline'} size="sm" />
+            </div>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-[var(--foreground)]">{student.name}</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">{student.name}</h3>
+              {isBirthday && <span title="Birthday coming up!" className="text-sm">🎂</span>}
+            </div>
             <p className="text-[10px] text-[var(--muted)]">{student.department || student.currentStudy} · {student.targetExam}</p>
+            {userStatus?.status === 'in-session' && userStatus.currentSubject && (
+              <p className="text-[10px] text-amber-400">Studying: {userStatus.currentSubject}</p>
+            )}
           </div>
         </div>
         <div className="text-right">
