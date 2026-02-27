@@ -30,6 +30,7 @@ function getQrImageUrl(plan: string) {
 export default function SubscriptionPage() {
   const { user } = useAuth();
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan>('free');
+  const [planStatus, setPlanStatus] = useState<string>('active');
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -38,6 +39,7 @@ export default function SubscriptionPage() {
   const [paymentPlan, setPaymentPlan] = useState<'monthly' | 'yearly'>('monthly');
   const [paymentStep, setPaymentStep] = useState<'qr' | 'confirming' | 'done'>('qr');
   const [transactionId, setTransactionId] = useState('');
+  const [paymentError, setPaymentError] = useState('');
 
   useEffect(() => {
     if (user) loadSubscription();
@@ -51,6 +53,7 @@ export default function SubscriptionPage() {
       const data = await res.json();
       if (data.success) {
         setCurrentPlan(data.data.plan || 'free');
+        setPlanStatus(data.data.status || 'active');
       }
     } catch { /* ignore */ }
     setLoading(false);
@@ -60,11 +63,17 @@ export default function SubscriptionPage() {
     setPaymentPlan(plan);
     setPaymentStep('qr');
     setTransactionId('');
+    setPaymentError('');
     setShowPaymentModal(true);
   };
 
   const handlePaymentConfirm = async () => {
     if (!user) return;
+    if (!transactionId || transactionId.trim().length < 4) {
+      setPaymentError('Please enter a valid UPI Transaction / UTR ID (at least 4 characters)');
+      return;
+    }
+    setPaymentError('');
     setPaymentStep('confirming');
     setSubscribing(true);
     setSelectedPlan(paymentPlan);
@@ -72,19 +81,21 @@ export default function SubscriptionPage() {
       const res = await fetch('/api/subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, plan: paymentPlan, transactionId }),
+        body: JSON.stringify({ userId: user.id, plan: paymentPlan, transactionId: transactionId.trim() }),
       });
       const data = await res.json();
       if (data.success) {
+        setPlanStatus('pending');
         setCurrentPlan(paymentPlan);
         setPaymentStep('done');
-        setTimeout(() => {
-          setShowPaymentModal(false);
-          setShowSuccess(true);
-          setTimeout(() => setShowSuccess(false), 3000);
-        }, 1500);
+      } else {
+        setPaymentStep('qr');
+        setPaymentError(data.error || 'Something went wrong. Try again.');
       }
-    } catch { /* ignore */ }
+    } catch {
+      setPaymentStep('qr');
+      setPaymentError('Network error. Please try again.');
+    }
     setSubscribing(false);
     setSelectedPlan(null);
   };
@@ -143,17 +154,25 @@ export default function SubscriptionPage() {
       {/* Current Plan Badge */}
       <div className="text-center mb-6">
         <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold ${
-          currentPlan === 'free'
+          planStatus === 'pending'
+            ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+            : currentPlan === 'free'
             ? 'bg-white/10 text-[var(--foreground)]'
             : currentPlan === 'monthly'
             ? 'bg-[var(--primary)]/15 text-[var(--primary-light)] border border-[var(--primary)]/30'
             : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
         }`}>
-          {currentPlan === 'free' && '📦 Free Plan'}
-          {currentPlan === 'monthly' && '⚡ Monthly Pro'}
-          {currentPlan === 'yearly' && '👑 Yearly Pro'}
-          <span className="text-[10px] opacity-70">• Current</span>
+          {planStatus === 'pending' && '⏳ Payment Under Verification'}
+          {planStatus !== 'pending' && currentPlan === 'free' && '📦 Free Plan'}
+          {planStatus !== 'pending' && currentPlan === 'monthly' && '⚡ Monthly Pro'}
+          {planStatus !== 'pending' && currentPlan === 'yearly' && '👑 Yearly Pro'}
+          <span className="text-[10px] opacity-70">• {planStatus === 'pending' ? 'Pending' : 'Current'}</span>
         </span>
+        {planStatus === 'pending' && (
+          <p className="text-xs text-amber-400/80 mt-2">
+            Your payment is being verified by admin. Plan will be activated shortly.
+          </p>
+        )}
       </div>
 
       {/* Pricing Cards */}
@@ -305,19 +324,19 @@ export default function SubscriptionPage() {
         <div className="space-y-4 max-w-2xl mx-auto">
           <FaqItem
             q="How do I pay?"
-            a="Click the subscribe button for your preferred plan. A UPI QR code will appear — scan it with any UPI app (GPay, PhonePe, Paytm, BHIM, etc.) and complete the payment. Your plan is activated instantly."
+            a="Click the subscribe button for your preferred plan. A UPI QR code will appear — scan it with any UPI app (GPay, PhonePe, Paytm, BHIM, etc.) and complete the payment. Then enter the Transaction/UTR ID from your payment history to submit for verification."
           />
           <FaqItem
-            q="Is the payment secure?"
-            a="Yes! You pay directly via UPI — we never see your bank details. The QR code connects you to a verified UPI ID for instant, safe transfers."
+            q="How long does verification take?"
+            a="Usually just a few minutes. The admin will verify your transaction ID and activate your plan. You'll see 'Pending Verification' until approved."
           />
           <FaqItem
             q="Can I cancel or downgrade?"
             a="Absolutely. You can switch to the free plan at any time. No questions asked. For refunds within 7 days, contact support."
           />
           <FaqItem
-            q="What if my payment doesn't reflect?"
-            a="Enter your UPI transaction/UTR ID during confirmation for faster verification. If the plan isn't activated within a few minutes, contact us with the transaction ID."
+            q="Where do I find my Transaction / UTR ID?"
+            a="Open your UPI app (GPay, PhonePe, Paytm, etc.), go to payment history, find the MitrAI payment, and look for the 12-digit UTR or Reference number."
           />
         </div>
       </div>
@@ -379,26 +398,37 @@ export default function SubscriptionPage() {
 
                 {/* Transaction ID */}
                 <div className="mb-4">
-                  <label className="text-xs text-[var(--muted)] block mb-1">Transaction / UTR ID (optional)</label>
+                  <label className="text-xs text-[var(--foreground)] block mb-1 font-medium">Transaction / UTR ID <span className="text-[var(--error)]">*</span></label>
                   <input
                     type="text"
                     value={transactionId}
-                    onChange={e => setTransactionId(e.target.value)}
-                    placeholder="Enter UPI transaction ID for verification"
-                    className="w-full px-3 py-2 rounded-lg bg-white/5 border border-[var(--border)] text-xs placeholder:text-[var(--muted)]/50 focus:outline-none focus:border-[var(--primary)]/50"
+                    onChange={e => { setTransactionId(e.target.value); setPaymentError(''); }}
+                    placeholder="Enter your UPI transaction ID after payment"
+                    className={`w-full px-3 py-2.5 rounded-lg bg-white/5 border text-xs placeholder:text-[var(--muted)]/50 focus:outline-none transition-all ${
+                      paymentError ? 'border-[var(--error)]/60 focus:border-[var(--error)]' : 'border-[var(--border)] focus:border-[var(--primary)]/50'
+                    }`}
                   />
+                  {paymentError && (
+                    <p className="text-[10px] text-[var(--error)] mt-1">{paymentError}</p>
+                  )}
+                  <p className="text-[10px] text-[var(--muted)] mt-1">Find the 12-digit UTR/Reference number in your UPI app payment history</p>
                 </div>
 
                 <button
                   onClick={handlePaymentConfirm}
-                  className="w-full py-3 rounded-xl text-sm font-bold transition-all bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/20 hover:scale-[1.01] active:scale-[0.99]"
+                  disabled={!transactionId.trim()}
+                  className={`w-full py-3 rounded-xl text-sm font-bold transition-all ${
+                    transactionId.trim()
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/20 hover:scale-[1.01] active:scale-[0.99]'
+                      : 'bg-white/10 text-[var(--muted)] cursor-not-allowed'
+                  }`}
                 >
-                  ✅ I&apos;ve Completed the Payment
+                  ✅ Submit Payment for Verification
                 </button>
 
                 <p className="text-[10px] text-[var(--muted)] text-center mt-3">
-                  Your plan will be activated instantly after confirmation.
-                  For issues, contact support.
+                  Your plan will be activated after admin verifies your payment.
+                  This usually takes a few minutes.
                 </p>
               </>
             )}
@@ -415,13 +445,21 @@ export default function SubscriptionPage() {
 
             {paymentStep === 'done' && (
               <div className="text-center py-8">
-                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-green-500/20 border border-green-500/30 flex items-center justify-center">
-                  <span className="text-2xl">🎉</span>
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                  <span className="text-2xl">⏳</span>
                 </div>
-                <p className="text-sm font-bold text-green-400">Plan Activated!</p>
-                <p className="text-xs text-[var(--muted)] mt-1">
-                  Welcome to MitrAI {paymentPlan === 'monthly' ? 'Monthly' : 'Yearly'} Pro!
+                <p className="text-sm font-bold text-amber-400">Payment Submitted!</p>
+                <p className="text-xs text-[var(--muted)] mt-2">
+                  Your payment is under verification by admin.<br/>
+                  Plan will be activated once verified.
                 </p>
+                <p className="text-[10px] text-[var(--muted)] mt-3">Transaction ID: {transactionId}</p>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="mt-4 px-6 py-2 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/15 transition-all"
+                >
+                  Close
+                </button>
               </div>
             )}
           </div>

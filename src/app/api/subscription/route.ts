@@ -37,8 +37,38 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, plan } = body;
+    const { userId, plan, transactionId, action, targetUserId, adminKey } = body;
 
+    // ── Admin actions (approve / reject) ──
+    if (action === 'approve' || action === 'reject') {
+      if (adminKey !== (process.env.ADMIN_KEY || 'mitrai-admin-2026')) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      }
+      if (!targetUserId) {
+        return NextResponse.json({ success: false, error: 'targetUserId required' }, { status: 400 });
+      }
+      if (action === 'approve') {
+        const { approveSubscription } = await import('@/lib/store');
+        const ok = await approveSubscription(targetUserId);
+        return NextResponse.json({ success: ok, message: ok ? 'Subscription approved' : 'Failed to approve' });
+      } else {
+        const { rejectSubscription } = await import('@/lib/store');
+        const ok = await rejectSubscription(targetUserId);
+        return NextResponse.json({ success: ok, message: ok ? 'Subscription rejected' : 'Failed to reject' });
+      }
+    }
+
+    // ── List pending (admin) ──
+    if (action === 'list-pending') {
+      if (adminKey !== (process.env.ADMIN_KEY || 'mitrai-admin-2026')) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      }
+      const { getAllPendingSubscriptions } = await import('@/lib/store');
+      const pending = await getAllPendingSubscriptions();
+      return NextResponse.json({ success: true, data: pending });
+    }
+
+    // ── Normal subscription flow ──
     if (!userId || !plan) {
       return NextResponse.json({ success: false, error: 'userId and plan required' }, { status: 400 });
     }
@@ -48,28 +78,31 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date();
-    let endDate = '';
 
-    if (plan === 'monthly') {
-      const end = new Date(now);
-      end.setMonth(end.getMonth() + 1);
-      endDate = end.toISOString();
-    } else if (plan === 'yearly') {
-      const end = new Date(now);
-      end.setFullYear(end.getFullYear() + 1);
-      endDate = end.toISOString();
+    // Free plan — activate immediately
+    if (plan === 'free') {
+      const subscription = await setUserSubscription({
+        userId, plan, startDate: now.toISOString(), endDate: '', status: 'active', transactionId: '', createdAt: now.toISOString(),
+      });
+      return NextResponse.json({ success: true, data: subscription });
+    }
+
+    // Paid plans — require transaction ID, set to PENDING
+    if (!transactionId || transactionId.trim().length < 4) {
+      return NextResponse.json({ success: false, error: 'Please enter a valid UPI Transaction / UTR ID (at least 4 characters)' }, { status: 400 });
     }
 
     const subscription = await setUserSubscription({
       userId,
       plan,
       startDate: now.toISOString(),
-      endDate,
-      status: 'active',
+      endDate: '',  // will be set on approval
+      status: 'pending',
+      transactionId: transactionId.trim(),
       createdAt: now.toISOString(),
     });
 
-    return NextResponse.json({ success: true, data: subscription });
+    return NextResponse.json({ success: true, data: subscription, message: 'Payment submitted for verification' });
   } catch (error) {
     console.error('Subscription API error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });

@@ -169,6 +169,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   start_date TEXT DEFAULT '',
   end_date TEXT DEFAULT '',
   status TEXT DEFAULT 'active',
+  transaction_id TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -330,7 +330,8 @@ export interface Subscription {
   plan: SubscriptionPlan;
   startDate: string;
   endDate: string;          // empty for free
-  status: 'active' | 'expired' | 'cancelled';
+  status: 'active' | 'pending' | 'expired' | 'cancelled';
+  transactionId?: string;   // UPI transaction/UTR ID
   createdAt: string;
 }
 
