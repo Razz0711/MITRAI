@@ -5,19 +5,6 @@
 
 import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailability, UserStatus, SessionBooking, BirthdayWish, FriendRequest, Friendship, BuddyRating, Subscription, DirectMessage, ChatThread } from './types';
 import { supabase } from './supabase';
-import fs from 'fs';
-import path from 'path';
-
-// File uploads still use local/tmp filesystem
-const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
-const DATA_DIR = IS_VERCEL ? path.join('/tmp', '.data') : path.join(process.cwd(), '.data');
-const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
 
 // ============================================
 // Helper: Convert between camelCase ↔ snake_case
@@ -311,25 +298,44 @@ export async function deleteMaterial(id: string): Promise<boolean> {
   const mat = await getMaterialById(id);
   if (!mat) return false;
   try {
-    const filePath = path.join(UPLOADS_DIR, mat.storedFileName);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    await supabase.storage.from('materials').remove([mat.storedFileName]);
   } catch (e) { console.error('Failed to delete uploaded file:', e); }
   const { error } = await supabase.from('materials').delete().eq('id', id);
   if (error) { console.error('deleteMaterial error:', error); return false; }
   return true;
 }
 
-export function saveUploadedFile(fileName: string, buffer: Buffer): string {
-  ensureDataDir();
-  if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  const ext = path.extname(fileName);
-  const storedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
-  fs.writeFileSync(path.join(UPLOADS_DIR, storedName), buffer);
+async function ensureBucketExists() {
+  const { data } = await supabase.storage.getBucket('materials');
+  if (!data) {
+    const { error: createError } = await supabase.storage.createBucket('materials', {
+      public: true,
+      fileSizeLimit: 10485760, // 10MB
+    });
+    if (createError && !createError.message?.includes('already exists')) {
+      console.error('Failed to create storage bucket:', createError);
+    }
+  }
+}
+
+export async function saveUploadedFile(fileName: string, buffer: Buffer): Promise<string> {
+  await ensureBucketExists();
+  const ext = fileName.split('.').pop() || 'bin';
+  const storedName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+  const { error } = await supabase.storage.from('materials').upload(storedName, buffer, {
+    contentType: 'application/octet-stream',
+    upsert: false,
+  });
+  if (error) {
+    console.error('Supabase storage upload error:', error);
+    throw new Error('Failed to upload file to storage: ' + error.message);
+  }
   return storedName;
 }
 
-export function getUploadedFilePath(storedFileName: string): string {
-  return path.join(UPLOADS_DIR, storedFileName);
+export function getUploadedFileUrl(storedFileName: string): string {
+  const { data } = supabase.storage.from('materials').getPublicUrl(storedFileName);
+  return data.publicUrl;
 }
 
 // ============================================

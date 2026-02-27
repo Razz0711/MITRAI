@@ -75,9 +75,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save file to disk
+    // Save file to Supabase Storage
     const buffer = Buffer.from(await file.arrayBuffer());
-    const storedFileName = saveUploadedFile(file.name, buffer);
+    const storedFileName = await saveUploadedFile(file.name, buffer);
 
     const material: StudyMaterial = {
       id: uuidv4(),

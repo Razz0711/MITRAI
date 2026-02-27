@@ -1,6 +1,6 @@
 // ============================================
 // MitrAI - Voice/Video Call Room Component
-// Uses Jitsi Meet (free, open-source, no API key)
+// Uses Jitsi Meet iframe (most reliable approach)
 // ============================================
 
 'use client';
@@ -14,242 +14,133 @@ interface CallRoomProps {
   audioOnly?: boolean;
 }
 
-declare global {
-  interface Window {
-    JitsiMeetExternalAPI: new (domain: string, options: Record<string, unknown>) => JitsiAPI;
-  }
-}
-
-interface JitsiAPI {
-  dispose: () => void;
-  executeCommand: (command: string, ...args: unknown[]) => void;
-  isAudioMuted: () => Promise<boolean>;
-  isVideoMuted: () => Promise<boolean>;
-  getNumberOfParticipants: () => number;
-  addListener: (event: string, handler: (...args: unknown[]) => void) => void;
-  removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
-}
-
 export default function CallRoom({ roomName, displayName, onLeave, audioOnly = false }: CallRoomProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const apiRef = useRef<JitsiAPI | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(audioOnly);
-  const [participantCount, setParticipantCount] = useState(1);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState('');
-  const [buddyJoined, setBuddyJoined] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
+
+  // Build the Jitsi Meet URL with config
+  const getJitsiUrl = useCallback(() => {
+    const sanitizedRoom = `MitrAI_${roomName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const domain = 'meet.jit.si';
+
+    const config = [
+      'config.prejoinPageEnabled=false',
+      'config.disableDeepLinking=true',
+      'config.enableWelcomePage=false',
+      'config.enableClosePage=false',
+      'config.disableThirdPartyRequests=true',
+      'config.startWithAudioMuted=false',
+      `config.startWithVideoMuted=${audioOnly}`,
+      'config.enableNoisyMicDetection=true',
+      'config.hideConferenceSubject=true',
+      'config.hideConferenceTimer=false',
+      'config.subject=MitrAI Study Session',
+      'config.disableInviteFunctions=true',
+      'interfaceConfig.SHOW_JITSI_WATERMARK=false',
+      'interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false',
+      'interfaceConfig.SHOW_BRAND_WATERMARK=false',
+      'interfaceConfig.SHOW_POWERED_BY=false',
+      'interfaceConfig.DEFAULT_BACKGROUND=#0f0f1a',
+      'interfaceConfig.TOOLBAR_ALWAYS_VISIBLE=true',
+      'interfaceConfig.DISABLE_JOIN_LEAVE_NOTIFICATIONS=false',
+      'interfaceConfig.MOBILE_APP_PROMO=false',
+      'interfaceConfig.HIDE_INVITE_MORE_HEADER=true',
+      'interfaceConfig.DISABLE_RINGING=true',
+    ];
+
+    const userInfoParam = `userInfo.displayName=${encodeURIComponent(displayName || 'Student')}`;
+
+    return `https://${domain}/${sanitizedRoom}#${config.join('&')}&${userInfoParam}`;
+  }, [roomName, displayName, audioOnly]);
 
   // ── Anti-screenshot / anti-recording protections ──
   useEffect(() => {
-    // 1. Block PrintScreen / screenshot shortcuts
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
         e.key === 'PrintScreen' ||
-        (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) || // Win+Shift+S
-        (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5')) // Mac screenshots
+        (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) ||
+        (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5'))
       ) {
         e.preventDefault();
         e.stopPropagation();
-        // Clear clipboard
         navigator.clipboard.writeText('').catch(() => {});
       }
     };
 
-    // 2. Block right-click context menu
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-    };
-
-    // 3. Detect visibility change (screen recording tools sometimes trigger this)
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // User switched away — could be recording. We just note it.
-        console.log('[Privacy] Tab switched during call');
-      }
-    };
-
-    // 4. Disable copy/paste of video content
+    const handleContextMenu = (e: MouseEvent) => e.preventDefault();
     const handleCopy = (e: ClipboardEvent) => {
       e.preventDefault();
       e.clipboardData?.setData('text/plain', 'Screenshot disabled for privacy');
     };
 
     document.addEventListener('keydown', handleKeyDown, true);
-    document.addEventListener('keyup', (e) => {
-      if (e.key === 'PrintScreen') {
-        navigator.clipboard.writeText('').catch(() => {});
-      }
-    }, true);
     document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('copy', handleCopy);
-
-    // 5. Try to block screen capture API if available
-    if (navigator.mediaDevices) {
-      const originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
-      navigator.mediaDevices.getDisplayMedia = function() {
-        return Promise.reject(new Error('Screen capture is disabled during calls for privacy'));
-      };
-      // Restore on cleanup
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown, true);
-        document.removeEventListener('contextmenu', handleContextMenu);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-        document.removeEventListener('copy', handleCopy);
-        navigator.mediaDevices.getDisplayMedia = originalGetDisplayMedia;
-      };
-    }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown, true);
       document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('copy', handleCopy);
     };
   }, []);
 
-  const initJitsi = useCallback(() => {
-    if (!containerRef.current || apiRef.current) return;
+  // Handle iframe load
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
 
-    try {
-      const sanitizedRoom = `MitrAI_${roomName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const handleLoad = () => {
+      setIsLoading(false);
+      setIsConnected(true);
+    };
 
-      const api = new window.JitsiMeetExternalAPI('meet.jit.si', {
-        roomName: sanitizedRoom,
-        parentNode: containerRef.current,
-        width: '100%',
-        height: '100%',
-        userInfo: {
-          displayName: displayName || 'Student',
-        },
-        configOverwrite: {
-          startWithAudioMuted: false,
-          startWithVideoMuted: audioOnly,
-          prejoinPageEnabled: false,
-          disableDeepLinking: true,
-          enableWelcomePage: false,
-          enableClosePage: false,
-          disableThirdPartyRequests: true,
-          enableNoisyMicDetection: true,
-          toolbarButtons: [
-            'microphone',
-            'camera',
-            'desktop',
-            'chat',
-            'raisehand',
-            'participants-pane',
-            'tileview',
-            'fullscreen',
-          ],
-          notifications: [],
-          disableInviteFunctions: true,
-          hideConferenceSubject: true,
-          hideConferenceTimer: false,
-          subject: `MitrAI Study Session`,
-        },
-        interfaceConfigOverwrite: {
-          SHOW_JITSI_WATERMARK: false,
-          SHOW_WATERMARK_FOR_GUESTS: false,
-          SHOW_BRAND_WATERMARK: false,
-          SHOW_POWERED_BY: false,
-          DEFAULT_BACKGROUND: '#0f0f1a',
-          TOOLBAR_ALWAYS_VISIBLE: true,
-          DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
-          MOBILE_APP_PROMO: false,
-          HIDE_INVITE_MORE_HEADER: true,
-          DISABLE_RINGING: true,
-        },
-      });
+    const handleError = () => {
+      setError('Failed to load video call. Please check your internet connection or try disabling ad-blockers.');
+      setIsLoading(false);
+    };
 
-      apiRef.current = api;
+    iframe.addEventListener('load', handleLoad);
+    iframe.addEventListener('error', handleError);
 
-      api.addListener('videoConferenceJoined', () => {
+    // Timeout fallback - if iframe hasn't loaded in 15s, show connected anyway
+    const timeout = setTimeout(() => {
+      if (isLoading) {
         setIsLoading(false);
         setIsConnected(true);
-        if (audioOnly) {
-          api.executeCommand('toggleVideo');
-        }
-      });
+      }
+    }, 15000);
 
-      api.addListener('videoConferenceLeft', () => {
-        setIsConnected(false);
-        onLeave?.();
-      });
-
-      api.addListener('participantJoined', () => {
-        setParticipantCount(api.getNumberOfParticipants());
-        setBuddyJoined(true);
-        setTimeout(() => setBuddyJoined(false), 4000);
-      });
-
-      api.addListener('participantLeft', () => {
-        setParticipantCount(api.getNumberOfParticipants());
-      });
-
-      api.addListener('audioMuteStatusChanged', (data: unknown) => {
-        const muteData = data as { muted: boolean };
-        setIsMuted(muteData.muted);
-      });
-
-      api.addListener('videoMuteStatusChanged', (data: unknown) => {
-        const muteData = data as { muted: boolean };
-        setIsVideoOff(muteData.muted);
-      });
-
-      api.addListener('readyToClose', () => {
-        onLeave?.();
-      });
-    } catch (err) {
-      console.error('Jitsi init error:', err);
-      setError('Failed to initialize video call. Please try again.');
-      setIsLoading(false);
-    }
-  }, [roomName, displayName, audioOnly, onLeave]);
-
-  const loadJitsiScript = useCallback(() => {
-    if (window.JitsiMeetExternalAPI) {
-      initJitsi();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://meet.jit.si/external_api.js';
-    script.async = true;
-    script.onload = () => initJitsi();
-    script.onerror = () => {
-      setError('Failed to load video call service. Please check your internet connection.');
-      setIsLoading(false);
-    };
-    document.head.appendChild(script);
-  }, [initJitsi]);
-
-  useEffect(() => {
-    loadJitsiScript();
     return () => {
-      if (apiRef.current) {
-        apiRef.current.dispose();
-        apiRef.current = null;
+      iframe.removeEventListener('load', handleLoad);
+      iframe.removeEventListener('error', handleError);
+      clearTimeout(timeout);
+    };
+  }, [isLoading]);
+
+  // Listen for messages from Jitsi iframe
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://meet.jit.si') return;
+
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data.event === 'video-conference-left' || data.event === 'readyToClose') {
+          onLeave?.();
+        }
+      } catch {
+        // Ignore non-JSON messages
       }
     };
-  }, [loadJitsiScript]);
 
-  const toggleMute = () => {
-    apiRef.current?.executeCommand('toggleAudio');
-  };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onLeave]);
 
-  const toggleVideo = () => {
-    apiRef.current?.executeCommand('toggleVideo');
-  };
-
-  const toggleScreenShare = () => {
-    apiRef.current?.executeCommand('toggleShareScreen');
-  };
-
-  const hangUp = () => {
-    apiRef.current?.executeCommand('hangup');
+  const handleEndCall = () => {
+    onLeave?.();
   };
 
   if (error) {
@@ -259,9 +150,14 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
           <div className="text-5xl mb-4">😔</div>
           <h3 className="text-xl font-bold mb-2 text-[var(--error)]">Connection Error</h3>
           <p className="text-[var(--muted)] mb-4">{error}</p>
-          <button onClick={() => { setError(''); setIsLoading(true); loadJitsiScript(); }} className="btn-primary">
-            🔄 Try Again
-          </button>
+          <div className="flex gap-3 justify-center">
+            <button onClick={() => { setError(''); setIsLoading(true); }} className="btn-primary">
+              🔄 Try Again
+            </button>
+            <button onClick={() => onLeave?.()} className="btn-secondary">
+              Go Back
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -275,6 +171,7 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
           <span className="text-[9px] text-[var(--muted)] flex items-center gap-1">🔒 Screenshot protection active</span>
         </div>
       )}
+
       {/* Loading Overlay */}
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--background)]/90">
@@ -284,16 +181,16 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
             </div>
             <p className="text-lg font-semibold mb-1">Connecting...</p>
             <p className="text-sm text-[var(--muted)]">Setting up your {audioOnly ? 'voice' : 'video'} call</p>
+            <p className="text-xs text-[var(--muted)] mt-2">This may take a few seconds</p>
           </div>
         </div>
       )}
 
       {/* Waiting for buddy overlay */}
-      {isConnected && participantCount <= 1 && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 animate-pulse">
+      {isConnected && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
           <div className="px-5 py-3 rounded-xl bg-[var(--surface)]/95 border border-[var(--primary)]/30 backdrop-blur-sm shadow-lg text-center">
-            <p className="text-sm font-semibold text-[var(--primary-light)]">⏳ Waiting for your buddy to join...</p>
-            <p className="text-[10px] text-[var(--muted)] mt-1 mb-2">Share this room code with your buddy:</p>
+            <p className="text-sm font-semibold text-[var(--primary-light)]">Share this room code with your buddy:</p>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(roomName).then(() => {
@@ -301,7 +198,7 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
                   setTimeout(() => setCodeCopied(false), 2000);
                 });
               }}
-              className="px-4 py-1.5 rounded-lg bg-[var(--primary)]/20 border border-[var(--primary)]/30 font-mono text-lg tracking-widest text-[var(--primary-light)] hover:bg-[var(--primary)]/30 transition-all"
+              className="mt-2 px-4 py-1.5 rounded-lg bg-[var(--primary)]/20 border border-[var(--primary)]/30 font-mono text-lg tracking-widest text-[var(--primary-light)] hover:bg-[var(--primary)]/30 transition-all"
             >
               {codeCopied ? '✅ Copied!' : roomName}
             </button>
@@ -309,67 +206,33 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         </div>
       )}
 
-      {/* Buddy joined toast */}
-      {buddyJoined && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 slide-up">
-          <div className="px-5 py-3 rounded-xl bg-green-500/20 border border-green-500/40 backdrop-blur-sm shadow-lg text-center">
-            <p className="text-sm font-semibold text-green-400">🎉 Your buddy joined the call!</p>
-          </div>
-        </div>
-      )}
-
-      {/* Status Bar */}
+      {/* Top bar with End Call */}
       {isConnected && (
         <div className="px-4 py-2 bg-[var(--surface)] border-b border-[var(--border)] flex items-center justify-between z-20">
           <div className="flex items-center gap-3">
-            <div className={`w-2.5 h-2.5 rounded-full ${participantCount > 1 ? 'bg-[var(--success)]' : 'bg-amber-400'} animate-pulse`} />
+            <div className="w-2.5 h-2.5 rounded-full bg-[var(--success)] animate-pulse" />
             <span className="text-sm font-medium">
-              {audioOnly ? '🎙️ Voice Call' : '📹 Video Call'} — {participantCount} participant{participantCount !== 1 ? 's' : ''}
+              {audioOnly ? '🎙️ Voice Call' : '📹 Video Call'} — Room: {roomName}
             </span>
-            {participantCount <= 1 && (
-              <span className="text-xs text-amber-400">(only you)</span>
-            )}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleMute}
-              className={`p-2 rounded-lg text-sm transition-all ${
-                isMuted ? 'bg-[var(--error)]/20 text-[var(--error)]' : 'bg-white/5 hover:bg-white/10'
-              }`}
-              title={isMuted ? 'Unmute' : 'Mute'}
-            >
-              {isMuted ? '🔇' : '🔊'}
-            </button>
-            {!audioOnly && (
-              <button
-                onClick={toggleVideo}
-                className={`p-2 rounded-lg text-sm transition-all ${
-                  isVideoOff ? 'bg-[var(--error)]/20 text-[var(--error)]' : 'bg-white/5 hover:bg-white/10'
-                }`}
-                title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
-              >
-                {isVideoOff ? '📷' : '📹'}
-              </button>
-            )}
-            <button
-              onClick={toggleScreenShare}
-              className="p-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 transition-all"
-              title="Share screen"
-            >
-              🖥️
-            </button>
-            <button
-              onClick={hangUp}
-              className="px-4 py-2 rounded-lg text-sm bg-[var(--error)] text-white font-medium hover:bg-red-600 transition-all"
-            >
-              End Call
-            </button>
-          </div>
+          <button
+            onClick={handleEndCall}
+            className="px-4 py-2 rounded-lg text-sm bg-[var(--error)] text-white font-medium hover:bg-red-600 transition-all"
+          >
+            End Call
+          </button>
         </div>
       )}
 
-      {/* Jitsi Container */}
-      <div ref={containerRef} className="flex-1 bg-black" />
+      {/* Jitsi iframe */}
+      <iframe
+        ref={iframeRef}
+        src={getJitsiUrl()}
+        className="flex-1 w-full border-0"
+        allow="camera; microphone; display-capture; autoplay; clipboard-write"
+        allowFullScreen
+        style={{ minHeight: 0 }}
+      />
     </div>
   );
 }
