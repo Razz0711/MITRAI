@@ -7,8 +7,11 @@ import { StudentProfile, StudySession, Notification, StudyMaterial, UserAvailabi
 import fs from 'fs';
 import path from 'path';
 
-// File-based persistence for dev mode
-const DATA_DIR = path.join(process.cwd(), '.data');
+// File-based persistence
+// On Vercel (production), use /tmp since the filesystem is read-only elsewhere
+// Locally, use .data in the project root for persistence across dev restarts
+const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
+const DATA_DIR = IS_VERCEL ? path.join('/tmp', '.data') : path.join(process.cwd(), '.data');
 const STUDENTS_FILE = path.join(DATA_DIR, 'students.json');
 const MATERIALS_FILE = path.join(DATA_DIR, 'materials.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
