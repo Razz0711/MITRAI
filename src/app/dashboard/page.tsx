@@ -14,7 +14,6 @@ import { StatusDot } from '@/components/StatusIndicator';
 export default function DashboardPage() {
   const { user } = useAuth();
   const [student, setStudent] = useState<StudentProfile | null>(null);
-  const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
   const [myProfiles, setMyProfiles] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
@@ -266,8 +265,6 @@ export default function DashboardPage() {
       const data = await res.json();
 
       if (data.success) {
-        setAllStudents(data.data);
-
         // Filter to only show the current user's own profiles
         const userEmail = user?.email?.toLowerCase() || '';
         const mine = (data.data as StudentProfile[]).filter(
@@ -337,7 +334,6 @@ export default function DashboardPage() {
       const data = await res.json();
       if (data.success) {
         // Remove from local state
-        setAllStudents(prev => prev.filter(s => s.id !== student.id));
         setMyProfiles(prev => prev.filter(s => s.id !== student.id));
         localStorage.removeItem('mitrai_student_id');
         localStorage.removeItem('mitrai_student_name');
