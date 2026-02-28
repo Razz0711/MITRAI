@@ -15,8 +15,8 @@ const SECRET_SALT = 'mitrai-admin-auth-2024';
  * This token is the same across all serverless invocations as long as env vars don't change.
  */
 export function generateAdminToken(): string {
-  const email = process.env.ADMIN_EMAIL || '';
-  const password = process.env.ADMIN_PASSWORD || '';
+  const email = (process.env.ADMIN_EMAIL || '').trim();
+  const password = (process.env.ADMIN_PASSWORD || '').trim();
   if (!email || !password) return '';
   return crypto
     .createHash('sha256')
@@ -28,10 +28,18 @@ export function generateAdminToken(): string {
  * Validate admin email + password against env vars.
  */
 export function validateAdminCredentials(email: string, password: string): boolean {
-  const expectedEmail = process.env.ADMIN_EMAIL || '';
-  const expectedPassword = process.env.ADMIN_PASSWORD || '';
-  if (!expectedEmail || !expectedPassword) return false;
-  return email.trim().toLowerCase() === expectedEmail.trim().toLowerCase() && password === expectedPassword;
+  const expectedEmail = (process.env.ADMIN_EMAIL || '').trim();
+  const expectedPassword = (process.env.ADMIN_PASSWORD || '').trim();
+  if (!expectedEmail || !expectedPassword) {
+    console.error('[Admin Auth] ADMIN_EMAIL or ADMIN_PASSWORD env var not set');
+    return false;
+  }
+  const emailMatch = email.trim().toLowerCase() === expectedEmail.toLowerCase();
+  const passMatch = password.trim() === expectedPassword;
+  if (!emailMatch || !passMatch) {
+    console.error(`[Admin Auth] Credential mismatch - email:${emailMatch} pass:${passMatch}`);
+  }
+  return emailMatch && passMatch;
 }
 
 /**
