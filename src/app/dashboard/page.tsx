@@ -41,6 +41,10 @@ export default function DashboardPage() {
   // Study streak (from sessions)
   const [studyStreak, setStudyStreak] = useState(0);
 
+  // Gamification
+  const [xp, setXp] = useState<{ totalXp: number; level: string; currentStreak: number; longestStreak: number } | null>(null);
+  const [badges, setBadges] = useState<{ badgeId: string; badgeName: string; badgeEmoji: string; earnedAt: string }[]>([]);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -80,6 +84,21 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user) { loadBirthdays(); loadNotifications(); loadStatus(); }
   }, [user, loadBirthdays, loadNotifications, loadStatus]);
+
+  // Load gamification data
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/gamification?userId=${user.id}`);
+        const data = await res.json();
+        if (data.success) {
+          setXp(data.data.xp);
+          setBadges(data.data.badges || []);
+        }
+      } catch (err) { console.error('loadGamification:', err); }
+    })();
+  }, [user]);
 
   // Calculate study streak from localStorage activity
   useEffect(() => {
@@ -326,6 +345,50 @@ export default function DashboardPage() {
             <StatCard label={`🔥 ${studyStreak} Day Streak`} value={studyStreak >= 7 ? '🏆 On Fire!' : studyStreak >= 3 ? '💪 Going!' : '🌱 Start'} color="primary" />
           </div>
 
+          {/* XP & Badges Widget */}
+          {xp && (
+            <div className="card p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                    {xp.level?.charAt(0) || 'B'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">{xp.level || 'Beginner'}</p>
+                    <p className="text-[10px] text-[var(--muted)]">{xp.totalXp || 0} XP earned</p>
+                  </div>
+                </div>
+                <Link href="/circles" className="text-xs text-[var(--primary-light)] hover:underline">
+                  View Circles →
+                </Link>
+              </div>
+              {/* XP Progress Bar */}
+              <div className="w-full h-2 rounded-full bg-white/10 mb-3">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                  style={{ width: `${Math.min(100, ((xp.totalXp || 0) % 500) / 5)}%` }}
+                />
+              </div>
+              {/* Badges */}
+              {badges.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {badges.map((b) => (
+                    <span
+                      key={b.badgeId}
+                      title={b.badgeName}
+                      className="inline-flex items-center gap-1 text-xs bg-white/5 border border-[var(--border)] rounded-full px-2.5 py-1"
+                    >
+                      {b.badgeEmoji} {b.badgeName}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {badges.length === 0 && (
+                <p className="text-[10px] text-[var(--muted)]">Complete actions to earn badges!</p>
+              )}
+            </div>
+          )}
+
           {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Profile Card */}
@@ -500,6 +563,20 @@ export default function DashboardPage() {
               <h3 className="text-sm font-semibold mb-1">Find Matches</h3>
               <p className="text-xs text-[var(--muted)]">Discover study buddies</p>
             </Link>
+            <Link href="/rooms" className="card-hover p-4 text-center block">
+              <h3 className="text-sm font-semibold mb-1">📚 Study Rooms</h3>
+              <p className="text-xs text-[var(--muted)]">Collaborate in groups</p>
+            </Link>
+            <Link href="/doubts" className="card-hover p-4 text-center block">
+              <h3 className="text-sm font-semibold mb-1">❓ Doubts</h3>
+              <p className="text-xs text-[var(--muted)]">Ask anonymously</p>
+            </Link>
+            <Link href="/circles" className="card-hover p-4 text-center block">
+              <h3 className="text-sm font-semibold mb-1">⭕ Circles</h3>
+              <p className="text-xs text-[var(--muted)]">Interest groups</p>
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
             <Link href="/friends" className="card-hover p-4 text-center block">
               <h3 className="text-sm font-semibold mb-1">Friends</h3>
               <p className="text-xs text-[var(--muted)]">Your buddy network</p>
@@ -511,6 +588,10 @@ export default function DashboardPage() {
             <Link href="/subscription" className="card-hover p-4 text-center block border-amber-500/20">
               <h3 className="text-sm font-semibold mb-1">✨ Pro</h3>
               <p className="text-xs text-amber-400">Free during launch!</p>
+            </Link>
+            <Link href="/analytics" className="card-hover p-4 text-center block">
+              <h3 className="text-sm font-semibold mb-1">📊 Analytics</h3>
+              <p className="text-xs text-[var(--muted)]">Study insights</p>
             </Link>
           </div>
 

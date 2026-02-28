@@ -20,3 +20,7 @@ export * from './chat';
 export * from './calendar';
 export * from './attendance';
 export * from './feedback';
+export * from './circles';
+export * from './gamification';
+export * from './rooms';
+export * from './doubts';
