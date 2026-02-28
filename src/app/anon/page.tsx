@@ -223,6 +223,11 @@ export default function AnonLobbyPage() {
     return `upi://pay?${params.toString()}`;
   };
 
+  const getQrImageUrl = (amount: number) => {
+    const upiUrl = generateUpiLink(amount);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(upiUrl)}&bgcolor=1a1a2e&color=ffffff&format=png`;
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -397,61 +402,61 @@ export default function AnonLobbyPage() {
                     </p>
                   </div>
 
-                  {/* Payment Steps */}
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-[var(--primary)] text-white text-xs flex items-center justify-center shrink-0 mt-0.5">1</div>
-                      <div>
-                        <p className="text-sm font-medium text-[var(--foreground)]">Pay via UPI</p>
-                        <p className="text-xs text-[var(--muted)]">
-                          Send <span className="font-bold text-[var(--primary)]">₹{selectedPlan.price}</span> to:
-                        </p>
-                        <div className="mt-1 flex items-center gap-2 bg-[var(--surface-light)] px-3 py-2 rounded-lg">
-                          <span className="text-sm font-mono font-semibold text-[var(--foreground)]">{UPI_CONFIG.upiId}</span>
-                          <button
-                            onClick={() => navigator.clipboard.writeText(UPI_CONFIG.upiId)}
-                            className="text-xs text-[var(--primary)] hover:underline"
-                          >
-                            Copy
-                          </button>
-                        </div>
-                        <a
-                          href={generateUpiLink(selectedPlan.price)}
-                          className="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-[var(--primary)] hover:underline"
-                        >
-                          📱 Open UPI App Directly
-                        </a>
-                      </div>
+                  {/* QR Code */}
+                  <div className="flex justify-center mb-4">
+                    <div className="p-3 bg-white rounded-2xl shadow-lg">
+                      <img
+                        src={getQrImageUrl(selectedPlan.price)}
+                        alt="UPI QR Code"
+                        width={200}
+                        height={200}
+                        className="rounded-xl"
+                        style={{ imageRendering: 'pixelated' }}
+                      />
                     </div>
+                  </div>
 
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-[var(--primary)] text-white text-xs flex items-center justify-center shrink-0 mt-0.5">2</div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-[var(--foreground)]">Enter Transaction ID</p>
-                        <p className="text-xs text-[var(--muted)] mb-2">
-                          After paying, paste your UPI transaction/reference ID below
-                        </p>
-                        <input
-                          type="text"
-                          value={txnId}
-                          onChange={e => { setTxnId(e.target.value); setTxnError(''); }}
-                          placeholder="e.g. 412345678901 or UPI ref number"
-                          className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
-                          maxLength={50}
-                        />
-                        {txnError && <p className="text-[var(--error)] text-xs mt-1">{txnError}</p>}
-                      </div>
+                  <div className="text-center mb-4">
+                    <p className="text-xs text-[var(--muted)] mb-1">Scan with any UPI app to pay</p>
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <span className="text-lg">📱</span>
+                      <span className="text-[10px] text-[var(--muted)]">GPay • PhonePe • Paytm • BHIM • Any UPI app</span>
                     </div>
-
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-[var(--surface-light)] text-[var(--muted)] text-xs flex items-center justify-center shrink-0 mt-0.5">3</div>
+                    <div className="mt-2 px-3 py-1.5 rounded-lg bg-[var(--surface-light)] border border-[var(--border)] inline-flex items-center gap-2">
                       <div>
-                        <p className="text-sm font-medium text-[var(--muted)]">We verify & activate</p>
-                        <p className="text-xs text-[var(--muted)]">
-                          Admin verifies your payment (usually within a few hours) and your pass gets activated automatically.
-                        </p>
+                        <p className="text-[10px] text-[var(--muted)]">UPI ID</p>
+                        <p className="text-xs font-mono font-semibold text-[var(--foreground)]">{UPI_CONFIG.upiId}</p>
                       </div>
+                      <button
+                        onClick={() => navigator.clipboard.writeText(UPI_CONFIG.upiId)}
+                        className="text-xs text-[var(--primary)] hover:underline"
+                      >
+                        Copy
+                      </button>
                     </div>
+                    <a
+                      href={generateUpiLink(selectedPlan.price)}
+                      className="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-[var(--primary)] hover:underline"
+                    >
+                      📱 Open UPI App Directly
+                    </a>
+                  </div>
+
+                  {/* Transaction ID input */}
+                  <div className="mb-3">
+                    <label className="text-xs text-[var(--foreground)] block mb-1 font-medium">
+                      Transaction / UTR ID <span className="text-[var(--error)]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={txnId}
+                      onChange={e => { setTxnId(e.target.value); setTxnError(''); }}
+                      placeholder="Enter your UPI transaction ID after payment"
+                      className="w-full px-3 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
+                      maxLength={50}
+                    />
+                    {txnError && <p className="text-[var(--error)] text-xs mt-1">{txnError}</p>}
+                    <p className="text-[10px] text-[var(--muted)] mt-1">Find the 12-digit UTR/Reference number in your UPI app payment history</p>
                   </div>
 
                   {/* Action buttons */}
@@ -471,10 +476,6 @@ export default function AnonLobbyPage() {
                       {txnLoading ? 'Submitting...' : 'Submit Payment'}
                     </button>
                   </div>
-
-                  <p className="text-[10px] text-[var(--muted)] text-center">
-                    Use Google Pay, PhonePe, Paytm, or any UPI app to pay
-                  </p>
                 </>
               ) : (
                 /* Success state */

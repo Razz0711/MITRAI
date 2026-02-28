@@ -65,7 +65,7 @@ export const ANON_PRICING = [
  * UPI Payment config — update UPI_ID with your actual UPI address
  */
 export const UPI_CONFIG = {
-  upiId: process.env.NEXT_PUBLIC_UPI_ID || 'mitrai@upi',
-  merchantName: 'MitrAI Study',
+  upiId: '7061001946@ybl',
+  merchantName: 'Raj Kumar',
   note: 'MitrAI Anon Chat',
 };
