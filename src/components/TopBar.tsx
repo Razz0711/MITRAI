@@ -18,7 +18,7 @@ export default function TopBar() {
       <div className="flex items-center justify-between h-12 px-4 max-w-7xl mx-auto">
         {/* Logo */}
         <Link href="/home" className="flex items-center gap-2">
-          <img src="/logo.png" alt="MitrAI" className="h-8 w-auto" />
+          <img src="/logo.jpg" alt="MitrAI" className="h-8 w-auto" />
           <span className="text-sm font-semibold text-[var(--foreground)]">MitrAI</span>
           <span className="text-[10px] text-[var(--muted)] hidden sm:inline">SVNIT</span>
         </Link>
