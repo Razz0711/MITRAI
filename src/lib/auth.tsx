@@ -18,6 +18,14 @@ interface User {
   dob: string;            // YYYY-MM-DD
   showBirthday: boolean;  // privacy toggle
   createdAt: string;
+  // Batch-matching fields
+  matchKey: string;
+  programType: string;
+  batchYear: string;
+  deptCode: string;
+  rollNo: string;
+  deptKnown: boolean;
+  profileAutoFilled: boolean;
 }
 
 interface SignupData {
@@ -28,6 +36,14 @@ interface SignupData {
   department: string;
   yearLevel: string;
   dob: string;
+  // Batch-matching fields
+  matchKey?: string;
+  programType?: string;
+  batchYear?: string;
+  deptCode?: string;
+  rollNo?: string;
+  deptKnown?: boolean;
+  profileAutoFilled?: boolean;
 }
 
 interface AuthContextType {
@@ -53,6 +69,13 @@ function mapSupabaseUser(supabaseUser: any): User {
     dob: meta.dob || '',
     showBirthday: meta.showBirthday !== false,
     createdAt: supabaseUser.created_at || '',
+    matchKey: meta.matchKey || '',
+    programType: meta.programType || '',
+    batchYear: meta.batchYear || '',
+    deptCode: meta.deptCode || '',
+    rollNo: meta.rollNo || '',
+    deptKnown: meta.deptKnown !== false,
+    profileAutoFilled: meta.profileAutoFilled === true,
   };
 }
 

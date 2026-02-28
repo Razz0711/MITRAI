@@ -54,6 +54,8 @@ export const STUDENT_DEFAULTS: Record<string, unknown> = {
   communication: 'introvert', teachingAbility: 'average', accountabilityNeed: 'medium',
   videoCallComfort: false, shortTermGoal: '', longTermGoal: '', studyHoursTarget: 0,
   weeklyGoals: '', dob: '', showBirthday: true,
+  matchKey: '', programType: '', batchYear: '', deptCode: '', rollNo: '',
+  deptKnown: true, profileAutoFilled: false,
 };
 
 export const CALENDAR_DEFAULTS: Record<string, unknown> = {

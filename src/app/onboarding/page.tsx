@@ -177,6 +177,13 @@ export default function OnboardingPage() {
         yearLevel: user.yearLevel,
         email: user.email,
         admissionNumber: user.admissionNumber,
+        matchKey: user.matchKey,
+        programType: user.programType,
+        batchYear: user.batchYear,
+        deptCode: user.deptCode,
+        rollNo: user.rollNo,
+        deptKnown: user.deptKnown,
+        profileAutoFilled: user.profileAutoFilled,
       } : undefined;
       const parsed = parseOnboardingData(data, authData);
 

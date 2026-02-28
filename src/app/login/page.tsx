@@ -7,6 +7,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { validateSVNITEmail, ParsedEmail } from '@/lib/email-parser';
 
 const DEPARTMENTS = [
   'CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics', 'Chemical',
@@ -29,6 +30,8 @@ function LoginPageInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [parsedEmail, setParsedEmail] = useState<ParsedEmail | null>(null);
+  const [emailParseError, setEmailParseError] = useState('');
 
   // OTP states
   const [otpStep, setOtpStep] = useState(false);
@@ -51,6 +54,30 @@ function LoginPageInner() {
       setIsSignup(true);
     }
   }, [searchParams]);
+
+  // Auto-parse email when typing during signup
+  useEffect(() => {
+    if (!isSignup) { setParsedEmail(null); setEmailParseError(''); return; }
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !/^[^@]+@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(trimmed)) {
+      setParsedEmail(null);
+      setEmailParseError('');
+      return;
+    }
+    const result = validateSVNITEmail(trimmed);
+    if (result.valid && result.parsed) {
+      setParsedEmail(result.parsed);
+      setEmailParseError('');
+      // Auto-fill fields
+      setAdmissionNumber(result.parsed.admissionNumber);
+      setDepartment(result.parsed.department);
+      setYearLevel(result.parsed.yearLevel);
+    } else {
+      setParsedEmail(null);
+      setEmailParseError(result.error || '');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email, isSignup]);
 
   // Redirect if already logged in
   if (user) {
@@ -116,6 +143,13 @@ function LoginPageInner() {
           department,
           yearLevel,
           dob,
+          matchKey: parsedEmail?.matchKey,
+          programType: parsedEmail?.programType,
+          batchYear: parsedEmail?.batchYear,
+          deptCode: parsedEmail?.deptCode,
+          rollNo: parsedEmail?.rollNo,
+          deptKnown: parsedEmail?.deptKnown,
+          profileAutoFilled: !!parsedEmail,
         });
         if (result.success) {
           router.push('/onboarding');
@@ -151,9 +185,9 @@ function LoginPageInner() {
 
     if (isSignup) {
       if (!name.trim()) { setError('Name is required'); return; }
-      if (!admissionNumber.trim()) { setError('Admission number is required'); return; }
-      if (!department) { setError('Please select your department'); return; }
-      if (!yearLevel) { setError('Please select your year'); return; }
+      if (!admissionNumber.trim() && !parsedEmail) { setError('Admission number is required'); return; }
+      if (!department && !parsedEmail) { setError('Please select your department'); return; }
+      if (!yearLevel && !parsedEmail) { setError('Please select your year'); return; }
       if (!dob) { setError('Please enter your date of birth'); return; }
       if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
     } else {
@@ -183,19 +217,51 @@ function LoginPageInner() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           {isSignup && (
-            <>
-              <div>
-                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Full Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your full name"
-                  className="input-field text-sm"
-                  autoFocus
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your full name"
+                className="input-field text-sm"
+                autoFocus
+              />
+            </div>
+          )}
 
+          <div>
+            <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">SVNIT Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="i22ma038@amhd.svnit.ac.in"
+              className="input-field text-sm"
+              autoFocus={!isSignup}
+            />
+            {isSignup && emailParseError && (
+              <p className="text-[10px] text-[var(--warning)] mt-1">{emailParseError}</p>
+            )}
+          </div>
+
+          {/* Auto-filled badge when email is parsed */}
+          {isSignup && parsedEmail && (
+            <div className="p-3 rounded-lg bg-[var(--success)]/10 border border-[var(--success)]/20 space-y-1.5">
+              <p className="text-[10px] font-semibold text-[var(--success)]">✓ Auto-detected from your email</p>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="px-2 py-0.5 rounded bg-[var(--success)]/15 text-[10px] text-[var(--success)]">{parsedEmail.programLabel}</span>
+                <span className="px-2 py-0.5 rounded bg-[var(--success)]/15 text-[10px] text-[var(--success)]">{parsedEmail.department}</span>
+                <span className="px-2 py-0.5 rounded bg-[var(--success)]/15 text-[10px] text-[var(--success)]">{parsedEmail.yearLevel}</span>
+                <span className="px-2 py-0.5 rounded bg-[var(--success)]/15 text-[10px] text-[var(--success)]">Batch &apos;{parsedEmail.batchYear}</span>
+                <span className="px-2 py-0.5 rounded bg-[var(--success)]/15 text-[10px] text-[var(--success)]">{parsedEmail.admissionNumber}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Manual fields only if email not parsed */}
+          {isSignup && !parsedEmail && (
+            <>
               <div>
                 <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Admission Number</label>
                 <input
@@ -234,32 +300,22 @@ function LoginPageInner() {
                   ))}
                 </select>
               </div>
-
-              <div>
-                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Date of Birth</label>
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  className="input-field text-sm"
-                  max={new Date().toISOString().split('T')[0]}
-                />
-                <p className="text-[10px] text-[var(--muted)] mt-0.5">Only day & month shown publicly for birthday celebrations</p>
-              </div>
             </>
           )}
 
-          <div>
-            <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">SVNIT Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="i22ma038@amhd.svnit.ac.in"
-              className="input-field text-sm"
-              autoFocus={!isSignup}
-            />
-          </div>
+          {isSignup && (
+            <div>
+              <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Date of Birth</label>
+              <input
+                type="date"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                className="input-field text-sm"
+                max={new Date().toISOString().split('T')[0]}
+              />
+              <p className="text-[10px] text-[var(--muted)] mt-0.5">Only day & month shown publicly for birthday celebrations</p>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Password</label>

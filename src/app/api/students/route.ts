@@ -59,6 +59,13 @@ function buildStudentProfile(source: Record<string, unknown>, id: string): Stude
     weeklyGoals: (source.weeklyGoals as string) || '',
     dob: (source.dob as string) || '',
     showBirthday: source.showBirthday !== false,
+    matchKey: (source.matchKey as string) || '',
+    programType: (source.programType as string) || '',
+    batchYear: (source.batchYear as string) || '',
+    deptCode: (source.deptCode as string) || '',
+    rollNo: (source.rollNo as string) || '',
+    deptKnown: source.deptKnown !== false,
+    profileAutoFilled: (source.profileAutoFilled as boolean) || false,
   };
 }
 

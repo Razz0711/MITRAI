@@ -3,7 +3,7 @@
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllStudents, getStudentById } from '@/lib/store';
+import { getAllStudents, getStudentById, getStudentsByMatchKey } from '@/lib/store';
 import { findTopMatches } from '@/lib/matching';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
@@ -23,11 +23,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Student not found' }, { status: 404 });
     }
 
-    const allStudents = await getAllStudents();
+    // Fetch candidates: if student has a match_key, only fetch batchmates; otherwise fall back to all
+    const candidates = student.matchKey
+      ? await getStudentsByMatchKey(student.matchKey)
+      : await getAllStudents();
+
     const hasApiKey = !!process.env.GEMINI_API_KEY;
     const shouldUseAI = useAI !== false && hasApiKey;
 
-    const matches = await findTopMatches(student, allStudents, 3, shouldUseAI);
+    const matches = await findTopMatches(student, candidates, 3, shouldUseAI);
 
     return NextResponse.json({ success: true, data: { student, matches } });
   } catch (error) {

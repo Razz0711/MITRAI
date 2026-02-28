@@ -9,6 +9,7 @@ import Link from 'next/link';
 import MatchCard from '@/components/MatchCard';
 import { MatchResult, StudentProfile, UserStatus, BirthdayInfo, Friendship, FriendRequest } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
+import { TYPE_MAP, DEPT_MAP } from '@/lib/email-parser';
 
 export default function MatchesPage() {
   const { user } = useAuth();
@@ -278,21 +279,54 @@ export default function MatchesPage() {
       {/* Browse All Students — visible even without running matching */}
       {!loading && (
         <div className="mt-6">
+          {/* Batch info banner */}
+          {user?.matchKey && (
+            <div className="mb-4 p-3 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm">🎓</span>
+                <span className="text-xs font-semibold text-[var(--primary-light)]">
+                  {TYPE_MAP[user.matchKey[0]] || 'Student'} · {DEPT_MAP[user.matchKey.slice(3)] || user.deptCode?.toUpperCase() || ''} · Batch &#39;{user.batchYear || user.matchKey.slice(1, 3)}
+                </span>
+              </div>
+              <p className="text-[10px] text-[var(--muted)]">
+                Matching is limited to your batch ({user.matchKey.toUpperCase()}) for the most relevant study partners.
+              </p>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold">Browse All Students</h2>
+            <h2 className="text-sm font-bold">
+              {user?.matchKey ? 'Your Batchmates on MitrAI' : 'Browse All Students'}
+            </h2>
             <span className="text-xs text-[var(--muted)]">
-              {allStudents.filter(s => s.id !== selectedStudentId).length} students
+              {allStudents.filter(s => {
+                if (s.id === selectedStudentId) return false;
+                if (user?.matchKey) return s.matchKey === user.matchKey;
+                return true;
+              }).length} {user?.matchKey ? 'batchmates' : 'students'}
             </span>
           </div>
-          {allStudents.filter(s => s.id !== selectedStudentId).length === 0 ? (
+          {allStudents.filter(s => {
+            if (s.id === selectedStudentId) return false;
+            if (user?.matchKey) return s.matchKey === user.matchKey;
+            return true;
+          }).length === 0 ? (
             <div className="text-center py-8 card">
               <span className="text-3xl mb-2 block">👥</span>
-              <p className="text-xs text-[var(--muted)]">No other students registered yet. Invite your SVNIT friends to join!</p>
+              <p className="text-xs text-[var(--muted)]">
+                {user?.matchKey
+                  ? 'No batchmates registered yet. Invite your SVNIT batchmates to join MitrAI!'
+                  : 'No other students registered yet. Invite your SVNIT friends to join!'}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {allStudents
-                .filter(s => s.id !== selectedStudentId)
+                .filter(s => {
+                  if (s.id === selectedStudentId) return false;
+                  if (user?.matchKey) return s.matchKey === user.matchKey;
+                  return true;
+                })
                 .map(s => (
                   <div key={s.id} className="card p-4">
                     <div className="flex items-center gap-3 mb-3">

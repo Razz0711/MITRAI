@@ -79,10 +79,14 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
 ];
 
 // Parse raw onboarding data into a StudentProfile shape
-// authData comes from registration (name, department, yearLevel, email, admissionNumber)
+// authData comes from registration (name, department, yearLevel, email, admissionNumber, match_key fields)
 export function parseOnboardingData(
   rawData: Record<string, string>,
-  authData?: { name: string; department: string; yearLevel: string; email: string; admissionNumber: string }
+  authData?: {
+    name: string; department: string; yearLevel: string; email: string; admissionNumber: string;
+    matchKey?: string; programType?: string; batchYear?: string; deptCode?: string; rollNo?: string;
+    deptKnown?: boolean; profileAutoFilled?: boolean;
+  }
 ): Record<string, unknown> {
   const parsed: Record<string, unknown> = {};
 
@@ -207,6 +211,15 @@ export function parseOnboardingData(
     else if (m.includes('problem') || m.includes('solving')) parsed.learningType = 'practical';
     else if (m.includes('discussion') || m.includes('group')) parsed.learningType = 'auditory';
   }
+
+  // Pass through batch-matching fields from auth data
+  if (authData?.matchKey) parsed.matchKey = authData.matchKey;
+  if (authData?.programType) parsed.programType = authData.programType;
+  if (authData?.batchYear) parsed.batchYear = authData.batchYear;
+  if (authData?.deptCode) parsed.deptCode = authData.deptCode;
+  if (authData?.rollNo) parsed.rollNo = authData.rollNo;
+  if (authData?.deptKnown !== undefined) parsed.deptKnown = authData.deptKnown;
+  if (authData?.profileAutoFilled !== undefined) parsed.profileAutoFilled = authData.profileAutoFilled;
 
   return parsed;
 }

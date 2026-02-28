@@ -44,7 +44,12 @@ export default function MatchCard({ match, rank, userStatus, isBirthday, onViewP
               <h3 className="text-sm font-semibold text-[var(--foreground)]">{student.name}</h3>
               {isBirthday && <span title="Birthday coming up!" className="text-sm">🎂</span>}
             </div>
-            <p className="text-[10px] text-[var(--muted)]">{student.department || student.currentStudy} · {student.targetExam}</p>
+            <p className="text-[10px] text-[var(--muted)]">
+              {student.department || student.currentStudy}
+              {student.yearLevel ? ` · ${student.yearLevel}` : ''}
+              {student.admissionNumber ? ` · ${student.admissionNumber}` : ''}
+              {student.targetExam ? ` · ${student.targetExam}` : ''}
+            </p>
             {userStatus?.status === 'in-session' && userStatus.currentSubject && (
               <p className="text-[10px] text-amber-400">Studying: {userStatus.currentSubject}</p>
             )}

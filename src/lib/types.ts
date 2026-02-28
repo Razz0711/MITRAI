@@ -59,6 +59,15 @@ export interface StudentProfile {
   // Birthday (stored server-side, no longer leaked via URL)
   dob: string;           // YYYY-MM-DD
   showBirthday: boolean; // privacy toggle
+
+  // Batch-matching fields (auto-parsed from SVNIT email)
+  matchKey: string;        // e.g. "i22ma" — used for batch-only matching
+  programType: string;     // i, u, p, d
+  batchYear: string;       // 2-digit batch year e.g. "22"
+  deptCode: string;        // 2-3 letter dept code e.g. "ma"
+  rollNo: string;          // 3-digit roll number e.g. "038"
+  deptKnown: boolean;      // whether the dept code was recognized
+  profileAutoFilled: boolean; // whether profile was auto-filled from email
 }
 
 export type LearningType = 'visual' | 'auditory' | 'reading' | 'practical';

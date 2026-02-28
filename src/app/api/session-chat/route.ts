@@ -72,6 +72,13 @@ export async function POST(req: NextRequest) {
       yearLevel: '',
       dob: '',
       showBirthday: false,
+      matchKey: '',
+      programType: '',
+      batchYear: '',
+      deptCode: '',
+      rollNo: '',
+      deptKnown: true,
+      profileAutoFilled: false,
     };
 
     const s1: StudentProfile = student1 || { ...defaultProfile, name: 'Student 1' };

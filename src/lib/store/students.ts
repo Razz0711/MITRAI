@@ -15,6 +15,14 @@ export async function getAllStudents(limit = 200, offset = 0): Promise<StudentPr
   return (data || []).map(rowToStudent);
 }
 
+/** Fetch students sharing the same match_key (batch + dept + program) */
+export async function getStudentsByMatchKey(matchKey: string, limit = 200): Promise<StudentProfile[]> {
+  if (!matchKey) return getAllStudents(limit);
+  const { data, error } = await supabase.from('students').select('*').eq('match_key', matchKey).limit(limit);
+  if (error) { console.error('getStudentsByMatchKey error:', error); return []; }
+  return (data || []).map(rowToStudent);
+}
+
 export async function getStudentById(id: string): Promise<StudentProfile | undefined> {
   const { data, error } = await supabase.from('students').select('*').eq('id', id).single();
   if (error || !data) return undefined;

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { supabase as supabaseService } from '@/lib/supabase';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
+import { parseStudentEmail } from '@/lib/email-parser';
 
 // Admin client for user creation (uses service role key)
 const supabaseAdmin = createClient(
@@ -20,13 +21,14 @@ export async function POST(req: NextRequest) {
     const { action } = body;
 
     if (action === 'signup') {
-      const { name, email, password, admissionNumber, department, yearLevel, dob } = body;
+      const { name, email, password, admissionNumber, department, yearLevel, dob,
+              matchKey, programType, batchYear, deptCode, rollNo, deptKnown, profileAutoFilled } = body;
 
       // Rate limit signups by email (10 attempts per 10 minutes)
       if (email && !rateLimit(`auth:${email}`, 10, 600_000)) return rateLimitExceeded();
 
-      if (!name || !email || !password || !admissionNumber || !department || !yearLevel || !dob) {
-        return NextResponse.json({ success: false, error: 'All fields are required' }, { status: 400 });
+      if (!name || !email || !password || !dob) {
+        return NextResponse.json({ success: false, error: 'Name, email, password, and date of birth are required' }, { status: 400 });
       }
 
       // Validate SVNIT email
@@ -39,6 +41,19 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Password must be at least 6 characters' }, { status: 400 });
       }
 
+      // Parse email to auto-fill if not provided by client
+      const parsed = parseStudentEmail(email.trim().toLowerCase());
+      const finalAdmNo = admissionNumber || parsed?.admissionNumber || '';
+      const finalDept = department || parsed?.department || '';
+      const finalYear = yearLevel || parsed?.yearLevel || '';
+      const finalMatchKey = matchKey || parsed?.matchKey || '';
+      const finalProgramType = programType || parsed?.programType || '';
+      const finalBatchYear = batchYear || parsed?.batchYear || '';
+      const finalDeptCode = deptCode || parsed?.deptCode || '';
+      const finalRollNo = rollNo || parsed?.rollNo || '';
+      const finalDeptKnown = deptKnown ?? parsed?.deptKnown ?? true;
+      const finalAutoFilled = profileAutoFilled ?? !!parsed;
+
       // Create Supabase Auth user with admin API (auto-confirmed, no email verification needed since we verified via OTP)
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: email.trim().toLowerCase(),
@@ -46,11 +61,18 @@ export async function POST(req: NextRequest) {
         email_confirm: true,
         user_metadata: {
           name: name.trim(),
-          admissionNumber: admissionNumber.trim().toUpperCase(),
-          department,
-          yearLevel,
+          admissionNumber: finalAdmNo.trim().toUpperCase(),
+          department: finalDept,
+          yearLevel: finalYear,
           dob,
           showBirthday: true,
+          matchKey: finalMatchKey,
+          programType: finalProgramType,
+          batchYear: finalBatchYear,
+          deptCode: finalDeptCode,
+          rollNo: finalRollNo,
+          deptKnown: finalDeptKnown,
+          profileAutoFilled: finalAutoFilled,
         },
       });
 
@@ -66,17 +88,19 @@ export async function POST(req: NextRequest) {
 
       // Auto-create a minimal student profile so this user is immediately visible for matching
       try {
-        let currentStudy = `B.Tech ${department}`;
-        if (department.startsWith('Integrated')) currentStudy = department;
-        else if (department === 'Mathematics & Computing') currentStudy = 'B.Tech Mathematics & Computing';
+        let currentStudy = parsed?.currentStudy || `B.Tech ${finalDept}`;
+        if (!parsed) {
+          if (finalDept.startsWith('Integrated')) currentStudy = finalDept;
+          else if (finalDept === 'Mathematics & Computing') currentStudy = 'B.Tech Mathematics & Computing';
+        }
 
         await supabaseService.from('students').upsert({
           id: userId,
           name: name.trim(),
           email: email.trim().toLowerCase(),
-          admission_number: admissionNumber.trim().toUpperCase(),
-          department,
-          year_level: yearLevel,
+          admission_number: finalAdmNo.trim().toUpperCase(),
+          department: finalDept,
+          year_level: finalYear,
           dob: dob || '',
           show_birthday: true,
           current_study: currentStudy,
@@ -85,6 +109,13 @@ export async function POST(req: NextRequest) {
           country: 'India',
           timezone: 'IST',
           preferred_language: 'English',
+          match_key: finalMatchKey,
+          program_type: finalProgramType,
+          batch_year: finalBatchYear,
+          dept_code: finalDeptCode,
+          roll_no: finalRollNo,
+          dept_known: finalDeptKnown,
+          profile_auto_filled: finalAutoFilled,
         }, { onConflict: 'id' });
       } catch (err) {
         console.error('profileUpsert:', err);
