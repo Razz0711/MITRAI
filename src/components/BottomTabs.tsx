@@ -1,6 +1,6 @@
 // ============================================
-// MitrAI - Bottom Tab Navigation (5 Tabs)
-// Mobile-first bottom bar for main app navigation
+// MitrAI - Top Tab Navigation (5 Tabs)
+// Mobile-first top tab bar below the header
 // ============================================
 
 'use client';
@@ -38,8 +38,8 @@ export default function BottomTabs() {
   const activeTab = getActiveTab(pathname);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--background)]/95 backdrop-blur-md border-t border-[var(--border)]">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
+    <nav className="fixed top-12 left-0 right-0 z-40 bg-[var(--background)]/95 backdrop-blur-md border-b border-[var(--border)]">
+      <div className="flex items-center justify-around h-12 max-w-lg mx-auto px-2">
         {tabs.map(tab => {
           const isActive = tab.id === activeTab;
           return (
@@ -52,14 +52,14 @@ export default function BottomTabs() {
                   : 'text-[var(--muted)] hover:text-[var(--foreground)]'
               }`}
             >
-              <span className={`text-xl transition-transform ${isActive ? 'scale-110' : ''}`}>
+              <span className={`text-base transition-transform ${isActive ? 'scale-110' : ''}`}>
                 {tab.icon}
               </span>
-              <span className={`text-[10px] ${isActive ? 'font-semibold' : 'font-medium'}`}>
+              <span className={`text-[10px] leading-tight ${isActive ? 'font-semibold' : 'font-medium'}`}>
                 {tab.label}
               </span>
               {isActive && (
-                <div className="absolute bottom-1 w-6 h-0.5 rounded-full bg-[var(--primary-light)]" />
+                <div className="absolute bottom-0 w-8 h-0.5 rounded-full bg-[var(--primary-light)]" />
               )}
             </Link>
           );

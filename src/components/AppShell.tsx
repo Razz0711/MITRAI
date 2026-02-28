@@ -29,10 +29,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <>
         <TopBar />
-        <main className="pt-12 pb-20 min-h-screen">
+        <BottomTabs />
+        <main className="pt-24 pb-4 min-h-screen">
           {children}
         </main>
-        <BottomTabs />
       </>
     );
   }
