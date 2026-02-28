@@ -11,6 +11,7 @@ import {
   joinCircle,
   leaveCircle,
   getCircleMembers,
+  getAllCircleMemberCounts,
   awardXP,
 } from '@/lib/store';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
@@ -24,14 +25,15 @@ export async function GET(req: NextRequest) {
   if (!authUser) return unauthorized();
   const userId = req.nextUrl.searchParams.get('userId') || authUser.id;
 
-  const [allCircles, userCircles] = await Promise.all([
+  const [allCircles, userCircles, memberCounts] = await Promise.all([
     getAllCircles(),
     getUserCircles(userId),
+    getAllCircleMemberCounts(),
   ]);
 
   return NextResponse.json({
     success: true,
-    data: { circles: allCircles, memberships: userCircles },
+    data: { circles: allCircles, memberships: userCircles, memberCounts },
   });
 }
 

@@ -63,3 +63,22 @@ export async function getCircleMembers(circleId: string): Promise<CircleMembersh
   if (error) { console.error('getCircleMembers error:', error); return []; }
   return (data || []).map((r) => fromRow<CircleMembership>(r));
 }
+
+/** Returns a map of circleId → member count for all circles */
+export async function getAllCircleMemberCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase.from('circle_memberships').select('circle_id');
+  if (error) { console.error('getAllCircleMemberCounts error:', error); return {}; }
+  const counts: Record<string, number> = {};
+  (data || []).forEach((r) => {
+    const cid = r.circle_id as string;
+    counts[cid] = (counts[cid] || 0) + 1;
+  });
+  return counts;
+}
+
+/** Get a single circle by ID */
+export async function getCircleById(circleId: string): Promise<Circle | null> {
+  const { data, error } = await supabase.from('circles').select('*').eq('id', circleId).single();
+  if (error || !data) return null;
+  return fromRow<Circle>(data);
+}

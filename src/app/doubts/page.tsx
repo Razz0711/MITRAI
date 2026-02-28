@@ -207,20 +207,20 @@ export default function DoubtsPage() {
       {/* Ask Modal */}
       {showAsk && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold dark:text-white">Ask a Doubt</h2>
+          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl p-6 w-full max-w-md space-y-4">
+            <h2 className="text-xl font-bold">Ask a Doubt</h2>
             <textarea
               value={askQuestion}
               onChange={(e) => setAskQuestion(e.target.value)}
               placeholder="Type your question..."
               rows={3}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white placeholder-gray-400"
             />
             <div className="grid grid-cols-2 gap-3">
               <select
                 value={askDept}
                 onChange={(e) => setAskDept(e.target.value)}
-                className="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
               >
                 <option value="">Department (optional)</option>
                 {DEPARTMENTS.filter((d) => d !== 'All').map((d) => (
@@ -231,15 +231,15 @@ export default function DoubtsPage() {
                 value={askSubject}
                 onChange={(e) => setAskSubject(e.target.value)}
                 placeholder="Subject (optional)"
-                className="px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm placeholder-gray-400"
               />
             </div>
-            <label className="flex items-center gap-2 text-sm dark:text-gray-300">
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <input
                 type="checkbox"
                 checked={askAnon}
                 onChange={(e) => setAskAnon(e.target.checked)}
-                className="rounded"
+                className="rounded accent-indigo-600"
               />
               Post anonymously
             </label>
@@ -247,13 +247,13 @@ export default function DoubtsPage() {
               <button
                 onClick={handleAsk}
                 disabled={asking || !askQuestion.trim()}
-                className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
               >
                 {asking ? 'Posting...' : 'Post Doubt'}
               </button>
               <button
                 onClick={() => setShowAsk(false)}
-                className="flex-1 py-2 border rounded-lg dark:border-gray-600 dark:text-gray-300"
+                className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 font-medium"
               >
                 Cancel
               </button>

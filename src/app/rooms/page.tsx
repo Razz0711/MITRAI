@@ -22,10 +22,18 @@ interface StudyRoom {
   createdAt: string;
 }
 
+interface Circle {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+}
+
 export default function RoomsPage() {
   const { user } = useAuth();
   const [rooms, setRooms] = useState<StudyRoom[]>([]);
   const [myRooms, setMyRooms] = useState<StudyRoom[]>([]);
+  const [circles, setCircles] = useState<Circle[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [tab, setTab] = useState<'all' | 'mine'>('all');
@@ -35,19 +43,23 @@ export default function RoomsPage() {
   const [roomTopic, setRoomTopic] = useState('');
   const [roomDesc, setRoomDesc] = useState('');
   const [roomMax, setRoomMax] = useState(5);
+  const [roomCircle, setRoomCircle] = useState('');
   const [creating, setCreating] = useState(false);
 
   const loadRooms = useCallback(async () => {
     if (!user) return;
     try {
-      const [allRes, myRes] = await Promise.all([
+      const [allRes, myRes, circlesRes] = await Promise.all([
         fetch('/api/rooms'),
         fetch(`/api/rooms?filter=mine&userId=${user.id}`),
+        fetch(`/api/circles?userId=${user.id}`),
       ]);
       const allData = await allRes.json();
       const myData = await myRes.json();
+      const circlesData = await circlesRes.json();
       if (allData.success) setRooms(allData.data.rooms || []);
       if (myData.success) setMyRooms(myData.data.rooms || []);
+      if (circlesData.success) setCircles(circlesData.data.circles || []);
     } catch (err) {
       console.error('loadRooms:', err);
     } finally {
@@ -73,6 +85,7 @@ export default function RoomsPage() {
           creatorId: user.id,
           creatorName: user.email?.split('@')[0] || 'Student',
           maxMembers: roomMax,
+          circleId: roomCircle || '',
         }),
       });
       const data = await res.json();
@@ -82,6 +95,7 @@ export default function RoomsPage() {
         setRoomTopic('');
         setRoomDesc('');
         setRoomMax(5);
+        setRoomCircle('');
         await loadRooms();
       }
     } catch (err) {
@@ -148,36 +162,49 @@ export default function RoomsPage() {
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold dark:text-white">Create Study Room</h2>
+          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl p-6 w-full max-w-md space-y-4">
+            <h2 className="text-xl font-bold">Create Study Room</h2>
             <input
               value={roomName}
               onChange={(e) => setRoomName(e.target.value)}
               placeholder="Room Name (e.g., DSA Practice)"
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white placeholder-gray-400"
             />
             <input
               value={roomTopic}
               onChange={(e) => setRoomTopic(e.target.value)}
               placeholder="Topic (e.g., Arrays & Linked Lists)"
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white placeholder-gray-400"
             />
             <textarea
               value={roomDesc}
               onChange={(e) => setRoomDesc(e.target.value)}
               placeholder="Description (optional)"
               rows={2}
-              className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white placeholder-gray-400"
             />
             <div className="flex items-center gap-3">
-              <label className="text-sm dark:text-gray-300">Max Members:</label>
+              <label className="text-sm text-gray-700 dark:text-gray-300">Max Members:</label>
               <select
                 value={roomMax}
                 onChange={(e) => setRoomMax(Number(e.target.value))}
-                className="px-3 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 {[2, 3, 4, 5, 6, 8, 10].map((n) => (
                   <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-gray-700 dark:text-gray-300 mb-1 block">Circle (optional):</label>
+              <select
+                value={roomCircle}
+                onChange={(e) => setRoomCircle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+              >
+                <option value="">No circle</option>
+                {circles.map((c) => (
+                  <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
                 ))}
               </select>
             </div>
@@ -185,13 +212,13 @@ export default function RoomsPage() {
               <button
                 onClick={handleCreate}
                 disabled={creating || !roomName.trim()}
-                className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium"
               >
                 {creating ? 'Creating...' : 'Create Room'}
               </button>
               <button
                 onClick={() => setShowCreate(false)}
-                className="flex-1 py-2 border rounded-lg dark:border-gray-600 dark:text-gray-300"
+                className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 font-medium"
               >
                 Cancel
               </button>
