@@ -53,6 +53,24 @@ interface FeedbackItem {
   created_at: string;
 }
 
+interface AnonStatsData {
+  totalPasses: number;
+  activePasses: number;
+  totalReports: number;
+  pendingReports: number;
+  totalBans: number;
+}
+
+interface CouponItem {
+  code: string;
+  plan: string;
+  maxUses: number;
+  usedCount: number;
+  active: boolean;
+  createdAt: string;
+  expiresAt: string | null;
+}
+
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -66,6 +84,12 @@ export default function AdminDashboardPage() {
   const [pendingSubs, setPendingSubs] = useState<PendingSub[]>([]);
   const [pendingReports, setPendingReports] = useState<PendingReport[]>([]);
   const [recentFeedback, setRecentFeedback] = useState<FeedbackItem[]>([]);
+  const [anonStats, setAnonStats] = useState<AnonStatsData | null>(null);
+  const [coupons, setCoupons] = useState<CouponItem[]>([]);
+  const [couponPlan, setCouponPlan] = useState('monthly');
+  const [couponCount, setCouponCount] = useState(5);
+  const [couponMaxUses, setCouponMaxUses] = useState(1);
+  const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
   const [actionMsg, setActionMsg] = useState('');
 
   useEffect(() => {
@@ -90,6 +114,8 @@ export default function AdminDashboardPage() {
       setPendingSubs(data.data.pendingSubscriptions || []);
       setPendingReports(data.data.pendingReports || []);
       setRecentFeedback(data.data.recentFeedback || []);
+      setAnonStats(data.data.anonStats || null);
+      setCoupons(data.data.coupons || []);
     } catch {
       setError('Network error');
     } finally {
@@ -111,6 +137,27 @@ export default function AdminDashboardPage() {
       loadDashboard();
     } catch {
       setActionMsg('Action failed');
+    }
+  };
+
+  const handleGenerateCoupons = async () => {
+    setGeneratedCodes([]);
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey, action: 'generate-coupons', plan: couponPlan, count: couponCount, maxUses: couponMaxUses }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGeneratedCodes(data.data.codes);
+        setActionMsg(`Generated ${data.data.codes.length} coupons!`);
+        loadDashboard();
+      } else {
+        setActionMsg(data.error || 'Failed to generate');
+      }
+    } catch {
+      setActionMsg('Generation failed');
     }
   };
 
@@ -280,6 +327,116 @@ export default function AdminDashboardPage() {
           </table>
         </div>
       </section>
+
+      {/* ─── Anon Chat Stats ─── */}
+      {anonStats && (
+        <section>
+          <h2 className="text-sm font-semibold text-[var(--foreground)] mb-3">🎭 Anonymous Chat Stats</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { label: 'Total Passes', value: anonStats.totalPasses, icon: '🎫' },
+              { label: 'Active Passes', value: anonStats.activePasses, icon: '✅' },
+              { label: 'Total Reports', value: anonStats.totalReports, icon: '🚩' },
+              { label: 'Pending Reports', value: anonStats.pendingReports, icon: '⏳' },
+              { label: 'Total Bans', value: anonStats.totalBans, icon: '🚫' },
+            ].map(s => (
+              <div key={s.label} className="card p-3">
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-sm">{s.icon}</span>
+                  <span className="text-[10px] text-[var(--muted)]">{s.label}</span>
+                </div>
+                <p className="text-xl font-bold text-[var(--foreground)]">{s.value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ─── Coupon Generator ─── */}
+      <section>
+        <h2 className="text-sm font-semibold text-[var(--foreground)] mb-3">🎫 Generate Anon Chat Coupons</h2>
+        <div className="card p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div>
+              <label className="text-[10px] text-[var(--muted)] block mb-1">Plan</label>
+              <select value={couponPlan} onChange={e => setCouponPlan(e.target.value)} className="input-field text-xs py-1.5">
+                <option value="weekly">Weekly (₹19)</option>
+                <option value="monthly">Monthly (₹49)</option>
+                <option value="semester">Semester (₹199)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-[var(--muted)] block mb-1">Count</label>
+              <input type="number" value={couponCount} onChange={e => setCouponCount(Number(e.target.value))} min={1} max={100} className="input-field text-xs py-1.5" />
+            </div>
+            <div>
+              <label className="text-[10px] text-[var(--muted)] block mb-1">Max Uses Each</label>
+              <input type="number" value={couponMaxUses} onChange={e => setCouponMaxUses(Number(e.target.value))} min={1} max={1000} className="input-field text-xs py-1.5" />
+            </div>
+            <div className="flex items-end">
+              <button onClick={handleGenerateCoupons} className="btn-primary text-xs px-4 py-1.5 w-full">
+                Generate
+              </button>
+            </div>
+          </div>
+
+          {generatedCodes.length > 0 && (
+            <div className="bg-[var(--surface)] rounded-lg p-3 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-[var(--success)]">✅ Generated {generatedCodes.length} codes:</span>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(generatedCodes.join('\n')); setActionMsg('Codes copied!'); }}
+                  className="text-[10px] text-[var(--primary)] hover:underline"
+                >
+                  Copy All
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {generatedCodes.map(code => (
+                  <span key={code} className="font-mono text-[10px] bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 rounded">
+                    {code}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── Existing Coupons ─── */}
+      {coupons.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-[var(--foreground)] mb-3">Existing Coupons ({coupons.length})</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-[var(--muted)] border-b border-[var(--border)]">
+                  <th className="pb-2 pr-3">Code</th>
+                  <th className="pb-2 pr-3">Plan</th>
+                  <th className="pb-2 pr-3">Uses</th>
+                  <th className="pb-2 pr-3">Active</th>
+                  <th className="pb-2">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coupons.map(c => (
+                  <tr key={c.code} className="border-b border-[var(--border)]/50">
+                    <td className="py-1.5 pr-3 font-mono text-[var(--primary)]">{c.code}</td>
+                    <td className="py-1.5 pr-3 text-[var(--foreground)]">{c.plan}</td>
+                    <td className="py-1.5 pr-3 text-[var(--muted)]">{c.usedCount}/{c.maxUses}</td>
+                    <td className="py-1.5 pr-3">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${c.active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {c.active ? 'Active' : 'Disabled'}
+                      </span>
+                    </td>
+                    <td className="py-1.5 text-[var(--muted)]">{new Date(c.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

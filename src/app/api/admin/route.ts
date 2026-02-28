@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabase } from '@/lib/supabase';
+import { generateCoupons, listCoupons, getAnonStats } from '@/lib/store/anon';
 
 export const dynamic = 'force-dynamic';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
@@ -36,12 +37,14 @@ export async function GET(req: NextRequest) {
 
   try {
     // Gather dashboard stats in parallel
-    const [usersResult, subsResult, reportsResult, materialsResult, feedbackResult] = await Promise.all([
+    const [usersResult, subsResult, reportsResult, materialsResult, feedbackResult, anonStats, coupons] = await Promise.all([
       supabase.from('students').select('id, name, email, department, year_level, created_at', { count: 'exact' }).order('created_at', { ascending: false }).limit(50),
       supabase.from('subscriptions').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('user_reports').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('materials').select('id', { count: 'exact' }),
       supabase.from('feedback').select('*').order('created_at', { ascending: false }).limit(20),
+      getAnonStats(),
+      listCoupons(),
     ]);
 
     const totalUsers = usersResult.count || 0;
@@ -64,6 +67,8 @@ export async function GET(req: NextRequest) {
         pendingSubscriptions: pendingSubs,
         pendingReports,
         recentFeedback,
+        anonStats,
+        coupons,
       },
     });
   } catch (error) {
@@ -132,6 +137,16 @@ export async function POST(req: NextRequest) {
 
       if (error) throw error;
       return NextResponse.json({ success: true, message: 'Report dismissed' });
+    }
+
+    // ── Generate anon coupons ──
+    if (action === 'generate-coupons') {
+      const { plan, count, maxUses, expiresAt } = body;
+      if (!plan || !count) {
+        return NextResponse.json({ success: false, error: 'plan and count required' }, { status: 400 });
+      }
+      const codes = await generateCoupons(plan, Math.min(count, 100), maxUses || 1, authUser.id, expiresAt);
+      return NextResponse.json({ success: true, data: { codes } });
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });

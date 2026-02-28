@@ -25,6 +25,7 @@ export default function Navbar() {
         { href: '/rooms', label: 'Rooms', icon: '📚' },
         { href: '/doubts', label: 'Doubts', icon: '❓' },
         { href: '/circles', label: 'Circles', icon: '⭕' },
+        { href: '/anon', label: 'Anon', icon: '🎭' },
         { href: '/materials', label: 'Materials', icon: '📝' },
         { href: '/calendar', label: 'Calendar', icon: '📅' },
         { href: '/attendance', label: 'Attendance', icon: '📊' },
