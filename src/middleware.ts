@@ -37,6 +37,8 @@ export async function middleware(request: NextRequest) {
   const isPublicPage = pathname === '/' || pathname === '/login';
   const isApiRoute = pathname.startsWith('/api/');
   const isPublicApi = pathname.startsWith('/api/otp') || pathname.startsWith('/api/auth');
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isAdminApi = pathname.startsWith('/api/admin');
 
   // CSRF protection: validate Origin header on mutating API requests
   if (isApiRoute && !isPublicApi && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
@@ -66,6 +68,11 @@ export async function middleware(request: NextRequest) {
     if (user && pathname === '/login') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
+    return supabaseResponse;
+  }
+
+  // Allow admin routes — admin has its own cookie-based auth
+  if (isAdminRoute || isAdminApi) {
     return supabaseResponse;
   }
 
