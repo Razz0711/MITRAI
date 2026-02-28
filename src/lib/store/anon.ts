@@ -464,6 +464,163 @@ export async function blockAnonUser(blockerId: string, blockedId: string): Promi
 // ADMIN: COUPONS
 // ═══════════════════════════════════════════
 
+// ═══════════════════════════════════════════
+// PAYMENTS (UPI-based)
+// ═══════════════════════════════════════════
+
+export interface AnonPayment {
+  id: string;
+  userId: string;
+  plan: string;
+  amount: number;
+  transactionId: string;
+  upiRef: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  userName?: string;
+  userEmail?: string;
+}
+
+/** Submit a UPI payment for verification */
+export async function submitPayment(userId: string, plan: string, amount: number, transactionId: string, upiRef?: string): Promise<{ success: boolean; error?: string }> {
+  // Check if user already has active pass
+  const active = await hasActivePass(userId);
+  if (active) return { success: false, error: 'You already have an active pass!' };
+
+  // Check for duplicate pending payment
+  const { data: existing } = await supabase
+    .from('anon_payments')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .limit(1);
+  if (existing && existing.length > 0) return { success: false, error: 'You already have a pending payment. Please wait for admin approval.' };
+
+  const { error } = await supabase
+    .from('anon_payments')
+    .insert({
+      user_id: userId,
+      plan,
+      amount,
+      transaction_id: transactionId.trim(),
+      upi_ref: upiRef?.trim() || null,
+      status: 'pending',
+    });
+  if (error) { console.error('submitPayment error:', error); return { success: false, error: 'Failed to submit payment' }; }
+  return { success: true };
+}
+
+/** Get user's pending payment status */
+export async function getUserPaymentStatus(userId: string): Promise<AnonPayment | null> {
+  const { data, error } = await supabase
+    .from('anon_payments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  if (error || !data) return null;
+  return snakeToPayment(data);
+}
+
+/** List pending payments (admin) */
+export async function listPendingPayments(): Promise<AnonPayment[]> {
+  const { data, error } = await supabase
+    .from('anon_payments')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('listPendingPayments error:', error); return []; }
+
+  // Enrich with user info
+  const payments = (data || []).map(snakeToPayment);
+  if (payments.length === 0) return [];
+
+  const userIds = Array.from(new Set(payments.map(p => p.userId)));
+  const { data: users } = await supabase.from('students').select('id, name, email').in('id', userIds);
+  const userMap = new Map((users || []).map(u => [u.id, u]));
+
+  return payments.map(p => ({
+    ...p,
+    userName: userMap.get(p.userId)?.name || 'Unknown',
+    userEmail: userMap.get(p.userId)?.email || '',
+  }));
+}
+
+/** Approve a payment → create pass (admin) */
+export async function approvePayment(paymentId: string, adminId: string): Promise<{ success: boolean; error?: string }> {
+  // Get payment
+  const { data: payment, error: pErr } = await supabase
+    .from('anon_payments')
+    .select('*')
+    .eq('id', paymentId)
+    .single();
+  if (pErr || !payment) return { success: false, error: 'Payment not found' };
+  if (payment.status !== 'pending') return { success: false, error: 'Payment already processed' };
+
+  const plan = payment.plan as string;
+  const durationDays = plan === 'weekly' ? 7 : plan === 'monthly' ? 30 : 180;
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+  // Create pass
+  const { error: passErr } = await supabase
+    .from('anon_passes')
+    .insert({
+      user_id: payment.user_id,
+      plan,
+      price: payment.amount,
+      source: 'upi',
+      coupon_code: '',
+      activated_at: now.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    });
+  if (passErr) return { success: false, error: 'Failed to create pass' };
+
+  // Update payment status
+  await supabase
+    .from('anon_payments')
+    .update({ status: 'approved', reviewed_by: adminId, reviewed_at: now.toISOString() })
+    .eq('id', paymentId);
+
+  return { success: true };
+}
+
+/** Reject a payment (admin) */
+export async function rejectPayment(paymentId: string, adminId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('anon_payments')
+    .update({
+      status: 'rejected',
+      reviewed_by: adminId,
+      reviewed_at: new Date().toISOString(),
+      rejection_reason: reason || 'Payment could not be verified',
+    })
+    .eq('id', paymentId);
+  if (error) return { success: false, error: 'Failed to reject payment' };
+  return { success: true };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function snakeToPayment(row: any): AnonPayment {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    plan: row.plan,
+    amount: row.amount,
+    transactionId: row.transaction_id,
+    upiRef: row.upi_ref || '',
+    status: row.status,
+    reviewedBy: row.reviewed_by,
+    reviewedAt: row.reviewed_at,
+    rejectionReason: row.rejection_reason,
+    createdAt: row.created_at,
+  };
+}
+
 /** Generate coupon codes */
 export async function generateCoupons(plan: string, count: number, maxUses: number, createdBy: string, expiresAt?: string): Promise<string[]> {
   const codes: string[] = [];

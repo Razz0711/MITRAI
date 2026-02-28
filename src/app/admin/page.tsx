@@ -71,6 +71,19 @@ interface CouponItem {
   expiresAt: string | null;
 }
 
+interface PendingPaymentItem {
+  id: string;
+  userId: string;
+  plan: string;
+  amount: number;
+  transactionId: string;
+  upiRef: string;
+  status: string;
+  createdAt: string;
+  userName?: string;
+  userEmail?: string;
+}
+
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -86,6 +99,7 @@ export default function AdminDashboardPage() {
   const [recentFeedback, setRecentFeedback] = useState<FeedbackItem[]>([]);
   const [anonStats, setAnonStats] = useState<AnonStatsData | null>(null);
   const [coupons, setCoupons] = useState<CouponItem[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<PendingPaymentItem[]>([]);
   const [couponPlan, setCouponPlan] = useState('monthly');
   const [couponCount, setCouponCount] = useState(5);
   const [couponMaxUses, setCouponMaxUses] = useState(1);
@@ -116,6 +130,7 @@ export default function AdminDashboardPage() {
       setRecentFeedback(data.data.recentFeedback || []);
       setAnonStats(data.data.anonStats || null);
       setCoupons(data.data.coupons || []);
+      setPendingPayments(data.data.pendingPayments || []);
     } catch {
       setError('Network error');
     } finally {
@@ -346,6 +361,50 @@ export default function AdminDashboardPage() {
                   <span className="text-[10px] text-[var(--muted)]">{s.label}</span>
                 </div>
                 <p className="text-xl font-bold text-[var(--foreground)]">{s.value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ─── Pending Anon Payments ─── */}
+      {pendingPayments.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-[var(--foreground)] mb-3">💳 Pending Anon Payments ({pendingPayments.length})</h2>
+          <div className="space-y-3">
+            {pendingPayments.map(p => (
+              <div key={p.id} className="card p-4 border-l-4 border-amber-500">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">
+                      {p.userName || 'Unknown'} <span className="text-[var(--muted)] font-normal">({p.userEmail})</span>
+                    </p>
+                    <p className="text-xs text-[var(--muted)] mt-1">
+                      Plan: <span className="text-[var(--primary)] font-medium">{p.plan}</span> &bull; Amount: <span className="font-medium">₹{p.amount}</span>
+                    </p>
+                    <p className="text-xs text-[var(--muted)] mt-0.5">
+                      Transaction ID: <span className="font-mono text-[var(--foreground)]">{p.transactionId}</span>
+                      {p.upiRef && <span> &bull; UPI Ref: <span className="font-mono">{p.upiRef}</span></span>}
+                    </p>
+                    <p className="text-[10px] text-[var(--muted)] mt-0.5">
+                      Submitted: {new Date(p.createdAt).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      onClick={() => handleAdminAction('approve-payment', p.id)}
+                      className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      ✅ Approve
+                    </button>
+                    <button
+                      onClick={() => handleAdminAction('reject-payment', p.id, { reason: 'Payment not found' })}
+                      className="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                      ❌ Reject
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

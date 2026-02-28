@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabase } from '@/lib/supabase';
-import { generateCoupons, listCoupons, getAnonStats } from '@/lib/store/anon';
+import { generateCoupons, listCoupons, getAnonStats, listPendingPayments, approvePayment, rejectPayment } from '@/lib/store/anon';
 
 export const dynamic = 'force-dynamic';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // Gather dashboard stats in parallel
-    const [usersResult, subsResult, reportsResult, materialsResult, feedbackResult, anonStats, coupons] = await Promise.all([
+    const [usersResult, subsResult, reportsResult, materialsResult, feedbackResult, anonStats, coupons, pendingPayments] = await Promise.all([
       supabase.from('students').select('id, name, email, department, year_level, created_at', { count: 'exact' }).order('created_at', { ascending: false }).limit(50),
       supabase.from('subscriptions').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
       supabase.from('user_reports').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
       supabase.from('feedback').select('*').order('created_at', { ascending: false }).limit(20),
       getAnonStats(),
       listCoupons(),
+      listPendingPayments(),
     ]);
 
     const totalUsers = usersResult.count || 0;
@@ -69,6 +70,7 @@ export async function GET(req: NextRequest) {
         recentFeedback,
         anonStats,
         coupons,
+        pendingPayments,
       },
     });
   } catch (error) {
@@ -147,6 +149,21 @@ export async function POST(req: NextRequest) {
       }
       const codes = await generateCoupons(plan, Math.min(count, 100), maxUses || 1, authUser.id, expiresAt);
       return NextResponse.json({ success: true, data: { codes } });
+    }
+
+    // ── Approve anon payment ──
+    if (action === 'approve-payment') {
+      const result = await approvePayment(targetId, authUser.id);
+      if (!result.success) return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+      return NextResponse.json({ success: true, message: 'Payment approved, pass activated!' });
+    }
+
+    // ── Reject anon payment ──
+    if (action === 'reject-payment') {
+      const { reason } = body;
+      const result = await rejectPayment(targetId, authUser.id, reason);
+      if (!result.success) return NextResponse.json({ success: false, error: result.error }, { status: 400 });
+      return NextResponse.json({ success: true, message: 'Payment rejected' });
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });

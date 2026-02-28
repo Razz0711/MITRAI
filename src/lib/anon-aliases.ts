@@ -60,3 +60,12 @@ export const ANON_PRICING = [
   { plan: 'monthly',  label: 'Monthly',  price: 49,  priceLabel: '₹49/month',    durationDays: 30  },
   { plan: 'semester', label: 'Semester', price: 199, priceLabel: '₹199/semester', durationDays: 180 },
 ] as const;
+
+/**
+ * UPI Payment config — update UPI_ID with your actual UPI address
+ */
+export const UPI_CONFIG = {
+  upiId: process.env.NEXT_PUBLIC_UPI_ID || 'mitrai@upi',
+  merchantName: 'MitrAI Study',
+  note: 'MitrAI Anon Chat',
+};

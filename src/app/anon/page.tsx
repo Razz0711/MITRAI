@@ -1,6 +1,6 @@
 // ============================================
 // MitrAI - Anonymous Chat Lobby
-// Room type selection, queue, coupon gate
+// Room type selection, queue, coupon gate, UPI payments
 // ============================================
 
 'use client';
@@ -8,9 +8,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { ROOM_TYPES, ANON_PRICING } from '@/lib/anon-aliases';
+import { ROOM_TYPES, ANON_PRICING, UPI_CONFIG } from '@/lib/anon-aliases';
 
-type Status = 'loading' | 'no-pass' | 'banned' | 'idle' | 'queuing' | 'matched';
+type Status = 'loading' | 'no-pass' | 'pending-payment' | 'banned' | 'idle' | 'queuing' | 'matched';
 
 export default function AnonLobbyPage() {
   const { user } = useAuth();
@@ -28,6 +28,15 @@ export default function AnonLobbyPage() {
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Payment modal state
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<typeof ANON_PRICING[number] | null>(null);
+  const [txnId, setTxnId] = useState('');
+  const [txnError, setTxnError] = useState('');
+  const [txnLoading, setTxnLoading] = useState(false);
+  const [paySuccess, setPaySuccess] = useState(false);
+  const [pendingPayment, setPendingPayment] = useState<{ plan: string; createdAt: string; status: string } | null>(null);
+
   // Check status on mount
   useEffect(() => {
     if (!user) return;
@@ -41,11 +50,27 @@ export default function AnonLobbyPage() {
 
   const checkStatus = async () => {
     try {
-      const res = await fetch('/api/anon?check=status');
-      const data = await res.json();
-      if (!data.success) { setStatus('idle'); return; }
+      const [statusRes, payRes] = await Promise.all([
+        fetch('/api/anon?check=status'),
+        fetch('/api/anon/pay'),
+      ]);
+      const statusData = await statusRes.json();
+      const payData = await payRes.json();
 
-      const d = data.data;
+      // Check pending payment
+      if (payData.success && payData.data.payment) {
+        const payment = payData.data.payment;
+        if (payment.status === 'pending') {
+          setPendingPayment({ plan: payment.plan, createdAt: payment.createdAt, status: payment.status });
+        }
+        if (payment.status === 'rejected') {
+          setPendingPayment({ plan: payment.plan, createdAt: payment.createdAt, status: 'rejected' });
+        }
+      }
+
+      if (!statusData.success) { setStatus('idle'); return; }
+
+      const d = statusData.data;
       if (d.banned) {
         setStatus('banned');
         setBanInfo({ reason: d.banReason, expiresAt: d.banExpiresAt });
@@ -56,7 +81,12 @@ export default function AnonLobbyPage() {
         return;
       }
       if (!d.hasPass) {
-        setStatus('no-pass');
+        // Check if they have a pending payment
+        if (payData.success && payData.data.payment?.status === 'pending') {
+          setStatus('pending-payment');
+        } else {
+          setStatus('no-pass');
+        }
         if (d.pass) setPassInfo({ plan: d.pass.plan, expiresAt: d.pass.expiresAt });
         return;
       }
@@ -91,10 +121,7 @@ export default function AnonLobbyPage() {
   };
 
   const startPolling = useCallback(() => {
-    // Timer for queue duration display
     timerRef.current = setInterval(() => setQueueSeconds(s => s + 1), 1000);
-
-    // Poll every 3s for match
     pollRef.current = setInterval(async () => {
       try {
         const res = await fetch('/api/anon?check=poll');
@@ -148,6 +175,54 @@ export default function AnonLobbyPage() {
     }
   };
 
+  // ── Payment flow ──
+  const handleSubscribeClick = (plan: typeof ANON_PRICING[number]) => {
+    setSelectedPlan(plan);
+    setTxnId('');
+    setTxnError('');
+    setPaySuccess(false);
+    setShowPayModal(true);
+  };
+
+  const handleSubmitPayment = async () => {
+    if (!selectedPlan || !txnId.trim()) return;
+    if (txnId.trim().length < 4) {
+      setTxnError('Transaction ID must be at least 4 characters');
+      return;
+    }
+    setTxnLoading(true);
+    setTxnError('');
+    try {
+      const res = await fetch('/api/anon/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: selectedPlan.plan, transactionId: txnId.trim() }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setTxnError(data.error || 'Failed to submit payment');
+      } else {
+        setPaySuccess(true);
+        setPendingPayment({ plan: selectedPlan.plan, createdAt: new Date().toISOString(), status: 'pending' });
+      }
+    } catch {
+      setTxnError('Network error');
+    } finally {
+      setTxnLoading(false);
+    }
+  };
+
+  const generateUpiLink = (amount: number) => {
+    const params = new URLSearchParams({
+      pa: UPI_CONFIG.upiId,
+      pn: UPI_CONFIG.merchantName,
+      am: String(amount),
+      cu: 'INR',
+      tn: UPI_CONFIG.note,
+    });
+    return `upi://pay?${params.toString()}`;
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -194,9 +269,39 @@ export default function AnonLobbyPage() {
           </div>
         )}
 
-        {/* No Pass — Coupon Gate */}
-        {status === 'no-pass' && (
+        {/* No Pass — Pricing + Subscribe + Coupon */}
+        {(status === 'no-pass' || status === 'pending-payment') && (
           <div className="space-y-6">
+            {/* Pending payment notice */}
+            {(status === 'pending-payment' || pendingPayment?.status === 'pending') && (
+              <div className="card p-4 border-2 border-amber-500/30 bg-amber-500/5">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⏳</span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-amber-400">Payment Under Review</h3>
+                    <p className="text-xs text-[var(--muted)]">
+                      Your {pendingPayment?.plan || ''} plan payment is being verified. This usually takes a few hours.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Rejected payment notice */}
+            {pendingPayment?.status === 'rejected' && (
+              <div className="card p-4 border-2 border-red-500/30 bg-red-500/5">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">❌</span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-[var(--error)]">Payment Rejected</h3>
+                    <p className="text-xs text-[var(--muted)]">
+                      Your previous payment could not be verified. Please try again or use a coupon code.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Teaser */}
             <div className="card p-8 text-center border-2 border-dashed border-[var(--primary)]/30">
               <div className="text-5xl mb-4">🔒</div>
@@ -205,20 +310,30 @@ export default function AnonLobbyPage() {
                 Chat anonymously with fellow SVNITians. Vent, confess, get advice — all without revealing your identity.
               </p>
 
-              {/* Pricing tiers */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
+              {/* Pricing tiers with Subscribe buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                 {ANON_PRICING.map(tier => (
-                  <div key={tier.plan} className={`p-4 rounded-xl border-2 transition-all ${
+                  <div key={tier.plan} className={`p-4 rounded-xl border-2 transition-all flex flex-col ${
                     tier.plan === 'monthly' 
-                      ? 'border-[var(--primary)] bg-[var(--primary)]/5 scale-105' 
+                      ? 'border-[var(--primary)] bg-[var(--primary)]/5 sm:scale-105' 
                       : 'border-[var(--border)]'
                   }`}>
                     {tier.plan === 'monthly' && (
                       <div className="text-[10px] font-bold text-[var(--primary)] mb-1">POPULAR</div>
                     )}
                     <div className="text-sm font-semibold text-[var(--foreground)]">{tier.label}</div>
-                    <div className="text-xl font-bold text-[var(--primary)] mt-1">₹{tier.price}</div>
-                    <div className="text-[10px] text-[var(--muted)]">{tier.durationDays} days</div>
+                    <div className="text-2xl font-bold text-[var(--primary)] mt-1">₹{tier.price}</div>
+                    <div className="text-[10px] text-[var(--muted)] mb-3">{tier.durationDays} days</div>
+                    <button
+                      onClick={() => handleSubscribeClick(tier)}
+                      className={`mt-auto w-full py-2 rounded-lg text-xs font-semibold transition-all ${
+                        tier.plan === 'monthly'
+                          ? 'bg-[var(--primary)] text-white hover:opacity-90'
+                          : 'bg-[var(--surface-light)] text-[var(--foreground)] hover:bg-[var(--primary)] hover:text-white'
+                      }`}
+                    >
+                      Subscribe ₹{tier.price}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -231,6 +346,13 @@ export default function AnonLobbyPage() {
                 <div className="flex items-center gap-2">✅ Mutual reveal option</div>
                 <div className="flex items-center gap-2">✅ Report & block</div>
                 <div className="flex items-center gap-2">✅ SVNIT-only safe space</div>
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-[var(--border)]" />
+                <span className="text-xs text-[var(--muted)]">or use a coupon</span>
+                <div className="flex-1 h-px bg-[var(--border)]" />
               </div>
 
               {/* Coupon input */}
@@ -255,6 +377,121 @@ export default function AnonLobbyPage() {
               <p className="text-[10px] text-[var(--muted)] mt-3">
                 Get coupon codes from campus events, club activities, or friends! 🎉
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* UPI Payment Modal */}
+        {showPayModal && selectedPlan && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !txnLoading && setShowPayModal(false)}>
+            <div className="card p-6 max-w-md w-full space-y-5" onClick={e => e.stopPropagation()}>
+              {!paySuccess ? (
+                <>
+                  <div className="text-center">
+                    <div className="text-3xl mb-2">💳</div>
+                    <h3 className="text-lg font-bold text-[var(--foreground)]">
+                      Pay ₹{selectedPlan.price} for {selectedPlan.label} Plan
+                    </h3>
+                    <p className="text-xs text-[var(--muted)] mt-1">
+                      {selectedPlan.durationDays} days of Anonymous Chat access
+                    </p>
+                  </div>
+
+                  {/* Payment Steps */}
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-[var(--primary)] text-white text-xs flex items-center justify-center shrink-0 mt-0.5">1</div>
+                      <div>
+                        <p className="text-sm font-medium text-[var(--foreground)]">Pay via UPI</p>
+                        <p className="text-xs text-[var(--muted)]">
+                          Send <span className="font-bold text-[var(--primary)]">₹{selectedPlan.price}</span> to:
+                        </p>
+                        <div className="mt-1 flex items-center gap-2 bg-[var(--surface-light)] px-3 py-2 rounded-lg">
+                          <span className="text-sm font-mono font-semibold text-[var(--foreground)]">{UPI_CONFIG.upiId}</span>
+                          <button
+                            onClick={() => navigator.clipboard.writeText(UPI_CONFIG.upiId)}
+                            className="text-xs text-[var(--primary)] hover:underline"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                        <a
+                          href={generateUpiLink(selectedPlan.price)}
+                          className="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-[var(--primary)] hover:underline"
+                        >
+                          📱 Open UPI App Directly
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-[var(--primary)] text-white text-xs flex items-center justify-center shrink-0 mt-0.5">2</div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-[var(--foreground)]">Enter Transaction ID</p>
+                        <p className="text-xs text-[var(--muted)] mb-2">
+                          After paying, paste your UPI transaction/reference ID below
+                        </p>
+                        <input
+                          type="text"
+                          value={txnId}
+                          onChange={e => { setTxnId(e.target.value); setTxnError(''); }}
+                          placeholder="e.g. 412345678901 or UPI ref number"
+                          className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
+                          maxLength={50}
+                        />
+                        {txnError && <p className="text-[var(--error)] text-xs mt-1">{txnError}</p>}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-[var(--surface-light)] text-[var(--muted)] text-xs flex items-center justify-center shrink-0 mt-0.5">3</div>
+                      <div>
+                        <p className="text-sm font-medium text-[var(--muted)]">We verify & activate</p>
+                        <p className="text-xs text-[var(--muted)]">
+                          Admin verifies your payment (usually within a few hours) and your pass gets activated automatically.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowPayModal(false)}
+                      className="flex-1 py-2.5 rounded-lg text-sm text-[var(--muted)] border border-[var(--border)] hover:bg-[var(--surface-light)] transition-colors"
+                      disabled={txnLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmitPayment}
+                      disabled={txnLoading || txnId.trim().length < 4}
+                      className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-[var(--primary)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {txnLoading ? 'Submitting...' : 'Submit Payment'}
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-[var(--muted)] text-center">
+                    Use Google Pay, PhonePe, Paytm, or any UPI app to pay
+                  </p>
+                </>
+              ) : (
+                /* Success state */
+                <div className="text-center py-4">
+                  <div className="text-5xl mb-4">✅</div>
+                  <h3 className="text-lg font-bold text-[var(--success)]">Payment Submitted!</h3>
+                  <p className="text-sm text-[var(--muted)] mt-2 mb-4">
+                    Your payment is being verified. You&apos;ll get access once the admin approves it (usually within a few hours).
+                  </p>
+                  <button
+                    onClick={() => { setShowPayModal(false); setStatus('pending-payment'); }}
+                    className="btn-primary text-sm px-6 py-2"
+                  >
+                    Got it
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
