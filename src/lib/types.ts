@@ -185,10 +185,12 @@ export interface SessionSummary {
 // Notification Types
 // ============================================
 
+import { NotificationType } from './constants';
+
 export interface Notification {
   id: string;
   userId: string;
-  type: 'session_reminder' | 'streak' | 'missed_session' | 'goal_achievement' | 'weekly_report' | 'match_found' | 'birthday_wish' | 'session_request' | 'session_accepted' | 'session_declined';
+  type: NotificationType;
   title: string;
   message: string;
   read: boolean;

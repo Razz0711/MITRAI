@@ -130,8 +130,8 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         if (data.event === 'video-conference-left' || data.event === 'readyToClose') {
           onLeave?.();
         }
-      } catch {
-        // Ignore non-JSON messages
+      } catch (err) {
+        // Ignore non-JSON messages from Jitsi iframe
       }
     };
 

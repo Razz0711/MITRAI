@@ -70,7 +70,7 @@ export default function CalendarPage() {
       const res = await fetch(`/api/calendar?userId=${user.id}&start=${startStr}&end=${endStr}`);
       const data = await res.json();
       if (data.success) setEvents(data.data || []);
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadEvents:', err); }
     setLoading(false);
   }, [user, viewYear, viewMonth]);
 
@@ -198,7 +198,7 @@ export default function CalendarPage() {
 
       setShowAddEvent(false);
       await loadEvents();
-    } catch { /* ignore */ }
+    } catch (err) { console.error('submitEvent:', err); }
     setFormSubmitting(false);
   }
 
@@ -211,7 +211,7 @@ export default function CalendarPage() {
         body: JSON.stringify({ eventId }),
       });
       await loadEvents();
-    } catch { /* ignore */ }
+    } catch (err) { console.error('deleteEvent:', err); }
   }
 
   // ── Build calendar grid ──

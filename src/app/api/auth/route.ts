@@ -86,7 +86,8 @@ export async function POST(req: NextRequest) {
           timezone: 'IST',
           preferred_language: 'English',
         }, { onConflict: 'id' });
-      } catch {
+      } catch (err) {
+        console.error('profileUpsert:', err);
         // Best-effort — profile will be completed during onboarding
       }
 

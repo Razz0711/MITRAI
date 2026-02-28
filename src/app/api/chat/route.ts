@@ -12,6 +12,7 @@ import {
   addNotification,
 } from '@/lib/store';
 import { DirectMessage } from '@/lib/types';
+import { NOTIFICATION_TYPES } from '@/lib/constants';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -75,11 +76,11 @@ export async function POST(request: NextRequest) {
     try {
       await addNotification({
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        userId: receiverId, type: 'session_request', title: 'New Message',
+        userId: receiverId, type: NOTIFICATION_TYPES.SESSION_REQUEST, title: 'New Message',
         message: `${senderName || 'Someone'}: ${text.trim().slice(0, 50)}${text.length > 50 ? '...' : ''}`,
         read: false, createdAt: new Date().toISOString(),
       });
-    } catch { /* non-critical */ }
+    } catch (err) { /* non-critical: notification send */ }
     if (receiverName) await updateThreadUserName(chatId, receiverId, receiverName);
     if (senderName) await updateThreadUserName(chatId, senderId, senderName);
     return NextResponse.json({ message });

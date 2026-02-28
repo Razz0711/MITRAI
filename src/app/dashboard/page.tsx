@@ -56,7 +56,7 @@ export default function DashboardPage() {
         setBirthdays(data.data.birthdays || []);
         setWishedMap(data.data.wishedMap || {});
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadBirthdays:', err); }
   }, [user]);
 
   const loadNotifications = useCallback(async () => {
@@ -65,7 +65,7 @@ export default function DashboardPage() {
       const res = await fetch(`/api/notifications?userId=${user.id}`);
       const data = await res.json();
       if (data.success) setNotifications(data.data || []);
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadNotifications:', err); }
   }, [user]);
 
   const loadStatus = useCallback(async () => {
@@ -74,7 +74,7 @@ export default function DashboardPage() {
       const res = await fetch(`/api/status?userId=${user.id}`);
       const data = await res.json();
       if (data.success) setMyStatus(data.data);
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadStatus:', err); }
   }, [user]);
 
   useEffect(() => {
@@ -109,7 +109,7 @@ export default function DashboardPage() {
       
       setStudyStreak(streak);
       localStorage.setItem('mitrai_study_streak', JSON.stringify({ dates: dates.slice(-30), streak }));
-    } catch { setStudyStreak(1); }
+    } catch (err) { console.error('studyStreak:', err); setStudyStreak(1); }
   }, []);
 
   const getInviteLink = () => {
@@ -184,7 +184,7 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fromUserId: user.id, fromUserName: user.name, toUserId, toUserName }),
       });
-    } catch { /* ignore */ }
+    } catch (err) { console.error('handleWish:', err); }
   };
 
   const handleMarkNotifRead = async (notifId: string) => {
@@ -196,7 +196,7 @@ export default function DashboardPage() {
         body: JSON.stringify({ userId: user.id, notificationId: notifId }),
       });
       setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
-    } catch { /* ignore */ }
+    } catch (err) { console.error('markNotifRead:', err); }
   };
 
   const handleDeleteProfile = async () => {
@@ -222,7 +222,7 @@ export default function DashboardPage() {
         }
         setShowDeleteConfirm(false);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('handleDeleteProfile:', err); }
     setDeleting(false);
   };
 

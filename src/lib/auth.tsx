@@ -110,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       return { success: true };
-    } catch {
+    } catch (err) {
+      console.error('login:', err);
       return { success: false, error: 'Login failed. Please try again.' };
     }
   };
@@ -140,7 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       return { success: true };
-    } catch {
+    } catch (err) {
+      console.error('signup:', err);
       return { success: false, error: 'Signup failed. Please try again.' };
     }
   };

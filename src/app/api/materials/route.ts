@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllMaterials, createMaterial, saveUploadedFile, addNotification } from '@/lib/store';
 import { StudyMaterial } from '@/lib/types';
+import { NOTIFICATION_TYPES } from '@/lib/constants';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -128,13 +129,13 @@ export async function POST(request: NextRequest) {
       await addNotification({
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         userId: uploadedBy,
-        type: 'goal_achievement',
+        type: NOTIFICATION_TYPES.GOAL_ACHIEVEMENT,
         title: 'Material Uploaded!',
         message: `Your "${title}" has been uploaded successfully 📚`,
         read: false,
         createdAt: new Date().toISOString(),
       });
-    } catch { /* non-critical */ }
+    } catch (err) { /* non-critical: upload notification */ }
 
     return NextResponse.json({ success: true, data: material });
   } catch (error) {

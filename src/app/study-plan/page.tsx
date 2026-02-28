@@ -58,7 +58,7 @@ export default function StudyPlanPage() {
                 setBuddyId(friendProfiles[0].id);
               }
             }
-          } catch { /* ignore */ }
+          } catch (err) { console.error('loadFriendStudents:', err); }
         }
       }
     } catch (err) {

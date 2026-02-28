@@ -81,7 +81,8 @@ function LoginPageInner() {
       } else {
         setError(data.error || 'Failed to send verification code');
       }
-    } catch {
+    } catch (err) {
+      console.error('sendOtp:', err);
       setError('Network error. Please try again.');
     } finally {
       setOtpSending(false);
@@ -129,7 +130,8 @@ function LoginPageInner() {
           setError(result.error || 'Invalid credentials');
         }
       }
-    } catch {
+    } catch (err) {
+      console.error('verifyOtp:', err);
       setError('Network error. Please try again.');
     } finally {
       setOtpVerifying(false);

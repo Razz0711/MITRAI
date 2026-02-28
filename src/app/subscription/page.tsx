@@ -55,7 +55,7 @@ export default function SubscriptionPage() {
         setCurrentPlan(data.data.plan || 'free');
         setPlanStatus(data.data.status || 'active');
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadSubscription:', err); }
     setLoading(false);
   };
 
@@ -92,7 +92,8 @@ export default function SubscriptionPage() {
         setPaymentStep('qr');
         setPaymentError(data.error || 'Something went wrong. Try again.');
       }
-    } catch {
+    } catch (err) {
+      console.error('paymentConfirm:', err);
       setPaymentStep('qr');
       setPaymentError('Network error. Please try again.');
     }
@@ -121,7 +122,7 @@ export default function SubscriptionPage() {
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('subscribe:', err); }
     setSubscribing(false);
     setSelectedPlan(null);
   };

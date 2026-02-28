@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
             { status: 403 }
           );
         }
-      } catch {
+      } catch (err) {
         return NextResponse.json(
           { success: false, error: 'Forbidden: invalid origin' },
           { status: 403 }

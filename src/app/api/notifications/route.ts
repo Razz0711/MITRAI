@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getNotifications, markNotificationRead, addNotification } from '@/lib/store';
+import { NOTIFICATION_TYPES } from '@/lib/constants';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
 // GET /api/notifications?userId=xxx
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       await addNotification({
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         userId,
-        type: type || 'match_found',
+        type: type || NOTIFICATION_TYPES.MATCH_FOUND,
         title,
         message: message || '',
         read: false,

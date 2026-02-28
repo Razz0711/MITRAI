@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllStudents, addNotification, hasWishedToday, addBirthdayWish, getBirthdayWishesForUser } from '@/lib/store';
 import { BirthdayInfo } from '@/lib/types';
+import { NOTIFICATION_TYPES } from '@/lib/constants';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
     await addNotification({
       id: uuidv4(),
       userId: toUserId,
-      type: 'birthday_wish',
+      type: NOTIFICATION_TYPES.BIRTHDAY_WISH,
       title: '🎂 Birthday Wish!',
       message: `${fromUserName || 'Someone'} wished you Happy Birthday! 🎉`,
       read: false,

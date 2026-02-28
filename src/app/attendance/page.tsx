@@ -33,7 +33,7 @@ export default function AttendancePage() {
       const res = await fetch(`/api/attendance?userId=${user.id}`);
       const data = await res.json();
       if (data.success) setAttendance(data.data || []);
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadAttendance:', err); }
     setLoading(false);
   }, [user]);
 
@@ -66,7 +66,7 @@ export default function AttendancePage() {
           )
         );
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('upsertAttendance:', err); }
   };
 
   const handleAddSubject = async () => {
@@ -88,7 +88,7 @@ export default function AttendancePage() {
         setNewSubject('');
         setShowAddSubject(false);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('addSubject:', err); }
   };
 
   const handleBulkAdd = async () => {
@@ -127,7 +127,7 @@ export default function AttendancePage() {
       });
       const data = await res.json();
       if (data.success) setAttendance(prev => prev.filter(a => a.id !== id));
-    } catch { /* ignore */ }
+    } catch (err) { console.error('deleteAttendance:', err); }
   };
 
   // Stats

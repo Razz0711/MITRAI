@@ -64,7 +64,7 @@ export default function CallPage() {
             setBuddyOnline(found ? (found.status as 'online' | 'in-session' | 'offline') : 'offline');
           }
         }
-      } catch { /* ignore */ }
+      } catch (err) { console.error('checkBuddyStatus:', err); }
     };
     checkBuddyStatus();
   }, []);
@@ -115,7 +115,7 @@ export default function CallPage() {
           }),
         });
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('submitRating:', err); }
     setRatingSubmitted(true);
     setSubmittingRating(false);
     setTimeout(() => {
@@ -146,7 +146,7 @@ export default function CallPage() {
         });
         setFriendRequestSent(true);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('sendFriendRequest:', err); }
     setSendingFriendReq(false);
   };
 

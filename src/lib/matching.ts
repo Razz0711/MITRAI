@@ -122,7 +122,8 @@ function scoreGoalAlignment(student: StudentProfile, candidate: StudentProfile):
     const date2 = new Date(candidate.targetDate);
     const diffMonths = Math.abs(date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24 * 30);
     sameTimeline = diffMonths <= 3;
-  } catch {
+  } catch (err) {
+    console.error('parseTargetDate:', err);
     sameTimeline = false;
   }
 
@@ -264,7 +265,8 @@ export async function findTopMatches(
     if (useAI) {
       try {
         explanation = await generateMatchExplanation(student, match.candidate, match.score);
-      } catch {
+      } catch (err) {
+        console.error('generateMatchExplanation:', err);
         explanation = null;
       }
     }

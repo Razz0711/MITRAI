@@ -10,6 +10,7 @@ import {
   markSlotEngaged, addNotification
 } from '@/lib/store';
 import { SessionBooking } from '@/lib/types';
+import { NOTIFICATION_TYPES } from '@/lib/constants';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     };
     await createBooking(booking);
     await addNotification({
-      id: uuidv4(), userId: targetId, type: 'session_request', title: '📅 Session Request',
+      id: uuidv4(), userId: targetId, type: NOTIFICATION_TYPES.SESSION_REQUEST, title: '📅 Session Request',
       message: `${requesterName} wants to study "${topic || 'together'}" on ${day} at ${hour > 12 ? hour - 12 : hour}${hour >= 12 ? 'PM' : 'AM'}`,
       read: false, createdAt: new Date().toISOString(),
     });
@@ -83,14 +84,14 @@ export async function PATCH(request: NextRequest) {
       await markSlotEngaged(booking.requesterId, booking.day, booking.hour, bookingId, booking.targetName);
       await markSlotEngaged(booking.targetId, booking.day, booking.hour, bookingId, booking.requesterName);
       await addNotification({
-        id: uuidv4(), userId: booking.requesterId, type: 'session_accepted', title: '✅ Session Accepted!',
+        id: uuidv4(), userId: booking.requesterId, type: NOTIFICATION_TYPES.SESSION_ACCEPTED, title: '✅ Session Accepted!',
         message: `${booking.targetName} accepted your session request for ${booking.day} at ${booking.hour > 12 ? booking.hour - 12 : booking.hour}${booking.hour >= 12 ? 'PM' : 'AM'}`,
         read: false, createdAt: new Date().toISOString(),
       });
     } else {
       await updateBooking(bookingId, { status: 'declined' });
       await addNotification({
-        id: uuidv4(), userId: booking.requesterId, type: 'session_declined', title: '❌ Session Declined',
+        id: uuidv4(), userId: booking.requesterId, type: NOTIFICATION_TYPES.SESSION_DECLINED, title: '❌ Session Declined',
         message: `${booking.targetName} declined your session request for ${booking.day}`,
         read: false, createdAt: new Date().toISOString(),
       });

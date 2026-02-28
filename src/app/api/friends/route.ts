@@ -20,6 +20,7 @@ import {
   addRating,
   addNotification,
 } from '@/lib/store';
+import { NOTIFICATION_TYPES } from '@/lib/constants';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
       });
       await addNotification({
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        userId: toUserId, type: 'session_request', title: 'New Friend Request',
+        userId: toUserId, type: NOTIFICATION_TYPES.SESSION_REQUEST, title: 'New Friend Request',
         message: `${fromUserName || 'Someone'} sent you a friend request!`,
         read: false, createdAt: new Date().toISOString(),
       });
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
       });
       await addNotification({
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        userId: toUserId, type: 'goal_achievement', title: 'New Rating Received',
+        userId: toUserId, type: NOTIFICATION_TYPES.GOAL_ACHIEVEMENT, title: 'New Rating Received',
         message: `${fromUserName || 'Someone'} rated you ${rating}/10${review ? `: "${review}"` : ''}`,
         read: false, createdAt: new Date().toISOString(),
       });
@@ -140,7 +141,7 @@ export async function PATCH(req: NextRequest) {
       });
       await addNotification({
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        userId: updated.fromUserId, type: 'session_accepted', title: 'Friend Request Accepted!',
+        userId: updated.fromUserId, type: NOTIFICATION_TYPES.SESSION_ACCEPTED, title: 'Friend Request Accepted!',
         message: `${updated.toUserName} accepted your friend request 🎉`,
         read: false, createdAt: new Date().toISOString(),
       });

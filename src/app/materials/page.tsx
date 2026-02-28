@@ -97,8 +97,8 @@ export default function MaterialsPage() {
       if (data.success) {
         setMaterials(data.data);
       }
-    } catch {
-      console.error('Failed to fetch materials');
+    } catch (err) {
+      console.error('Failed to fetch materials:', err);
     } finally {
       setLoading(false);
     }
@@ -170,7 +170,8 @@ export default function MaterialsPage() {
       let data;
       try {
         data = await res.json();
-      } catch {
+      } catch (err) {
+        console.error('parseUploadResponse:', err);
         setUploadError(`Server error (${res.status}): ${res.statusText}`);
         return;
       }

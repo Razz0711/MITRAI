@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { getAllStudents, createStudent, getStudentById, deleteStudent, updateStudent } from '@/lib/store';
-import { StudentProfile } from '@/lib/types';
+import { StudentProfile, LearningType, StudyMethod, SessionLength, BreakPattern, StudyPace, Day, SessionType, StudyStylePref, CommunicationType, TeachingAbility, Level } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -14,6 +14,52 @@ function stripSensitive(student: StudentProfile): Partial<StudentProfile> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { email, admissionNumber, ...safe } = student;
   return safe;
+}
+
+/** Build a full StudentProfile from a partial body + id (shared by POST & PUT) */
+function buildStudentProfile(source: Record<string, unknown>, id: string): StudentProfile {
+  return {
+    id,
+    createdAt: new Date().toISOString(),
+    name: String(source.name || 'Unknown').slice(0, 100),
+    age: Math.min(Math.max(Number(source.age) || 17, 10), 100),
+    email: String(source.email || '').slice(0, 200),
+    admissionNumber: (source.admissionNumber as string) || '',
+    city: (source.city as string) || '',
+    country: (source.country as string) || 'India',
+    timezone: (source.timezone as string) || 'IST',
+    preferredLanguage: (source.preferredLanguage as string) || 'English',
+    currentStudy: (source.currentStudy as string) || '',
+    institution: (source.institution as string) || 'SVNIT Surat',
+    department: (source.department as string) || '',
+    yearLevel: (source.yearLevel as string) || '',
+    targetExam: (source.targetExam as string) || '',
+    targetDate: (source.targetDate as string) || '',
+    strongSubjects: (source.strongSubjects as string[]) || [],
+    weakSubjects: (source.weakSubjects as string[]) || [],
+    currentlyStudying: (source.currentlyStudying as string) || '',
+    upcomingTopics: (source.upcomingTopics as string[]) || [],
+    learningType: (source.learningType as LearningType) || 'practical',
+    studyMethod: (source.studyMethod as StudyMethod[]) || ['problems'],
+    sessionLength: (source.sessionLength as SessionLength) || '1hr',
+    breakPattern: (source.breakPattern as BreakPattern) || 'flexible',
+    pace: (source.pace as StudyPace) || 'medium',
+    availableDays: (source.availableDays as Day[]) || ['Monday', 'Wednesday', 'Friday'],
+    availableTimes: (source.availableTimes as string) || '7PM-10PM IST',
+    sessionsPerWeek: (source.sessionsPerWeek as number) || 3,
+    sessionType: (source.sessionType as SessionType) || 'both',
+    studyStyle: (source.studyStyle as StudyStylePref) || 'flexible',
+    communication: (source.communication as CommunicationType) || 'extrovert',
+    teachingAbility: (source.teachingAbility as TeachingAbility) || 'average',
+    accountabilityNeed: (source.accountabilityNeed as Level) || 'medium',
+    videoCallComfort: (source.videoCallComfort as boolean) ?? true,
+    shortTermGoal: (source.shortTermGoal as string) || '',
+    longTermGoal: (source.longTermGoal as string) || '',
+    studyHoursTarget: (source.studyHoursTarget as number) || 4,
+    weeklyGoals: (source.weeklyGoals as string) || '',
+    dob: (source.dob as string) || '',
+    showBirthday: source.showBirthday !== false,
+  };
 }
 
 // GET - Fetch all students or a specific student
@@ -71,48 +117,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const student: StudentProfile = {
-      id: body.id || uuidv4(),
-      createdAt: new Date().toISOString(),
-      name: String(body.name || 'Unknown').slice(0, 100),
-      age: Math.min(Math.max(Number(body.age) || 17, 10), 100),
-      email: String(body.email || '').slice(0, 200),
-      admissionNumber: body.admissionNumber || '',
-      city: body.city || '',
-      country: body.country || 'India',
-      timezone: body.timezone || 'IST',
-      preferredLanguage: body.preferredLanguage || 'English',
-      currentStudy: body.currentStudy || '',
-      institution: body.institution || 'SVNIT Surat',
-      department: body.department || '',
-      yearLevel: body.yearLevel || '',
-      targetExam: body.targetExam || '',
-      targetDate: body.targetDate || '',
-      strongSubjects: body.strongSubjects || [],
-      weakSubjects: body.weakSubjects || [],
-      currentlyStudying: body.currentlyStudying || '',
-      upcomingTopics: body.upcomingTopics || [],
-      learningType: body.learningType || 'practical',
-      studyMethod: body.studyMethod || ['problems'],
-      sessionLength: body.sessionLength || '1hr',
-      breakPattern: body.breakPattern || 'flexible',
-      pace: body.pace || 'medium',
-      availableDays: body.availableDays || ['Monday', 'Wednesday', 'Friday'],
-      availableTimes: body.availableTimes || '7PM-10PM IST',
-      sessionsPerWeek: body.sessionsPerWeek || 3,
-      sessionType: body.sessionType || 'both',
-      studyStyle: body.studyStyle || 'flexible',
-      communication: body.communication || 'extrovert',
-      teachingAbility: body.teachingAbility || 'average',
-      accountabilityNeed: body.accountabilityNeed || 'medium',
-      videoCallComfort: body.videoCallComfort ?? true,
-      shortTermGoal: body.shortTermGoal || '',
-      longTermGoal: body.longTermGoal || '',
-      studyHoursTarget: body.studyHoursTarget || 4,
-      weeklyGoals: body.weeklyGoals || '',
-      dob: body.dob || '',
-      showBirthday: body.showBirthday !== false,
-    };
+    const student = buildStudentProfile(body, body.id || uuidv4());
 
     const created = await createStudent(student);
     return NextResponse.json({ success: true, data: created }, { status: 201 });
@@ -140,48 +145,7 @@ export async function PUT(req: NextRequest) {
     const existing = await getStudentById(id);
     if (!existing) {
       // If not found, create it instead
-      const student: StudentProfile = {
-        id,
-        createdAt: new Date().toISOString(),
-        name: updates.name || 'Unknown',
-        age: updates.age || 17,
-        email: updates.email || '',
-        admissionNumber: updates.admissionNumber || '',
-        city: updates.city || 'Surat',
-        country: updates.country || 'India',
-        timezone: updates.timezone || 'IST',
-        preferredLanguage: updates.preferredLanguage || 'English',
-        currentStudy: updates.currentStudy || '',
-        institution: updates.institution || 'SVNIT Surat',
-        department: updates.department || '',
-        yearLevel: updates.yearLevel || '',
-        targetExam: updates.targetExam || '',
-        targetDate: updates.targetDate || '',
-        strongSubjects: updates.strongSubjects || [],
-        weakSubjects: updates.weakSubjects || [],
-        currentlyStudying: updates.currentlyStudying || '',
-        upcomingTopics: updates.upcomingTopics || [],
-        learningType: updates.learningType || 'practical',
-        studyMethod: updates.studyMethod || ['problems'],
-        sessionLength: updates.sessionLength || '1hr',
-        breakPattern: updates.breakPattern || 'flexible',
-        pace: updates.pace || 'medium',
-        availableDays: updates.availableDays || ['Monday', 'Wednesday', 'Friday'],
-        availableTimes: updates.availableTimes || '7PM-10PM IST',
-        sessionsPerWeek: updates.sessionsPerWeek || 3,
-        sessionType: updates.sessionType || 'both',
-        studyStyle: updates.studyStyle || 'flexible',
-        communication: updates.communication || 'extrovert',
-        teachingAbility: updates.teachingAbility || 'average',
-        accountabilityNeed: updates.accountabilityNeed || 'medium',
-        videoCallComfort: updates.videoCallComfort ?? true,
-        shortTermGoal: updates.shortTermGoal || '',
-        longTermGoal: updates.longTermGoal || '',
-        studyHoursTarget: updates.studyHoursTarget || 4,
-        weeklyGoals: updates.weeklyGoals || '',
-        dob: updates.dob || '',
-        showBirthday: updates.showBirthday !== false,
-      };
+      const student = buildStudentProfile(updates, id);
       const created = await createStudent(student);
       return NextResponse.json({ success: true, data: created }, { status: 201 });
     }

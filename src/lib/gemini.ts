@@ -136,9 +136,9 @@ Respond in EXACTLY this JSON format (no markdown, no code blocks):
 
   try {
     return JSON.parse(text);
-  } catch {
-    return {
-      whyItWorks: `${student.name} and ${match.name} share compatible study goals and complementary strengths. Their overlapping schedules make regular sessions possible.`,
+  } catch (err) {
+    console.error('parseMatchExplanation:', err);
+    return { whyItWorks: `${student.name} and ${match.name} share compatible study goals and complementary strengths. Their overlapping schedules make regular sessions possible.`,
       potentialChallenges: 'Different learning paces may require patience from both sides.',
       recommendedFirstTopic: student.weakSubjects[0] || student.currentlyStudying || 'Introduction session',
       bestFormat: student.sessionType === 'both' ? 'Peer teaching' : '1-on-1',
@@ -305,9 +305,9 @@ Respond in EXACTLY this JSON format (no markdown, no code blocks):
 
   try {
     return JSON.parse(text);
-  } catch {
-    return {
-      compatibility: 'Medium',
+  } catch (err) {
+    console.error('parseCompatibilityCheck:', err);
+    return { compatibility: 'Medium',
       confidence: 60,
       strengths: ['Shared exam target', 'Schedule overlap possible'],
       issues: ['Compatibility analysis could not be fully completed'],

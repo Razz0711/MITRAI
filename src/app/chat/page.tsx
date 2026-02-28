@@ -45,7 +45,7 @@ export default function ChatPage() {
         (statusData.data || []).forEach((s: UserStatus) => { map[s.userId] = s; });
         setStatuses(map);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadThreads:', err); }
     setLoading(false);
   }, [studentId]);
 
@@ -56,7 +56,7 @@ export default function ChatPage() {
       const res = await fetch(`/api/chat?chatId=${selectedChatId}&userId=${studentId}`);
       const data = await res.json();
       setMessages(data.messages || []);
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadMessages:', err); }
   }, [selectedChatId, studentId]);
 
   // Mark messages as read
@@ -68,7 +68,7 @@ export default function ChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chatId: selectedChatId, userId: studentId }),
       });
-    } catch { /* ignore */ }
+    } catch (err) { console.error('markRead:', err); }
   }, [selectedChatId, studentId]);
 
   useEffect(() => {
@@ -168,7 +168,7 @@ export default function ChatPage() {
       await loadMessages();
       await loadThreads();
       inputRef.current?.focus();
-    } catch { /* ignore */ }
+    } catch (err) { console.error('sendMessage:', err); }
     setSending(false);
   };
 
@@ -186,7 +186,7 @@ export default function ChatPage() {
         await loadMessages();
         await loadThreads();
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('deleteMessage:', err); }
   };
 
   // Open a chat (from friends page redirect with query params) - NO auto-send

@@ -33,7 +33,8 @@ export default function FeedbackPage() {
       } else {
         alert(data.error || 'Failed to submit feedback');
       }
-    } catch {
+    } catch (err) {
+      console.error('submitFeedback:', err);
       alert('Something went wrong. Please try again.');
     }
 

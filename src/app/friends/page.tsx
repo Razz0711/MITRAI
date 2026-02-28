@@ -45,10 +45,10 @@ export default function FriendsPage() {
               (statusData.data || []).forEach((s: UserStatus) => { statusMap[s.userId] = s; });
               setStatuses(statusMap);
             }
-          } catch { /* ignore */ }
+          } catch (err) { console.error('loadFriendStatuses:', err); }
         }
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadFriendsData:', err); }
     setLoading(false);
   }, [user]);
 
@@ -64,7 +64,7 @@ export default function FriendsPage() {
         body: JSON.stringify({ requestId, status }),
       });
       loadData();
-    } catch { /* ignore */ }
+    } catch (err) { console.error('respondFriendReq:', err); }
   };
 
   const handleRemoveFriend = async (friendUserId: string) => {
@@ -77,7 +77,7 @@ export default function FriendsPage() {
         body: JSON.stringify({ userId1: user.id, userId2: friendUserId }),
       });
       loadData();
-    } catch { /* ignore */ }
+    } catch (err) { console.error('removeFriend:', err); }
   };
 
   if (loading) {

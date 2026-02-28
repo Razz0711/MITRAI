@@ -44,7 +44,7 @@ export default function MatchesPage() {
         data.data.forEach((s: UserStatus) => { map[s.userId] = s; });
         setStatusMap(map);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadStatuses:', err); }
   };
 
   const loadBirthdays = useCallback(async () => {
@@ -60,7 +60,7 @@ export default function MatchesPage() {
         const ids = new Set<string>((data.data.birthdays || []).map((b: BirthdayInfo) => b.userId));
         setBirthdayUserIds(ids);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadBirthdays:', err); }
   }, []);
 
   const loadFriends = useCallback(async () => {
@@ -82,7 +82,7 @@ export default function MatchesPage() {
         );
         setPendingSentIds(sentIds);
       }
-    } catch { /* ignore */ }
+    } catch (err) { console.error('loadFriends:', err); }
   }, [user]);
 
   const handleAddFriend = async (studentId: string, studentName: string) => {
@@ -104,7 +104,7 @@ export default function MatchesPage() {
         next.add(studentId);
         return next;
       });
-    } catch { /* ignore */ }
+    } catch (err) { console.error('addFriend:', err); }
   };
 
   const loadStudents = async () => {
