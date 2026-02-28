@@ -110,12 +110,14 @@ export async function POST(request: NextRequest) {
       // Send OTP via email
       try {
         await sendOtpEmail(normalizedEmail, code);
-      } catch (emailErr) {
-        console.error('[OTP] Failed to send email:', emailErr);
+      } catch (emailErr: unknown) {
+        const errMsg = emailErr instanceof Error ? emailErr.message : String(emailErr);
+        console.error('[OTP] Failed to send email:', errMsg);
         await supabase.from('otp_codes').delete().eq('email', normalizedEmail);
         return NextResponse.json({
           success: false,
-          error: 'Failed to send verification email. Please try again.',
+          error: `Failed to send verification email. Please try again.`,
+          debug: errMsg,
         }, { status: 500 });
       }
 
