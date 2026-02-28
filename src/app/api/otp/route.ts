@@ -14,14 +14,15 @@ import { supabase } from '@/lib/supabase';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_APP_PASSWORD,
+    user: (process.env.SMTP_EMAIL || '').trim(),
+    pass: (process.env.SMTP_APP_PASSWORD || '').trim(),
   },
 });
 
 async function sendOtpEmail(to: string, code: string) {
+  const fromEmail = (process.env.SMTP_EMAIL || '').trim();
   const mailOptions = {
-    from: `"MitrAI" <${process.env.SMTP_EMAIL}>`,
+    from: `"MitrAI" <${fromEmail}>`,
     to,
     subject: `${code} is your MitrAI verification code`,
     html: `
