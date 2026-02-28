@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import dynamic from 'next/dynamic';
 import ChatInterface from '@/components/ChatInterface';
+import SubTabBar from '@/components/SubTabBar';
 import { ChatMessage, StudentProfile } from '@/lib/types';
 
 const CallRoom = dynamic(() => import('@/components/CallRoom'), { ssr: false });
@@ -144,6 +145,7 @@ export default function SessionPage() {
   if (!sessionStarted) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
+        <SubTabBar group="learn" />
         <div className="text-center mb-6">
           <h1 className="text-xl font-bold mb-1">
             <span className="gradient-text">Study Session</span>
@@ -208,7 +210,7 @@ export default function SessionPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col">
+    <div className="h-[calc(100vh-8rem)] flex flex-col">
       {/* Session Header */}
       <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
         <div className="flex items-center gap-4">

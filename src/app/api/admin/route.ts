@@ -6,32 +6,24 @@
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { supabase } from '@/lib/supabase';
 import { generateCoupons, listCoupons, getAnonStats, listPendingPayments, approvePayment, rejectPayment } from '@/lib/store/anon';
+import { verifyAdminAccess, isAdminAuthenticated } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
-function verifyAdmin(adminKey: string | null): boolean {
-  const expected = process.env.ADMIN_KEY || '';
-  const provided = String(adminKey || '');
-  if (!expected || expected.length === 0) return false;
-  if (expected.length !== provided.length) return false;
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(provided));
-  } catch {
-    return false;
-  }
-}
-
-// GET /api/admin?adminKey=xxx
+// GET /api/admin?adminKey=xxx (or cookie-based)
 export async function GET(req: NextRequest) {
-  const authUser = await getAuthUser();
-  if (!authUser) return unauthorized();
+  // Admin can access via cookie (no Supabase auth needed) or via Supabase auth + admin key
+  const adminCookie = isAdminAuthenticated();
+  if (!adminCookie) {
+    const authUser = await getAuthUser();
+    if (!authUser) return unauthorized();
+  }
 
   const adminKey = req.nextUrl.searchParams.get('adminKey');
-  if (!verifyAdmin(adminKey)) {
+  if (!verifyAdminAccess(adminKey)) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -81,14 +73,20 @@ export async function GET(req: NextRequest) {
 
 // POST /api/admin — admin actions
 export async function POST(req: NextRequest) {
-  const authUser = await getAuthUser();
-  if (!authUser) return unauthorized();
+  // Admin can access via cookie (no Supabase auth needed) or via Supabase auth + admin key
+  const adminCookie = isAdminAuthenticated();
+  let adminUserId = 'admin';
+  if (!adminCookie) {
+    const authUser = await getAuthUser();
+    if (!authUser) return unauthorized();
+    adminUserId = authUser.id;
+  }
 
   try {
     const body = await req.json();
     const { adminKey, action, targetId } = body;
 
-    if (!verifyAdmin(adminKey)) {
+    if (!verifyAdminAccess(adminKey)) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -147,13 +145,13 @@ export async function POST(req: NextRequest) {
       if (!plan || !count) {
         return NextResponse.json({ success: false, error: 'plan and count required' }, { status: 400 });
       }
-      const codes = await generateCoupons(plan, Math.min(count, 100), maxUses || 1, authUser.id, expiresAt);
+      const codes = await generateCoupons(plan, Math.min(count, 100), maxUses || 1, adminUserId, expiresAt);
       return NextResponse.json({ success: true, data: { codes } });
     }
 
     // ── Approve anon payment ──
     if (action === 'approve-payment') {
-      const result = await approvePayment(targetId, authUser.id);
+      const result = await approvePayment(targetId, adminUserId);
       if (!result.success) return NextResponse.json({ success: false, error: result.error }, { status: 400 });
       return NextResponse.json({ success: true, message: 'Payment approved, pass activated!' });
     }
@@ -161,7 +159,7 @@ export async function POST(req: NextRequest) {
     // ── Reject anon payment ──
     if (action === 'reject-payment') {
       const { reason } = body;
-      const result = await rejectPayment(targetId, authUser.id, reason);
+      const result = await rejectPayment(targetId, adminUserId, reason);
       if (!result.success) return NextResponse.json({ success: false, error: result.error }, { status: 400 });
       return NextResponse.json({ success: true, message: 'Payment rejected' });
     }

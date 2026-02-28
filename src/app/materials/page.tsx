@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { StudyMaterial, MaterialType } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import SubTabBar from '@/components/SubTabBar';
 
 const DEPARTMENTS = [
   'CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics',
@@ -211,8 +212,9 @@ export default function MaterialsPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pt-20 pb-10">
+    <div className="min-h-screen bg-[var(--background)]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <SubTabBar group="learn" />
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>

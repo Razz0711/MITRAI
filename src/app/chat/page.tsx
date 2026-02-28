@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { DirectMessage, ChatThread, UserStatus } from '@/lib/types';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import SubTabBar from '@/components/SubTabBar';
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -242,8 +243,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen pt-14">
-      <div className="h-[calc(100vh-56px)] flex">
+    <div className="min-h-screen">
+      <SubTabBar group="connect" />
+      <div className="h-[calc(100vh-9rem)] flex">
         {/* ======= Sidebar / Thread List ======= */}
         <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-[var(--border)] bg-[var(--background)]`}>
           {/* Header */}

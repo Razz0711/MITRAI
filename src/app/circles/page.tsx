@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import SubTabBar from '@/components/SubTabBar';
 
 interface Circle {
   id: string;
@@ -82,7 +83,8 @@ export default function CirclesPage() {
   const available = circles.filter((c) => !isJoined(c.id));
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <SubTabBar group="connect" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

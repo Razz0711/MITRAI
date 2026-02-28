@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { Friendship, FriendRequest, BuddyRating, UserStatus } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import SubTabBar from '@/components/SubTabBar';
 
 export default function FriendsPage() {
   const { user } = useAuth();
@@ -90,6 +91,7 @@ export default function FriendsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <SubTabBar group="discover" />
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

@@ -10,6 +10,7 @@ import MatchCard from '@/components/MatchCard';
 import { MatchResult, StudentProfile, UserStatus, BirthdayInfo, Friendship, FriendRequest } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import { TYPE_MAP, DEPT_MAP } from '@/lib/email-parser';
+import SubTabBar from '@/components/SubTabBar';
 
 export default function MatchesPage() {
   const { user } = useAuth();
@@ -158,6 +159,7 @@ export default function MatchesPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+      <SubTabBar group="discover" />
       {/* Header */}
       <div className="text-center mb-6">
         <h1 className="text-xl font-bold mb-1">

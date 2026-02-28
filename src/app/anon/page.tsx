@@ -9,6 +9,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { ROOM_TYPES, ANON_PRICING, UPI_CONFIG } from '@/lib/anon-aliases';
+import SubTabBar from '@/components/SubTabBar';
 
 type Status = 'loading' | 'no-pass' | 'pending-payment' | 'banned' | 'idle' | 'queuing' | 'matched';
 
@@ -239,8 +240,9 @@ export default function AnonLobbyPage() {
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   return (
-    <div className="min-h-screen pt-20 pb-10 px-4">
+    <div className="min-h-screen px-4">
       <div className="max-w-2xl mx-auto">
+        <SubTabBar group="discover" />
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-[var(--foreground)] mb-2">

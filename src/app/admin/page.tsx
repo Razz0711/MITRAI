@@ -6,7 +6,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
 interface AdminStats {
@@ -85,11 +84,10 @@ interface PendingPaymentItem {
 }
 
 export default function AdminDashboardPage() {
-  const { user } = useAuth();
   const router = useRouter();
   const [adminKey, setAdminKey] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -106,20 +104,33 @@ export default function AdminDashboardPage() {
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
   const [actionMsg, setActionMsg] = useState('');
 
+  // Check cookie-based admin auth on mount
   useEffect(() => {
-    if (!user) router.push('/login');
-  }, [user, router]);
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/auth');
+        const data = await res.json();
+        if (data.authenticated) {
+          setAuthenticated(true);
+        }
+      } catch { /* ignore */ }
+      finally { setLoading(false); }
+    })();
+  }, []);
 
+  // Load dashboard when authenticated (either via cookie or manual key)
   const loadDashboard = useCallback(async () => {
-    if (!adminKey) return;
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/admin?adminKey=${encodeURIComponent(adminKey)}`);
+      const url = adminKey
+        ? `/api/admin?adminKey=${encodeURIComponent(adminKey)}`
+        : '/api/admin';
+      const res = await fetch(url);
       const data = await res.json();
       if (!data.success) {
-        setError(data.error || 'Failed to authenticate');
-        setAuthenticated(false);
+        setError(data.error || 'Failed to load admin data');
+        if (!adminKey) setAuthenticated(false);
         return;
       }
       setAuthenticated(true);
@@ -138,6 +149,10 @@ export default function AdminDashboardPage() {
     }
   }, [adminKey]);
 
+  useEffect(() => {
+    if (authenticated) loadDashboard();
+  }, [authenticated, loadDashboard]);
+
   const handleAdminAction = async (action: string, targetId: string, extra?: Record<string, string>) => {
     setActionMsg('');
     try {
@@ -148,7 +163,6 @@ export default function AdminDashboardPage() {
       });
       const data = await res.json();
       setActionMsg(data.message || data.error || 'Done');
-      // Refresh data
       loadDashboard();
     } catch {
       setActionMsg('Action failed');
@@ -176,28 +190,51 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleLogout = async () => {
+    await fetch('/api/admin/auth', { method: 'DELETE' });
+    setAuthenticated(false);
+    setAdminKey('');
+    router.push('/admin/login');
+  };
+
+  if (loading && !authenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs text-[var(--muted)]">Checking admin session...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!authenticated) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-6">
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="w-full max-w-sm text-center">
+          <div className="mb-6">
             <h1 className="text-xl font-bold text-[var(--foreground)]">Admin Dashboard</h1>
-            <p className="text-sm text-[var(--muted)] mt-1">Enter your admin key to access</p>
+            <p className="text-sm text-[var(--muted)] mt-1">Please sign in to access</p>
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); loadDashboard(); }} className="space-y-3">
-            <input
-              type="password"
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              placeholder="Admin Key"
-              className="input-field text-sm"
-              autoFocus
-            />
-            {error && <p className="text-xs text-[var(--error)]">{error}</p>}
-            <button type="submit" className="btn-primary w-full text-sm py-2.5" disabled={loading}>
-              {loading ? 'Verifying...' : 'Access Dashboard'}
-            </button>
-          </form>
+          <a href="/admin/login" className="btn-primary inline-block text-sm py-2.5 px-6">
+            Sign In
+          </a>
+          <div className="mt-6 pt-6 border-t border-[var(--border)]">
+            <p className="text-xs text-[var(--muted)] mb-2">Or use admin key:</p>
+            <form onSubmit={(e) => { e.preventDefault(); loadDashboard(); }} className="space-y-3">
+              <input
+                type="password"
+                value={adminKey}
+                onChange={(e) => setAdminKey(e.target.value)}
+                placeholder="Admin Key"
+                className="input-field text-sm"
+              />
+              {error && <p className="text-xs text-[var(--error)]">{error}</p>}
+              <button type="submit" className="btn-secondary w-full text-xs py-2" disabled={loading}>
+                {loading ? 'Verifying...' : 'Access with Key'}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     );
@@ -207,8 +244,8 @@ export default function AdminDashboardPage() {
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-[var(--foreground)]">Admin Dashboard</h1>
-        <button onClick={() => setAuthenticated(false)} className="text-xs text-[var(--muted)] hover:text-[var(--error)]">
-          Lock
+        <button onClick={handleLogout} className="text-xs text-[var(--muted)] hover:text-[var(--error)]">
+          🚪 Logout
         </button>
       </div>
 
