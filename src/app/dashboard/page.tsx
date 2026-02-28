@@ -354,7 +354,15 @@ export default function DashboardPage() {
               )}
 
               {/* Delete Profile */}
-              <div className="mt-4 pt-3 border-t border-[var(--border)]">
+              <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-2">
+                <button
+                  onClick={() => {
+                    if (user) window.open(`/api/export?userId=${user.id}`, '_blank');
+                  }}
+                  className="w-full text-xs text-[var(--primary-light)] hover:bg-[var(--primary)]/10 rounded-lg py-2 transition-colors"
+                >
+                  📦 Export My Data (GDPR)
+                </button>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className="w-full text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg py-2 transition-colors"

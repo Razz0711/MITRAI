@@ -27,6 +27,7 @@ export default function Navbar() {
         { href: '/attendance', label: 'Attendance', icon: '📊' },
         { href: '/call', label: 'Call', icon: '📞' },
         { href: '/session', label: 'Session', icon: '📖' },
+        { href: '/analytics', label: 'Analytics', icon: '📈' },
       ]
     : [];
 

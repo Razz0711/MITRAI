@@ -318,7 +318,18 @@ function LoginPageInner() {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Password</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-[var(--muted)]">Password</label>
+              {!isSignup && (
+                <button
+                  type="button"
+                  onClick={() => router.push('/reset-password')}
+                  className="text-[10px] text-[var(--primary-light)] hover:underline"
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
             <input
               type="password"
               value={password}

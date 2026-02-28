@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
+import { validateFileType } from '@/lib/file-validation';
 
 // Ensure the materials bucket exists (using service role key)
 async function ensureBucket() {
@@ -29,6 +30,12 @@ export async function POST(request: NextRequest) {
     
     if (!fileName) {
       return NextResponse.json({ success: false, error: 'fileName is required' }, { status: 400 });
+    }
+
+    // Validate file type — block executables
+    const validation = validateFileType(fileName);
+    if (!validation.valid) {
+      return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
     }
 
     await ensureBucket();

@@ -9,6 +9,7 @@ import { StudyMaterial } from '@/lib/types';
 import { NOTIFICATION_TYPES } from '@/lib/constants';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
+import { validateFileType, validateFileSize } from '@/lib/file-validation';
 
 // GET /api/materials — list all materials with optional filters
 export async function GET(request: NextRequest) {
@@ -63,6 +64,12 @@ export async function POST(request: NextRequest) {
       }
       // Ownership: can only upload as yourself
       if (uploadedBy !== authUser.id) return forbidden();
+
+      // Validate file type — block executables
+      const fileCheck = validateFileType(fileName);
+      if (!fileCheck.valid) {
+        return NextResponse.json({ success: false, error: fileCheck.error }, { status: 400 });
+      }
     } else {
       // Legacy flow: file uploaded via FormData through the API
       const formData = await request.formData();
@@ -91,6 +98,16 @@ export async function POST(request: NextRequest) {
           { success: false, error: 'File too large. Maximum size is 10MB.' },
           { status: 400 }
         );
+      }
+
+      // Validate file type — block executables
+      const fileTypeCheck = validateFileType(file.name);
+      if (!fileTypeCheck.valid) {
+        return NextResponse.json({ success: false, error: fileTypeCheck.error }, { status: 400 });
+      }
+      const sizeCheck = validateFileSize(file.size);
+      if (!sizeCheck.valid) {
+        return NextResponse.json({ success: false, error: sizeCheck.error }, { status: 400 });
       }
 
       fileName = file.name;
