@@ -116,8 +116,7 @@ export async function POST(request: NextRequest) {
         await supabase.from('otp_codes').delete().eq('email', normalizedEmail);
         return NextResponse.json({
           success: false,
-          error: `Failed to send verification email. Please try again.`,
-          debug: errMsg,
+          error: 'Failed to send verification email. Please try again.',
         }, { status: 500 });
       }
 
