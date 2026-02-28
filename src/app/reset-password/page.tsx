@@ -102,9 +102,7 @@ function ResetPasswordInner() {
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white font-bold text-sm">
-            M
-          </div>
+          <img src="/logo.png" alt="MitrAI" className="w-14 h-14 mx-auto mb-3" />
           <h1 className="text-xl font-bold text-[var(--foreground)]">
             {step === 'request' ? 'Reset Password' : 'Set New Password'}
           </h1>
