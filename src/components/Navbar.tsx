@@ -8,10 +8,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/components/ThemeProvider';
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = user
@@ -62,6 +64,14 @@ export default function Navbar() {
 
           {/* Right Side */}
           <div className="hidden md:flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded-md hover:bg-[var(--surface-light)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors text-sm"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
             {user ? (
               <>
                 <Link href="/subscription" className="text-xs font-medium text-amber-400 hover:text-amber-300 transition-colors px-2">
@@ -126,14 +136,22 @@ export default function Navbar() {
                 <Link href="/feedback" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--muted)]">
                   <span>📝</span> Feedback
                 </Link>
+                <button onClick={() => toggleTheme()} className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-[var(--muted)]">
+                  <span>{theme === 'dark' ? '☀️' : '🌙'}</span> {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                </button>
                 <button onClick={() => { logout(); setMobileOpen(false); }} className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-[var(--error)]">
                   <span>🚪</span> Sign out
                 </button>
               </>
             ) : (
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--primary-light)]">
-                <span>🔑</span> Sign in
-              </Link>
+              <>
+                <button onClick={() => toggleTheme()} className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-[var(--muted)]">
+                  <span>{theme === 'dark' ? '☀️' : '🌙'}</span> {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                </button>
+                <Link href="/login" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2 text-xs text-[var(--primary-light)]">
+                  <span>🔑</span> Sign in
+                </Link>
+              </>
             )}
           </div>
         )}

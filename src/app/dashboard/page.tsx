@@ -10,6 +10,7 @@ import { StudentProfile, Day, BirthdayInfo, UserStatus, Notification as NotifTyp
 import { useAuth } from '@/lib/auth';
 import BirthdayBanner, { UpcomingBirthdays } from '@/components/BirthdayBanner';
 import { StatusDot } from '@/components/StatusIndicator';
+import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -229,12 +230,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-[var(--primary)]/20 border border-[var(--primary)]/30 flex items-center justify-center animate-pulse">
-            <span className="w-3 h-3 rounded-full bg-[var(--primary)]" />
-          </div>
-          <p className="text-xs text-[var(--muted)]">Loading dashboard...</p>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        <LoadingSkeleton type="stats" count={4} label="Loading dashboard..." />
+        <div className="mt-6">
+          <LoadingSkeleton type="cards" count={3} label="" />
         </div>
       </div>
     );

@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { Friendship, FriendRequest, BuddyRating, UserStatus } from '@/lib/types';
+import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 export default function FriendsPage() {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function FriendsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'ratings'>('friends');
   const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -67,6 +69,7 @@ export default function FriendsPage() {
 
   const handleRemoveFriend = async (friendUserId: string) => {
     if (!user) return;
+    if (!confirm('Remove this friend? This action cannot be undone.')) return;
     try {
       await fetch('/api/friends', {
         method: 'DELETE',
@@ -79,13 +82,8 @@ export default function FriendsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-[var(--primary)]/20 border border-[var(--primary)]/30 flex items-center justify-center animate-pulse">
-            <span className="w-3 h-3 rounded-full bg-[var(--primary)]" />
-          </div>
-          <p className="text-xs text-[var(--muted)]">Loading friends...</p>
-        </div>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+        <LoadingSkeleton type="cards" count={4} label="Loading friends..." />
       </div>
     );
   }
@@ -149,6 +147,19 @@ export default function FriendsPage() {
       {/* Friends Tab */}
       {activeTab === 'friends' && (
         <div className="space-y-3">
+          {/* Search */}
+          {friends.length > 0 && (
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] text-xs">🔍</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search friends..."
+                className="input-field pl-8 text-xs py-2"
+              />
+            </div>
+          )}
           {friends.length === 0 ? (
             <div className="text-center py-12 card">
               <span className="text-4xl mb-3 block">👥</span>
@@ -159,7 +170,18 @@ export default function FriendsPage() {
               </Link>
             </div>
           ) : (
-            friends.map((f) => {
+            friends.filter((f) => {
+              const friendName = f.user1Id === user?.id ? f.user2Name : f.user1Name;
+              return friendName.toLowerCase().includes(searchQuery.toLowerCase());
+            }).length === 0 ? (
+              <div className="text-center py-8 card">
+                <p className="text-xs text-[var(--muted)]">No friends match &quot;{searchQuery}&quot;</p>
+              </div>
+            ) : (
+            friends.filter((f) => {
+              const friendName = f.user1Id === user?.id ? f.user2Name : f.user1Name;
+              return friendName.toLowerCase().includes(searchQuery.toLowerCase());
+            }).map((f) => {
               const friendName = f.user1Id === user?.id ? f.user2Name : f.user1Name;
               const friendId = f.user1Id === user?.id ? f.user2Id : f.user1Id;
               const friendStatus = statuses[friendId];
@@ -203,7 +225,7 @@ export default function FriendsPage() {
                 </div>
               );
             })
-          )}
+          ))}
         </div>
       )}
 

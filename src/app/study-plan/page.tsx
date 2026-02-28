@@ -5,18 +5,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { StudentProfile } from '@/lib/types';
+import { StudentProfile, Friendship } from '@/lib/types';
+import { useAuth } from '@/lib/auth';
 
 export default function StudyPlanPage() {
+  const { user } = useAuth();
   const [plan, setPlan] = useState('');
   const [loading, setLoading] = useState(false);
   const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
+  const [friendStudents, setFriendStudents] = useState<StudentProfile[]>([]);
   const [studentId, setStudentId] = useState('');
   const [buddyId, setBuddyId] = useState('');
 
   useEffect(() => {
     loadStudents();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const loadStudents = async () => {
     try {
@@ -26,17 +30,35 @@ export default function StudyPlanPage() {
         setAllStudents(data.data);
 
         // Auto-select from localStorage
-        const savedStudent = localStorage.getItem('mitrai_student_id');
+        const savedStudent = localStorage.getItem('mitrai_student_id') || user?.id || '';
         const savedBuddy = localStorage.getItem('mitrai_buddy_id');
 
         if (savedStudent) setStudentId(savedStudent);
         else if (data.data.length > 0) setStudentId(data.data[0].id);
 
-        // Prevent self-buddy: only set buddy if different from student
-        if (savedBuddy && savedBuddy !== savedStudent) setBuddyId(savedBuddy);
-        else if (data.data.length > 1) {
-          const firstOther = data.data.find((s: StudentProfile) => s.id !== (savedStudent || data.data[0]?.id));
-          if (firstOther) setBuddyId(firstOther.id);
+        // Load friends to filter buddy dropdown
+        if (savedStudent || user?.id) {
+          const uid = savedStudent || user?.id;
+          try {
+            const friendsRes = await fetch(`/api/friends?userId=${uid}`);
+            const friendsData = await friendsRes.json();
+            if (friendsData.success) {
+              const friendships: Friendship[] = friendsData.data.friends || [];
+              const friendIds = friendships.map((f: Friendship) =>
+                f.user1Id === uid ? f.user2Id : f.user1Id
+              );
+              const friendProfiles = data.data.filter((s: StudentProfile) =>
+                friendIds.includes(s.id) && s.id !== uid
+              );
+              setFriendStudents(friendProfiles);
+              // Auto-select buddy from friends
+              if (savedBuddy && savedBuddy !== savedStudent && friendIds.includes(savedBuddy)) {
+                setBuddyId(savedBuddy);
+              } else if (friendProfiles.length > 0) {
+                setBuddyId(friendProfiles[0].id);
+              }
+            }
+          } catch { /* ignore */ }
         }
       }
     } catch (err) {
@@ -115,10 +137,19 @@ export default function StudyPlanPage() {
               className="input-field"
             >
               <option value="">Select buddy...</option>
-              {allStudents.filter(s => s.id !== studentId).map(s => (
-                <option key={s.id} value={s.id}>{s.name} — {s.targetExam}</option>
-              ))}
+              {friendStudents.length > 0 ? (
+                friendStudents.filter(s => s.id !== studentId).map(s => (
+                  <option key={s.id} value={s.id}>{s.name} — {s.targetExam}</option>
+                ))
+              ) : (
+                <option value="" disabled>Add friends first to see buddies here</option>
+              )}
             </select>
+            {friendStudents.length === 0 && (
+              <p className="text-[10px] text-[var(--muted)] mt-1">
+                Only your friends appear here. <a href="/friends" className="text-[var(--primary-light)] hover:underline">Add friends →</a>
+              </p>
+            )}
           </div>
         </div>
 

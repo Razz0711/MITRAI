@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { StudyMaterial, MaterialType } from '@/lib/types';
+import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 const DEPARTMENTS = [
   'CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics',
@@ -389,10 +390,7 @@ export default function MaterialsPage() {
 
         {/* Materials List */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-[var(--muted)] mt-2">Loading materials...</p>
-          </div>
+          <LoadingSkeleton type="materials" count={4} label="Loading materials..." />
         ) : materials.length === 0 ? (
           <div className="card p-12 text-center">
             <p className="text-3xl mb-3">📚</p>

@@ -203,6 +203,7 @@ export default function CalendarPage() {
   }
 
   async function handleDeleteEvent(eventId: string) {
+    if (!confirm('Are you sure you want to delete this event?')) return;
     try {
       await fetch('/api/calendar', {
         method: 'DELETE',

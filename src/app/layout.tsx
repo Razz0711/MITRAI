@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import AppProviders from "@/components/AppProviders";
 import { AuthProvider } from "@/lib/auth";
+import ThemeProvider from "@/components/ThemeProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -32,12 +33,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <AppProviders>
-            <Navbar />
-            <main className="pt-14 min-h-screen">
-              {children}
-            </main>
-          </AppProviders>
+          <ThemeProvider>
+            <AppProviders>
+              <Navbar />
+              <main className="pt-14 min-h-screen">
+                {children}
+              </main>
+            </AppProviders>
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

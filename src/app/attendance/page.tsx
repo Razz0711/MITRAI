@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import { AttendanceRecord } from '@/lib/types';
+import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 export default function AttendancePage() {
   const { user } = useAuth();
@@ -138,13 +139,8 @@ export default function AttendancePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-[var(--primary)]/20 border border-[var(--primary)]/30 flex items-center justify-center animate-pulse">
-            <span className="w-3 h-3 rounded-full bg-[var(--primary)]" />
-          </div>
-          <p className="text-xs text-[var(--muted)]">Loading attendance...</p>
-        </div>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+        <LoadingSkeleton type="rows" count={5} label="Loading attendance..." />
       </div>
     );
   }

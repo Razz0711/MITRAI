@@ -18,6 +18,23 @@
   --error: #ef4444;
 }
 
+/* Light mode overrides */
+[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #18181b;
+  --primary: #7c3aed;
+  --primary-light: #6d28d9;
+  --secondary: #0891b2;
+  --accent: #ec4899;
+  --surface: #f4f4f5;
+  --surface-light: #e4e4e7;
+  --border: #d4d4d8;
+  --muted: #71717a;
+  --success: #16a34a;
+  --warning: #ca8a04;
+  --error: #dc2626;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border) var(--background);
@@ -34,45 +51,45 @@ body {
 
 @layer components {
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#7c3aed] to-[#06b6d4];
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)];
   }
 
   .card {
-    @apply bg-[#18181b] border border-[#27272a] rounded-lg;
+    @apply bg-[var(--surface)] border border-[var(--border)] rounded-lg;
   }
 
   .btn-primary {
-    @apply px-4 py-2 rounded-lg bg-[#7c3aed] text-white text-sm font-medium
+    @apply px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-sm font-medium
     transition-all duration-200 active:scale-[0.98] hover:bg-[#6d28d9]
     disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100;
   }
 
   .btn-secondary {
-    @apply px-4 py-2 rounded-lg border border-[#27272a] text-[#fafafa] text-sm font-medium
-    transition-all duration-200 hover:bg-[#27272a] hover:border-[#71717a] active:scale-[0.98];
+    @apply px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--foreground)] text-sm font-medium
+    transition-all duration-200 hover:bg-[var(--surface-light)] hover:border-[var(--muted)] active:scale-[0.98];
   }
 
   .btn-ghost {
-    @apply px-4 py-2 rounded-lg text-[#71717a] text-sm font-medium
-    transition-all duration-200 hover:text-[#fafafa] hover:bg-[#27272a];
+    @apply px-4 py-2 rounded-lg text-[var(--muted)] text-sm font-medium
+    transition-all duration-200 hover:text-[var(--foreground)] hover:bg-[var(--surface-light)];
   }
 
   .input-field {
-    @apply w-full px-3 py-2 rounded-lg bg-[#18181b] border border-[#27272a] text-sm text-[#fafafa]
-    placeholder:text-[#71717a] focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]
+    @apply w-full px-3 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-sm text-[var(--foreground)]
+    placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]
     transition-all duration-150;
   }
 
   .chat-bubble-ai {
-    @apply max-w-[80%] px-3.5 py-2.5 rounded-lg rounded-bl-sm bg-[#18181b] border border-[#27272a] text-[#fafafa];
+    @apply max-w-[80%] px-3.5 py-2.5 rounded-lg rounded-bl-sm bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)];
   }
 
   .chat-bubble-user {
-    @apply max-w-[80%] px-3.5 py-2.5 rounded-lg rounded-br-sm bg-[#7c3aed] text-white;
+    @apply max-w-[80%] px-3.5 py-2.5 rounded-lg rounded-br-sm bg-[var(--primary)] text-white;
   }
 
   .score-bar {
-    @apply h-1.5 rounded-full bg-[#27272a];
+    @apply h-1.5 rounded-full bg-[var(--surface-light)];
   }
 
   .score-fill {
@@ -84,15 +101,15 @@ body {
   }
 
   .label {
-    @apply block text-xs font-medium text-[#71717a] mb-1;
+    @apply block text-xs font-medium text-[var(--muted)] mb-1;
   }
 
   .section-title {
-    @apply text-lg font-semibold text-[#fafafa];
+    @apply text-lg font-semibold text-[var(--foreground)];
   }
 
   .page-title {
-    @apply text-2xl font-bold text-[#fafafa];
+    @apply text-2xl font-bold text-[var(--foreground)];
   }
 
   .fade-in {
@@ -106,13 +123,13 @@ body {
 
 /* Card hover - written as plain CSS to avoid @apply nesting issues */
 .card-hover {
-  background-color: #18181b;
-  border: 1px solid #27272a;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   transition: all 0.2s;
 }
 .card-hover:hover {
-  background-color: #27272a;
+  background-color: var(--surface-light);
   border-color: rgba(124, 58, 237, 0.4);
 }
 
@@ -164,18 +181,18 @@ body {
 
 /* Backwards compat aliases */
 .glass-card {
-  background-color: #18181b;
-  border: 1px solid #27272a;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
 }
 .glass-card-hover {
-  background-color: #18181b;
-  border: 1px solid #27272a;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   transition: all 0.2s;
 }
 .glass-card-hover:hover {
-  background-color: #27272a;
+  background-color: var(--surface-light);
   border-color: rgba(124, 58, 237, 0.4);
 }
 

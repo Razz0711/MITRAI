@@ -20,6 +20,7 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
+  const [pendingFriend, setPendingFriend] = useState<{ id: string; name: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -130,15 +131,24 @@ export default function ChatPage() {
   const sendMessage = async () => {
     if (!newMsg.trim() || !selectedChatId || !studentId || sending) return;
 
-    const selectedThread = threads.find(t => t.chatId === selectedChatId);
-    if (!selectedThread) return;
+    let receiverId: string;
+    let receiverName: string;
 
-    const receiverId = selectedThread.user1Id === studentId
-      ? selectedThread.user2Id
-      : selectedThread.user1Id;
-    const receiverName = selectedThread.user1Id === studentId
-      ? selectedThread.user2Name
-      : selectedThread.user1Name;
+    const selectedThread = threads.find(t => t.chatId === selectedChatId);
+    if (selectedThread) {
+      receiverId = selectedThread.user1Id === studentId
+        ? selectedThread.user2Id
+        : selectedThread.user1Id;
+      receiverName = selectedThread.user1Id === studentId
+        ? selectedThread.user2Name
+        : selectedThread.user1Name;
+    } else if (pendingFriend) {
+      // No thread yet — use pending friend info from the friends page redirect
+      receiverId = pendingFriend.id;
+      receiverName = pendingFriend.name;
+    } else {
+      return;
+    }
 
     setSending(true);
     try {
@@ -154,6 +164,7 @@ export default function ChatPage() {
         }),
       });
       setNewMsg('');
+      setPendingFriend(null);
       await loadMessages();
       await loadThreads();
       inputRef.current?.focus();
@@ -178,39 +189,23 @@ export default function ChatPage() {
     } catch { /* ignore */ }
   };
 
-  // Open a chat (from friends page redirect with query params)
+  // Open a chat (from friends page redirect with query params) - NO auto-send
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const friendId = params.get('friendId');
     const friendName = params.get('friendName');
     if (friendId && studentId) {
-      // Send a placeholder to create the thread if it doesn't exist
       const chatId = [studentId, friendId].sort().join('__');
       setSelectedChatId(chatId);
       setShowSidebar(false);
 
-      // Create thread by sending an empty check - the GET will just show it if it exists
-      // If no thread exists, we'll create on first message.
-      // But we need to ensure the thread appears in sidebar. Let's pre-create.
+      // Store pending friend info so the user can send the first message themselves
       if (friendName) {
-        fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            senderId: studentId,
-            senderName: user?.name || 'Unknown',
-            receiverId: friendId,
-            receiverName: friendName,
-            text: '👋 Hey! Let\'s chat!',
-          }),
-        }).then(() => {
-          loadMessages();
-          loadThreads();
-          // Remove query params
-          window.history.replaceState({}, '', '/chat');
-        });
+        setPendingFriend({ id: friendId, name: friendName });
       }
+      // Clean URL
+      window.history.replaceState({}, '', '/chat');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
@@ -349,8 +344,8 @@ export default function ChatPage() {
                 {/* Avatar */}
                 {(() => {
                   const thread = threads.find(t => t.chatId === selectedChatId);
-                  const name = thread ? getOtherUserName(thread) : '?';
-                  const otherId = thread ? (thread.user1Id === studentId ? thread.user2Id : thread.user1Id) : '';
+                  const name = thread ? getOtherUserName(thread) : (pendingFriend?.name || '?');
+                  const otherId = thread ? (thread.user1Id === studentId ? thread.user2Id : thread.user1Id) : (pendingFriend?.id || '');
                   const otherStatus = statuses[otherId];
                   const isOnline = otherStatus?.status === 'online' || otherStatus?.status === 'in-session';
                   return (

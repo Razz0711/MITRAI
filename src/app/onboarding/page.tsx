@@ -79,6 +79,24 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleBack = () => {
+    if (currentStep <= 0 || isComplete) return;
+    const prevStep = currentStep - 1;
+    // Remove last user + AI message pair
+    setMessages(prev => prev.length >= 2 ? prev.slice(0, -2) : prev);
+    // Clear data for the current step's field
+    const fieldName = STEP_FIELDS[prevStep];
+    if (fieldName) {
+      setCollectedData(prev => {
+        const copy = { ...prev };
+        delete copy[fieldName];
+        return copy;
+      });
+    }
+    setCurrentStep(prevStep);
+    setMultiSelectChoices([]);
+  };
+
   const handleSendMessage = useCallback(async (userMessage: string) => {
     // Add user message
     const userMsg: ChatMessage = {
@@ -189,7 +207,18 @@ export default function OnboardingPage() {
       {/* Progress Bar */}
       <div className="px-4 pt-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-[var(--muted)]">Setting up your profile</span>
+          <div className="flex items-center gap-2">
+            {currentStep > 0 && !isComplete && (
+              <button
+                onClick={handleBack}
+                disabled={isLoading}
+                className="px-2.5 py-1 rounded-lg text-xs font-medium text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-all disabled:opacity-40"
+              >
+                ← Back
+              </button>
+            )}
+            <span className="text-sm text-[var(--muted)]">Setting up your profile</span>
+          </div>
           <span className="text-sm font-medium gradient-text">{progressPercentage}%</span>
         </div>
         <div className="h-2 rounded-full bg-[var(--surface)]">
