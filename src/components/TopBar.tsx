@@ -1,41 +1,80 @@
 // ============================================
-// MitrAI - Top Bar (Minimal header for logged-in users)
-// Shows logo, theme toggle, user name
+// MitrAI - Unified Header (Logo + Tabs + Actions in one row)
+// Saves vertical space by combining TopBar + TabBar
 // ============================================
 
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/components/ThemeProvider';
+import { Home, MessageCircle, BookOpen, Compass, User, Sun, Moon } from 'lucide-react';
+import { getActiveTab } from './BottomTabs';
+
+const tabs = [
+  { id: 'home', label: 'Home', icon: Home, href: '/home' },
+  { id: 'connect', label: 'Connect', icon: MessageCircle, href: '/chat' },
+  { id: 'learn', label: 'Learn', icon: BookOpen, href: '/session' },
+  { id: 'discover', label: 'Discover', icon: Compass, href: '/matches' },
+  { id: 'me', label: 'Me', icon: User, href: '/me' },
+];
 
 export default function TopBar() {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const pathname = usePathname();
+  const activeTab = getActiveTab(pathname);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)]">
-      <div className="flex items-center justify-between h-12 px-4 max-w-7xl mx-auto">
-        {/* Logo */}
-        <Link href="/home" className="flex items-center gap-2">
-          <img src="/logo.jpg" alt="MitrAI" className="h-8 w-auto" />
-          <span className="text-sm font-semibold text-[var(--foreground)]">MitrAI</span>
-          <span className="text-[10px] text-[var(--muted)] hidden sm:inline">SVNIT</span>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--background)]/90 backdrop-blur-md border-b border-[var(--border)]">
+      <div className="flex items-center h-14 px-3 max-w-7xl mx-auto">
+        {/* Logo — compact */}
+        <Link href="/home" className="flex items-center gap-1.5 shrink-0 mr-3">
+          <img src="/logo.jpg" alt="MitrAI" className="h-7 w-auto" />
+          <span className="text-sm font-bold text-[var(--foreground)] hidden sm:inline">MitrAI</span>
         </Link>
 
+        {/* Center tabs */}
+        <nav className="flex items-center justify-center gap-1 flex-1">
+          {tabs.map(tab => {
+            const isActive = tab.id === activeTab;
+            const Icon = tab.icon;
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  isActive
+                    ? 'bg-[var(--primary)]/15 text-[var(--primary-light)]'
+                    : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-light)]'
+                }`}
+              >
+                <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
+                <span className="hidden sm:inline">{tab.label}</span>
+                {isActive && (
+                  <span className="absolute -bottom-[9px] left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[var(--primary-light)]" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
         {/* Right actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0 ml-3">
           <button
             onClick={toggleTheme}
-            className="p-1.5 rounded-md hover:bg-[var(--surface-light)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors text-sm"
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="p-1.5 rounded-lg hover:bg-[var(--surface-light)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
           >
-            {theme === 'dark' ? '☀️' : '🌙'}
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           {user && (
-            <span className="text-xs text-[var(--muted)] max-w-[100px] truncate hidden sm:inline">
-              {user.name}
-            </span>
+            <Link href="/me" className="flex items-center gap-1.5">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white text-xs font-bold">
+                {user.name?.[0]?.toUpperCase() || '?'}
+              </div>
+            </Link>
           )}
         </div>
       </div>

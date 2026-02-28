@@ -8,9 +8,9 @@
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import TopBar from './TopBar';
-import BottomTabs from './BottomTabs';
 import Link from 'next/link';
 import { useTheme } from './ThemeProvider';
+import { Sun, Moon } from 'lucide-react';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -29,8 +29,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <>
         <TopBar />
-        <BottomTabs />
-        <main className="pt-24 pb-4 min-h-screen">
+        <main className="pt-16 pb-4 min-h-screen">
           {children}
         </main>
       </>
@@ -68,10 +67,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="p-1.5 rounded-md hover:bg-[var(--surface-light)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors text-sm"
+              className="p-1.5 rounded-lg hover:bg-[var(--surface-light)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
               title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
             >
-              {theme === 'dark' ? '☀️' : '🌙'}
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </button>
             <Link href="/login" className="btn-primary text-xs py-1.5 px-4">
               Get Started

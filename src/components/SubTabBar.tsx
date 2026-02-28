@@ -1,34 +1,37 @@
 // ============================================
 // MitrAI - SubTabBar (Horizontal pill-style sub-tabs)
 // Used within Connect, Learn, and Discover tab groups
+// Centered within content area with Lucide icons
 // ============================================
 
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { MessageCircle, CircleDot, Users2, Bot, HelpCircle, FileText, Handshake, UserCheck, Ghost } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
 export interface SubTab {
   label: string;
   href: string;
-  icon: string;
+  icon: LucideIcon;
 }
 
 const SUB_TABS: Record<string, SubTab[]> = {
   connect: [
-    { label: 'Direct', href: '/chat', icon: '💬' },
-    { label: 'Circles', href: '/circles', icon: '⭕' },
-    { label: 'Rooms', href: '/rooms', icon: '📚' },
+    { label: 'Direct', href: '/chat', icon: MessageCircle },
+    { label: 'Circles', href: '/circles', icon: CircleDot },
+    { label: 'Rooms', href: '/rooms', icon: Users2 },
   ],
   learn: [
-    { label: 'Session', href: '/session', icon: '🤖' },
-    { label: 'Doubts', href: '/doubts', icon: '❓' },
-    { label: 'Materials', href: '/materials', icon: '📝' },
+    { label: 'Session', href: '/session', icon: Bot },
+    { label: 'Doubts', href: '/doubts', icon: HelpCircle },
+    { label: 'Materials', href: '/materials', icon: FileText },
   ],
   discover: [
-    { label: 'Matches', href: '/matches', icon: '🤝' },
-    { label: 'Friends', href: '/friends', icon: '👥' },
-    { label: 'Anonymous', href: '/anon', icon: '🎭' },
+    { label: 'Matches', href: '/matches', icon: Handshake },
+    { label: 'Friends', href: '/friends', icon: UserCheck },
+    { label: 'Anonymous', href: '/anon', icon: Ghost },
   ],
 };
 
@@ -37,9 +40,10 @@ export default function SubTabBar({ group }: { group: 'connect' | 'learn' | 'dis
   const tabs = SUB_TABS[group] || [];
 
   return (
-    <div className="flex gap-2 overflow-x-auto no-scrollbar py-3 mb-4">
+    <div className="flex justify-center gap-2 overflow-x-auto no-scrollbar py-3 mb-4 max-w-4xl mx-auto px-4">
       {tabs.map(tab => {
         const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
+        const Icon = tab.icon;
         return (
           <Link
             key={tab.href}
@@ -50,7 +54,7 @@ export default function SubTabBar({ group }: { group: 'connect' | 'learn' | 'dis
                 : 'bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-light)] border border-[var(--border)]'
             }`}
           >
-            <span>{tab.icon}</span>
+            <Icon size={14} strokeWidth={isActive ? 2.5 : 2} />
             {tab.label}
           </Link>
         );

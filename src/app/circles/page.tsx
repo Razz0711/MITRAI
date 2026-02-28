@@ -93,12 +93,7 @@ export default function CirclesPage() {
             Join interest groups to find like-minded study buddies
           </p>
         </div>
-        <Link
-          href="/dashboard"
-          className="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-        >
-          ← Dashboard
-        </Link>
+
       </div>
 
       {/* My Circles */}
