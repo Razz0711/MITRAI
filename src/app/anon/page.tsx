@@ -18,7 +18,7 @@ export default function AnonLobbyPage() {
 
   const [status, setStatus] = useState<Status>('loading');
   const [banInfo, setBanInfo] = useState<{ reason?: string; expiresAt?: string }>({});
-  const [passInfo, setPassInfo] = useState<{ plan?: string; expiresAt?: string }>({});
+  const [passInfo, setPassInfo] = useState<{ plan?: string; expiresAt?: string; isPro?: boolean }>({});
   const [selectedType, setSelectedType] = useState<string>('vent');
   const [alias, setAlias] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -87,10 +87,10 @@ export default function AnonLobbyPage() {
         } else {
           setStatus('no-pass');
         }
-        if (d.pass) setPassInfo({ plan: d.pass.plan, expiresAt: d.pass.expiresAt });
+        if (d.pass) setPassInfo({ plan: d.pass.plan, expiresAt: d.pass.expiresAt, isPro: d.isPro });
         return;
       }
-      setPassInfo({ plan: d.pass?.plan, expiresAt: d.pass?.expiresAt });
+      setPassInfo({ plan: d.pass?.plan, expiresAt: d.pass?.expiresAt, isPro: d.isPro });
       setStatus('idle');
     } catch {
       setStatus('idle');
@@ -503,10 +503,14 @@ export default function AnonLobbyPage() {
             {passInfo.plan && (
               <div className="card p-3 flex items-center justify-between">
                 <span className="text-xs text-[var(--muted)]">
-                  ✅ {passInfo.plan.charAt(0).toUpperCase() + passInfo.plan.slice(1)} Pass Active
+                  {passInfo.isPro
+                    ? '✨ Pro Subscriber — Anonymous Chat included free!'
+                    : `✅ ${passInfo.plan.charAt(0).toUpperCase() + passInfo.plan.slice(1)} Pass Active`}
                 </span>
                 <span className="text-xs text-[var(--muted)]">
-                  Expires: {passInfo.expiresAt ? new Date(passInfo.expiresAt).toLocaleDateString('en-IN') : '—'}
+                  {passInfo.isPro
+                    ? 'Unlimited Access'
+                    : `Expires: ${passInfo.expiresAt ? new Date(passInfo.expiresAt).toLocaleDateString('en-IN') : '—'}`}
                 </span>
               </div>
             )}

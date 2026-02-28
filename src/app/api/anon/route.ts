@@ -15,6 +15,7 @@ import {
   leaveQueue,
   pollForMatch,
   getUserActiveRoom,
+  isProSubscriber,
 } from '@/lib/store/anon';
 
 export const dynamic = 'force-dynamic';
@@ -29,10 +30,11 @@ export async function GET(req: NextRequest) {
 
   try {
     if (check === 'status') {
-      const [pass, ban, activeRoom] = await Promise.all([
+      const [pass, ban, activeRoom, isPro] = await Promise.all([
         getActivePass(userId),
         isUserBanned(userId),
         getUserActiveRoom(userId),
+        isProSubscriber(userId),
       ]);
 
       return NextResponse.json({
@@ -40,6 +42,7 @@ export async function GET(req: NextRequest) {
         data: {
           hasPass: !!pass,
           pass,
+          isPro,
           banned: ban.banned,
           banReason: ban.reason,
           banExpiresAt: ban.expiresAt,

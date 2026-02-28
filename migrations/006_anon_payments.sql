@@ -6,13 +6,13 @@
 -- Payments table (tracks UPI payment submissions)
 CREATE TABLE IF NOT EXISTS anon_payments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
   plan TEXT NOT NULL CHECK (plan IN ('weekly', 'monthly', 'semester')),
   amount INTEGER NOT NULL,
   transaction_id TEXT NOT NULL,
   upi_ref TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-  reviewed_by UUID REFERENCES students(id),
+  reviewed_by TEXT REFERENCES students(id),
   reviewed_at TIMESTAMPTZ,
   rejection_reason TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -28,12 +28,12 @@ ALTER TABLE anon_payments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own payments"
   ON anon_payments FOR SELECT
   TO authenticated
-  USING (user_id = auth.uid());
+  USING (user_id = auth.uid()::text);
 
 CREATE POLICY "Users can insert own payments"
   ON anon_payments FOR INSERT
   TO authenticated
-  WITH CHECK (user_id = auth.uid());
+  WITH CHECK (user_id = auth.uid()::text);
 
 -- Service role can do everything (admin operations via server)
 -- No additional policy needed — supabase service role bypasses RLS

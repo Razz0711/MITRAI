@@ -7,6 +7,7 @@ import { supabase } from './core';
 import { generateAlias } from '../anon-aliases';
 import type { AnonRoomType } from '../anon-aliases';
 import { v4 as uuidv4 } from 'uuid';
+import { getUserSubscription } from './subscriptions';
 
 // ═══════════════════════════════════════════
 // Types (local to avoid bloating types.ts)
@@ -84,8 +85,12 @@ export interface AnonCoupon {
 // PASS / ACCESS CHECK
 // ═══════════════════════════════════════════
 
-/** Check if user has an active (non-expired) pass */
+/** Check if user has an active (non-expired) pass OR an active Pro subscription */
 export async function hasActivePass(userId: string): Promise<boolean> {
+  // Check Pro subscription first
+  const sub = await getUserSubscription(userId);
+  if (sub && sub.status === 'active' && sub.plan !== 'free') return true;
+
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from('anon_passes')
@@ -97,8 +102,30 @@ export async function hasActivePass(userId: string): Promise<boolean> {
   return (data || []).length > 0;
 }
 
-/** Get user's active pass details */
+/** Check if user is a Pro subscriber (active paid subscription) */
+export async function isProSubscriber(userId: string): Promise<boolean> {
+  const sub = await getUserSubscription(userId);
+  return !!(sub && sub.status === 'active' && sub.plan !== 'free');
+}
+
+/** Get user's active pass details (returns a virtual pass for Pro subscribers) */
 export async function getActivePass(userId: string): Promise<AnonPass | null> {
+  // Pro subscribers get a virtual "pro" pass
+  const sub = await getUserSubscription(userId);
+  if (sub && sub.status === 'active' && sub.plan !== 'free') {
+    return {
+      id: 'pro-subscription',
+      userId,
+      plan: 'pro',
+      price: 0,
+      source: 'pro-subscription',
+      couponCode: '',
+      activatedAt: sub.startDate,
+      expiresAt: sub.endDate || new Date(Date.now() + 365 * 86400000).toISOString(),
+      createdAt: sub.createdAt,
+    };
+  }
+
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from('anon_passes')
