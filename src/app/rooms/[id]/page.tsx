@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Single Room Page (chat + members)
+// MitrAI - Single Room Page (chat + members + call)
 // ============================================
 
 'use client';
@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import CallRoom from '@/components/CallRoom';
+import { Phone } from 'lucide-react';
 
 interface RoomMsg {
   id: string;
@@ -47,6 +49,7 @@ export default function RoomDetailPage() {
   const [sending, setSending] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [inCall, setInCall] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
 
@@ -76,7 +79,6 @@ export default function RoomDetailPage() {
     loadRoom();
   }, [loadRoom]);
 
-  // Poll for new messages every 3 seconds
   useEffect(() => {
     if (isMember) {
       pollRef.current = setInterval(loadRoom, 3000);
@@ -86,7 +88,6 @@ export default function RoomDetailPage() {
     };
   }, [isMember, loadRoom]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -150,40 +151,64 @@ export default function RoomDetailPage() {
   if (!room) {
     return (
       <div className="max-w-4xl mx-auto p-6 text-center">
-        <p className="text-gray-400 text-lg">Room not found.</p>
-        <Link href="/rooms" className="text-indigo-600 hover:underline">← Back to Rooms</Link>
+        <p className="text-[var(--muted)] text-lg">Room not found.</p>
+        <Link href="/rooms" className="text-[var(--primary-light)] hover:underline">← Back to Rooms</Link>
+      </div>
+    );
+  }
+
+  // Full-screen call mode
+  if (inCall) {
+    return (
+      <div className="h-[calc(100vh-60px)]">
+        <CallRoom
+          roomName={`room_${id}`}
+          displayName={user?.name || myName}
+          onLeave={() => setInCall(false)}
+        />
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-[1fr_250px] gap-6 h-[calc(100vh-120px)]">
+    <div className="max-w-5xl mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-[1fr_250px] gap-4 h-[calc(100vh-120px)]">
       {/* Main Chat Area */}
-      <div className="flex flex-col bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 overflow-hidden">
+      <div className="flex flex-col bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden">
         {/* Room Header */}
-        <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
+        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <Link href="/rooms" className="text-gray-400 hover:text-gray-600">←</Link>
-              <h1 className="text-lg font-bold dark:text-white">{room.name}</h1>
+              <Link href="/rooms" className="text-[var(--muted)] hover:text-[var(--foreground)]">←</Link>
+              <h1 className="text-lg font-bold text-[var(--foreground)]">{room.name}</h1>
               <span className={`text-xs px-2 py-0.5 rounded-full ${
                 room.status === 'active'
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-gray-100 text-gray-500'
+                  ? 'bg-[var(--success)]/15 text-[var(--success)]'
+                  : 'bg-[var(--surface-light)] text-[var(--muted)]'
               }`}>{room.status}</span>
             </div>
             {room.topic && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 ml-6">{room.topic}</p>
+              <p className="text-sm text-[var(--muted)] ml-6">{room.topic}</p>
             )}
           </div>
-          {isMember && (
-            <button
-              onClick={handleLeave}
-              className="text-xs text-red-500 hover:underline"
-            >
-              Leave
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {isMember && (
+              <>
+                <button
+                  onClick={() => setInCall(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--success)]/15 text-[var(--success)] hover:bg-[var(--success)]/25 text-xs font-medium transition-colors"
+                  title="Start voice/video call"
+                >
+                  <Phone size={14} /> Call
+                </button>
+                <button
+                  onClick={handleLeave}
+                  className="text-xs text-[var(--error)] hover:underline"
+                >
+                  Leave
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Messages */}
@@ -191,7 +216,7 @@ export default function RoomDetailPage() {
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
               {messages.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">
+                <p className="text-center text-[var(--muted)] py-8">
                   No messages yet. Start the conversation! 💬
                 </p>
               ) : (
@@ -205,17 +230,17 @@ export default function RoomDetailPage() {
                       <div
                         className={`max-w-[75%] px-4 py-2 rounded-2xl ${
                           isMe
-                            ? 'bg-indigo-600 text-white rounded-br-md'
-                            : 'bg-gray-100 dark:bg-gray-700 dark:text-gray-200 rounded-bl-md'
+                            ? 'bg-[var(--primary)] text-white rounded-br-md'
+                            : 'bg-[var(--surface-light)] text-[var(--foreground)] rounded-bl-md'
                         }`}
                       >
                         {!isMe && (
-                          <p className="text-xs font-semibold text-indigo-400 mb-0.5">
+                          <p className="text-xs font-semibold text-[var(--primary-light)] mb-0.5">
                             {msg.senderName}
                           </p>
                         )}
                         <p className="text-sm">{msg.text}</p>
-                        <p className={`text-[10px] mt-1 ${isMe ? 'text-indigo-200' : 'text-gray-400'}`}>
+                        <p className={`text-[10px] mt-1 ${isMe ? 'text-white/60' : 'text-[var(--muted)]'}`}>
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -227,18 +252,18 @@ export default function RoomDetailPage() {
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t dark:border-gray-700 flex gap-2">
+            <div className="p-3 border-t border-[var(--border)] flex gap-2">
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                 placeholder="Type a message..."
-                className="flex-1 px-4 py-2 rounded-full border dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm"
+                className="flex-1 px-4 py-2 rounded-full border border-[var(--border)] bg-[var(--surface-light)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
               />
               <button
                 onClick={handleSend}
                 disabled={sending || !text.trim()}
-                className="px-5 py-2 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                className="px-5 py-2 bg-[var(--primary)] text-white rounded-full text-sm font-medium hover:bg-[#6d28d9] disabled:opacity-50"
               >
                 Send
               </button>
@@ -247,13 +272,13 @@ export default function RoomDetailPage() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <p className="text-4xl mb-4">🔒</p>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
+            <p className="text-[var(--muted)] mb-4">
               Join this room to chat with other students
             </p>
             <button
               onClick={handleJoin}
               disabled={joining}
-              className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
+              className="px-6 py-2.5 bg-[var(--primary)] text-white rounded-lg font-medium hover:bg-[#6d28d9] disabled:opacity-50"
             >
               {joining ? 'Joining...' : `Join Room (${members.length}/${room.maxMembers})`}
             </button>
@@ -262,8 +287,8 @@ export default function RoomDetailPage() {
       </div>
 
       {/* Members Sidebar */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4 space-y-4 hidden md:block">
-        <h2 className="font-bold dark:text-white">
+      <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 space-y-4 hidden md:block">
+        <h2 className="font-bold text-[var(--foreground)]">
           Members ({members.length}/{room.maxMembers})
         </h2>
         <div className="space-y-2">
@@ -272,14 +297,14 @@ export default function RoomDetailPage() {
               key={m.userId}
               className="flex items-center gap-2 text-sm"
             >
-              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-xs">
+              <div className="w-8 h-8 rounded-full bg-[var(--primary)]/15 flex items-center justify-center text-[var(--primary-light)] font-bold text-xs">
                 {m.userName?.charAt(0)?.toUpperCase() || '?'}
               </div>
               <div>
-                <p className="dark:text-white">
+                <p className="text-[var(--foreground)]">
                   {m.userName}
                   {m.userId === user?.id && (
-                    <span className="text-xs text-gray-400 ml-1">(you)</span>
+                    <span className="text-xs text-[var(--muted)] ml-1">(you)</span>
                   )}
                 </p>
                 {m.role === 'creator' && (
@@ -292,10 +317,10 @@ export default function RoomDetailPage() {
 
         {room.description && (
           <>
-            <hr className="dark:border-gray-700" />
+            <hr className="border-[var(--border)]" />
             <div>
-              <h3 className="text-xs uppercase text-gray-400 mb-1">About</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">{room.description}</p>
+              <h3 className="text-xs uppercase text-[var(--muted)] mb-1">About</h3>
+              <p className="text-sm text-[var(--muted)]">{room.description}</p>
             </div>
           </>
         )}

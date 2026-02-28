@@ -303,6 +303,7 @@ export default function MatchesPage() {
             <span className="text-xs text-[var(--muted)]">
               {allStudents.filter(s => {
                 if (s.id === selectedStudentId) return false;
+                if (s.id === user?.id) return false;
                 if (user?.matchKey) return s.matchKey === user.matchKey;
                 return true;
               }).length} {user?.matchKey ? 'batchmates' : 'students'}
@@ -310,6 +311,7 @@ export default function MatchesPage() {
           </div>
           {allStudents.filter(s => {
             if (s.id === selectedStudentId) return false;
+            if (s.id === user?.id) return false;
             if (user?.matchKey) return s.matchKey === user.matchKey;
             return true;
           }).length === 0 ? (
@@ -326,6 +328,7 @@ export default function MatchesPage() {
               {allStudents
                 .filter(s => {
                   if (s.id === selectedStudentId) return false;
+                  if (s.id === user?.id) return false;
                   if (user?.matchKey) return s.matchKey === user.matchKey;
                   return true;
                 })

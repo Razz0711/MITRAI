@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import { Users, MessageCircle, ArrowLeft } from 'lucide-react';
 
 interface Circle {
   id: string;
@@ -45,7 +46,6 @@ export default function CircleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [tab, setTab] = useState<'members' | 'rooms'>('members');
 
   const loadCircle = useCallback(async () => {
     if (!user || !id) return;
@@ -99,10 +99,8 @@ export default function CircleDetailPage() {
   if (!circle) {
     return (
       <div className="max-w-4xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Circle Not Found
-        </h1>
-        <Link href="/circles" className="text-indigo-600 hover:underline dark:text-indigo-400">
+        <p className="text-[var(--muted)] text-lg mb-2">Circle not found.</p>
+        <Link href="/circles" className="text-[var(--primary-light)] hover:underline">
           ← Back to Circles
         </Link>
       </div>
@@ -110,178 +108,139 @@ export default function CircleDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Back link */}
-      <Link
-        href="/circles"
-        className="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-      >
-        ← All Circles
-      </Link>
-
-      {/* Circle Header */}
-      <div
-        className="rounded-2xl p-6 border-2 dark:bg-gray-800"
-        style={{ borderColor: circle.color }}
-      >
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <span className="text-5xl">{circle.emoji}</span>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                {circle.name}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300 mt-1">
-                {circle.description}
-              </p>
-              <div className="flex items-center gap-3 mt-2">
-                <span
-                  className="text-xs font-medium px-2.5 py-1 rounded-full text-white"
-                  style={{ backgroundColor: circle.color }}
-                >
-                  {members.length} member{members.length !== 1 ? 's' : ''}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {rooms.length} active room{rooms.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-start gap-4">
+        <Link
+          href="/circles"
+          className="mt-1 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+        >
+          <ArrowLeft size={20} />
+        </Link>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-1">
+            <span className="text-3xl">{circle.emoji}</span>
+            <h1 className="text-xl font-bold text-[var(--foreground)]">{circle.name}</h1>
           </div>
-
-          <button
-            onClick={handleToggle}
-            disabled={actionLoading}
-            className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all disabled:opacity-50 ${
-              isMember
-                ? 'border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/20'
-                : 'text-white'
-            }`}
-            style={!isMember ? { backgroundColor: circle.color } : undefined}
-          >
-            {actionLoading
-              ? isMember
-                ? 'Leaving...'
-                : 'Joining...'
-              : isMember
-              ? 'Leave Circle'
-              : 'Join Circle'}
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
-        {(['members', 'rooms'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              tab === t
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-            }`}
-          >
-            {t === 'members' ? `Members (${members.length})` : `Rooms (${rooms.length})`}
-          </button>
-        ))}
-      </div>
-
-      {/* Members Tab */}
-      {tab === 'members' && (
-        <div className="space-y-3">
-          {members.length === 0 ? (
-            <p className="text-center text-gray-400 py-8">
-              No members yet. Be the first to join!
-            </p>
-          ) : (
-            members.map((m) => (
-              <div
-                key={m.userId}
-                className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800"
-              >
-                {/* Avatar placeholder */}
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-                  style={{ backgroundColor: circle.color }}
-                >
-                  {m.name
-                    .split(' ')
-                    .map((part) => part[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 dark:text-white truncate">
-                    {m.name}
-                  </p>
-                  {m.department && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {m.department}
-                    </p>
-                  )}
-                </div>
-                <span className="text-xs text-gray-400 shrink-0">
-                  Joined {new Date(m.joinedAt).toLocaleDateString()}
-                </span>
-              </div>
-            ))
+          {circle.description && (
+            <p className="text-sm text-[var(--muted)] ml-12">{circle.description}</p>
           )}
+          <div className="flex items-center gap-4 mt-2 ml-12 text-xs text-[var(--muted)]">
+            <span className="flex items-center gap-1">
+              <Users size={12} /> {members.length} member{members.length !== 1 ? 's' : ''}
+            </span>
+            <span className="flex items-center gap-1">
+              <MessageCircle size={12} /> {rooms.length} room{rooms.length !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
-      )}
+        <button
+          onClick={handleToggle}
+          disabled={actionLoading}
+          className={`px-4 py-2 rounded-lg font-medium text-sm transition-all disabled:opacity-50 ${
+            isMember
+              ? 'border border-[var(--error)]/30 text-[var(--error)] hover:bg-[var(--error)]/10'
+              : 'text-white'
+          }`}
+          style={!isMember ? { backgroundColor: circle.color } : undefined}
+        >
+          {actionLoading
+            ? isMember ? 'Leaving...' : 'Joining...'
+            : isMember ? 'Leave Circle' : 'Join Circle'}
+        </button>
+      </div>
 
-      {/* Rooms Tab */}
-      {tab === 'rooms' && (
-        <div className="space-y-3">
-          {rooms.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-400 mb-3">
-                No study rooms in this circle yet.
-              </p>
-              <Link
-                href="/rooms"
-                className="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
-              >
-                Create a Room →
-              </Link>
-            </div>
-          ) : (
-            rooms.map((room) => (
+      {/* Study Rooms */}
+      <section>
+        <h2 className="text-sm font-bold text-[var(--foreground)] mb-3">
+          Study Rooms ({rooms.length})
+        </h2>
+        {rooms.length === 0 ? (
+          <div className="card p-6 text-center">
+            <p className="text-3xl mb-2">📚</p>
+            <p className="text-sm text-[var(--muted)]">No active rooms in this circle yet.</p>
+            <Link
+              href="/rooms"
+              className="inline-block mt-3 text-xs text-[var(--primary-light)] hover:underline"
+            >
+              Create a room →
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {rooms.map((room) => (
               <Link
                 key={room.id}
                 href={`/rooms/${room.id}`}
-                className="block p-4 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 hover:shadow-md transition-all"
+                className="card p-4 hover:border-[var(--primary)]/40 transition-colors group"
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {room.name}
-                    </h3>
-                    {room.topic && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                        {room.topic}
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded-full">
-                    Active
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-[var(--foreground)] group-hover:text-[var(--primary-light)] transition-colors">
+                    {room.name}
+                  </h3>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full ${
+                      room.status === 'active'
+                        ? 'bg-[var(--success)]/15 text-[var(--success)]'
+                        : 'bg-[var(--surface-light)] text-[var(--muted)]'
+                    }`}
+                  >
+                    {room.status}
                   </span>
                 </div>
-                {room.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                    {room.description}
-                  </p>
+                {room.topic && (
+                  <p className="text-xs text-[var(--muted)] mb-1">📌 {room.topic}</p>
                 )}
-                <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                  <span>Max {room.maxMembers} members</span>
-                  <span>·</span>
-                  <span>{new Date(room.createdAt).toLocaleDateString()}</span>
-                </div>
+                {room.description && (
+                  <p className="text-xs text-[var(--muted)] line-clamp-2">{room.description}</p>
+                )}
+                <p className="text-[10px] text-[var(--muted)] mt-2">
+                  Max {room.maxMembers} members
+                </p>
               </Link>
-            ))
-          )}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Members */}
+      <section>
+        <h2 className="text-sm font-bold text-[var(--foreground)] mb-3">
+          Members ({members.length})
+        </h2>
+        {members.length === 0 ? (
+          <div className="card p-6 text-center">
+            <p className="text-sm text-[var(--muted)]">No members yet. Be the first to join!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {members.map((m) => (
+              <div key={m.userId} className="card p-3 flex items-center gap-3">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+                  style={{ backgroundColor: circle.color }}
+                >
+                  {m.name.split(' ').map((p) => p[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[var(--foreground)] truncate">
+                    {m.name}
+                    {m.userId === user?.id && (
+                      <span className="text-[10px] text-[var(--muted)] ml-1">(you)</span>
+                    )}
+                  </p>
+                  {m.department && (
+                    <p className="text-[10px] text-[var(--muted)] truncate">{m.department}</p>
+                  )}
+                </div>
+                <span className="text-[10px] text-[var(--muted)] shrink-0">
+                  {new Date(m.joinedAt).toLocaleDateString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
