@@ -172,13 +172,37 @@ function LoginPageInner() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Try admin login for non-SVNIT emails (login mode only)
+  const tryAdminLogin = async (adminEmail: string, adminPassword: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: adminEmail, password: adminPassword }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        router.push('/admin');
+        return true;
+      }
+    } catch { /* ignore */ }
+    return false;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     const trimmedEmail = email.trim().toLowerCase();
 
     if (!isSvnitEmail(trimmedEmail)) {
+      // If in login mode with a non-SVNIT email, try admin auth first
+      if (!isSignup && trimmedEmail && password) {
+        setOtpSending(true);
+        const isAdmin = await tryAdminLogin(trimmedEmail, password);
+        setOtpSending(false);
+        if (isAdmin) return;
+      }
       setError('Only SVNIT email addresses are allowed (e.g. name@svnit.ac.in or name@amhd.svnit.ac.in)');
       return;
     }
