@@ -30,7 +30,7 @@ export function useStatusHeartbeat() {
           status: inactive ? 'offline' : status,
         }),
       });
-    } catch (err) {
+    } catch {
       // Status heartbeat failed silently
     }
   }, [user]);

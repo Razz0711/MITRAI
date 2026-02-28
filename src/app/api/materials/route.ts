@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         read: false,
         createdAt: new Date().toISOString(),
       });
-    } catch (err) { /* non-critical: upload notification */ }
+    } catch { /* non-critical: upload notification */ }
 
     return NextResponse.json({ success: true, data: material });
   } catch (error) {

@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         message: `${senderName || 'Someone'}: ${text.trim().slice(0, 50)}${text.length > 50 ? '...' : ''}`,
         read: false, createdAt: new Date().toISOString(),
       });
-    } catch (err) { /* non-critical: notification send */ }
+    } catch { /* non-critical: notification send */ }
     if (receiverName) await updateThreadUserName(chatId, receiverId, receiverName);
     if (senderName) await updateThreadUserName(chatId, senderId, senderName);
     return NextResponse.json({ message });

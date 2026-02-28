@@ -22,7 +22,7 @@ export function createSupabaseServerClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
-          } catch (err) {
+          } catch {
             // Cannot set cookies in Server Components (read-only context)
           }
         },
