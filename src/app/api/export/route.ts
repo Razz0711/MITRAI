@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/export?userId=xxx
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
@@ -50,8 +52,8 @@ export async function GET(req: NextRequest) {
       supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(500),
       supabase.from('subscriptions').select('*').eq('user_id', userId).single(),
       supabase.from('feedback').select('*').eq('user_id', userId),
-      supabase.from('buddy_ratings').select('*').eq('from_user_id', userId),
-      supabase.from('buddy_ratings').select('*').eq('to_user_id', userId),
+      supabase.from('ratings').select('*').eq('from_user_id', userId),
+      supabase.from('ratings').select('*').eq('to_user_id', userId),
       supabase.from('availability').select('*').eq('user_id', userId).single(),
     ]);
 

@@ -9,6 +9,8 @@ import { supabase } from '@/lib/supabase';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/users/block?userId=xxx — get list of users blocked by this user
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();

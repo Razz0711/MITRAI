@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabase } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 function verifyAdmin(adminKey: string | null): boolean {

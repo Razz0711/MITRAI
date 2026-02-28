@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/analytics?userId=xxx
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
