@@ -127,6 +127,33 @@ export async function sendPushToUser(
   await Promise.allSettled(subs.map(s => sendWebPush(s, payload)));
 }
 
+/** Send web push to a list of user IDs (e.g. department mates) */
+export async function sendPushToUsers(
+  userIds: string[],
+  payload: { title: string; body: string; url?: string },
+): Promise<void> {
+  if (!userIds.length) return;
+  // Fetch all subscriptions for these users in one query
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select('*')
+    .in('user_id', userIds);
+  if (error) { console.error('sendPushToUsers error:', error); return; }
+  const subs = (data || []) as unknown as PushSubscriptionRecord[];
+  console.log(`sendPushToUsers: ${subs.length} subscription(s) for ${userIds.length} user(s)`);
+  let sent = 0;
+  let failed = 0;
+  for (let i = 0; i < subs.length; i += 50) {
+    const batch = subs.slice(i, i + 50);
+    const results = await Promise.allSettled(batch.map(s => sendWebPush(s, payload)));
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value) sent++;
+      else failed++;
+    }
+  }
+  console.log(`sendPushToUsers: done — ${sent} sent, ${failed} failed`);
+}
+
 /** Broadcast web push to all subscribed users (optionally exclude one) */
 export async function broadcastWebPush(
   payload: { title: string; body: string; url?: string },

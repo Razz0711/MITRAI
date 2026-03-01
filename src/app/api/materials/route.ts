@@ -7,7 +7,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { getAllMaterials, createMaterial, saveUploadedFile, addNotification } from '@/lib/store';
 import { StudyMaterial } from '@/lib/types';
 import { NOTIFICATION_TYPES } from '@/lib/constants';
-import { broadcastWebPush } from '@/lib/store/push-subscriptions';
+import { sendPushToUsers } from '@/lib/store/push-subscriptions';
+import { supabase } from '@/lib/store/core';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 import { validateFileType, validateFileSize } from '@/lib/file-validation';
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
 
     await createMaterial(material);
 
-    // Notify uploader (confirmation) — could be extended to notify department mates
+    // Notify uploader (confirmation)
     try {
       await addNotification({
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -153,9 +154,37 @@ export async function POST(request: NextRequest) {
         read: false,
         createdAt: new Date().toISOString(),
       });
-      // Notify all users about new material
-      broadcastWebPush({ title: '📚 New Study Material', body: `"${title}" — check it out!`, url: '/materials' }, uploadedBy).catch(() => {});
-    } catch { /* non-critical: upload notification */ }
+    } catch { /* non-critical */ }
+
+    // Push notification only to students in the same department + year
+    try {
+      let query = supabase.from('students').select('id').neq('id', uploadedBy);
+      if (department) query = query.eq('department', department);
+      if (yearLevel) query = query.eq('year_level', yearLevel);
+      const { data: peers } = await query;
+      const peerIds = (peers || []).map((p: { id: string }) => p.id);
+      console.log(`[Materials] Notifying ${peerIds.length} peer(s) in ${department} / ${yearLevel}`);
+      if (peerIds.length > 0) {
+        // In-app notification for each peer
+        await Promise.allSettled(peerIds.map(uid =>
+          addNotification({
+            id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${uid.slice(-4)}`,
+            userId: uid,
+            type: NOTIFICATION_TYPES.MATERIAL_UPLOADED,
+            title: '📚 New Study Material',
+            message: `"${title}" was uploaded for ${department}${yearLevel ? ` — ${yearLevel}` : ''}`,
+            read: false,
+            createdAt: new Date().toISOString(),
+          })
+        ));
+        // Web push to those users
+        sendPushToUsers(peerIds, {
+          title: '📚 New Study Material',
+          body: `"${title}" — ${department}${yearLevel ? ` (${yearLevel})` : ''}`,
+          url: '/materials',
+        }).catch(() => {});
+      }
+    } catch (e) { console.error('[Materials] peer notify error:', e); }
 
     return NextResponse.json({ success: true, data: material });
   } catch (error) {
