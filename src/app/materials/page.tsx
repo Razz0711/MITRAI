@@ -77,15 +77,24 @@ export default function MaterialsPage() {
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
 
-  // List state — default filters to user's own department & year
+  // List state — start with no selection, user must pick filters
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filterDept, setFilterDept] = useState(user?.department || 'all');
+  const [loading, setLoading] = useState(false);
+  const [filterDept, setFilterDept] = useState('all');
   const [filterType, setFilterType] = useState('all');
-  const [filterYear, setFilterYear] = useState(user?.yearLevel || 'all');
+  const [filterYear, setFilterYear] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Whether user has applied any filter
+  const hasFilter = filterDept !== 'all' || filterType !== 'all' || filterYear !== 'all' || !!searchQuery;
+
   const fetchMaterials = useCallback(async () => {
+    if (!hasFilter) {
+      setMaterials([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const params = new URLSearchParams();
       if (filterDept !== 'all') params.set('department', filterDept);
@@ -103,7 +112,7 @@ export default function MaterialsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filterDept, filterType, filterYear, searchQuery]);
+  }, [filterDept, filterType, filterYear, searchQuery, hasFilter]);
 
   useEffect(() => {
     if (!user) {
@@ -392,16 +401,22 @@ export default function MaterialsPage() {
         </div>
 
         {/* Materials List */}
-        {loading ? (
+        {!hasFilter ? (
+          <div className="card p-12 text-center">
+            <p className="text-3xl mb-3">🔍</p>
+            <p className="text-sm text-[var(--foreground)] font-medium">Select filters to browse materials</p>
+            <p className="text-xs text-[var(--muted)] mt-1">
+              Choose your department, type, or year above to see study resources
+            </p>
+          </div>
+        ) : loading ? (
           <LoadingSkeleton type="materials" count={4} label="Loading materials..." />
         ) : materials.length === 0 ? (
           <div className="card p-12 text-center">
             <p className="text-3xl mb-3">📚</p>
             <p className="text-sm text-[var(--foreground)] font-medium">No materials found</p>
             <p className="text-xs text-[var(--muted)] mt-1">
-              {searchQuery || filterDept !== 'all' || filterType !== 'all' || filterYear !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Be the first to upload study materials!'}
+              Try adjusting your filters or be the first to upload!
             </p>
           </div>
         ) : (
