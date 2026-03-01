@@ -16,6 +16,8 @@ import {
   pollForMatch,
   getUserActiveRoom,
   isProSubscriber,
+  hasUsedFreeTrial,
+  grantFreeTrial,
 } from '@/lib/store/anon';
 
 export const dynamic = 'force-dynamic';
@@ -30,12 +32,25 @@ export async function GET(req: NextRequest) {
 
   try {
     if (check === 'status') {
-      const [pass, ban, activeRoom, isPro] = await Promise.all([
+      const [initialPass, ban, activeRoom, isPro] = await Promise.all([
         getActivePass(userId),
         isUserBanned(userId),
         getUserActiveRoom(userId),
         isProSubscriber(userId),
       ]);
+
+      // Auto-grant free 7-day trial if user has no pass and never had one
+      let pass = initialPass;
+      let trialGranted = false;
+      if (!pass && !ban.banned) {
+        const trialPass = await grantFreeTrial(userId);
+        if (trialPass) {
+          pass = trialPass;
+          trialGranted = true;
+        }
+      }
+
+      const usedTrial = await hasUsedFreeTrial(userId);
 
       return NextResponse.json({
         success: true,
@@ -47,6 +62,9 @@ export async function GET(req: NextRequest) {
           banReason: ban.reason,
           banExpiresAt: ban.expiresAt,
           activeRoomId: activeRoom,
+          trialGranted,
+          isFreeTrial: pass?.source === 'free_trial',
+          usedTrial,
         },
       });
     }

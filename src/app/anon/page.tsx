@@ -29,6 +29,11 @@ export default function AnonLobbyPage() {
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Free trial state
+  const [isFreeTrial, setIsFreeTrial] = useState(false);
+  const [trialGranted, setTrialGranted] = useState(false);
+  const [usedTrial, setUsedTrial] = useState(false);
+
   // Payment modal state
   const [showPayModal, setShowPayModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<typeof ANON_PRICING[number] | null>(null);
@@ -72,6 +77,12 @@ export default function AnonLobbyPage() {
       if (!statusData.success) { setStatus('idle'); return; }
 
       const d = statusData.data;
+
+      // Track trial state
+      if (d.trialGranted) setTrialGranted(true);
+      if (d.isFreeTrial) setIsFreeTrial(true);
+      if (d.usedTrial) setUsedTrial(true);
+
       if (d.banned) {
         setStatus('banned');
         setBanInfo({ reason: d.banReason, expiresAt: d.banExpiresAt });
@@ -322,10 +333,14 @@ export default function AnonLobbyPage() {
 
             {/* Teaser */}
             <div className="card p-8 text-center border-2 border-dashed border-[var(--primary)]/30">
-              <div className="text-5xl mb-4">🔒</div>
-              <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">Unlock Anonymous Chat</h2>
+              <div className="text-5xl mb-4">{usedTrial ? '⏰' : '🔒'}</div>
+              <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">
+                {usedTrial ? 'Your Free Trial Has Ended' : 'Unlock Anonymous Chat'}
+              </h2>
               <p className="text-[var(--muted)] text-sm mb-6">
-                Chat anonymously with fellow SVNITians. Vent, confess, get advice — all without revealing your identity.
+                {usedTrial
+                  ? 'Your 7-day free trial is over. Subscribe to keep chatting anonymously with fellow SVNITians!'
+                  : 'Chat anonymously with fellow SVNITians. Vent, confess, get advice — all without revealing your identity.'}
               </p>
 
               {/* Pricing tiers with Subscribe buttons */}
@@ -513,8 +528,30 @@ export default function AnonLobbyPage() {
         {/* Idle — Room Selection */}
         {status === 'idle' && (
           <div className="space-y-6">
-            {/* Pass info */}
-            {passInfo.plan && (
+            {/* Free Trial Banner */}
+            {isFreeTrial && passInfo.expiresAt && (
+              <div className="card p-4 border-2 border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
+                <div className="flex items-start gap-3">
+                  <span className="text-3xl">🎉</span>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-emerald-400">
+                      {trialGranted ? 'Free Trial Activated!' : 'Free Trial Active'}
+                    </h3>
+                    <p className="text-xs text-[var(--muted)] mt-0.5">
+                      You have <strong className="text-emerald-400">
+                        {Math.max(0, Math.ceil((new Date(passInfo.expiresAt).getTime() - Date.now()) / 86400000))} days
+                      </strong> left to try Anonymous Chat for free.
+                    </p>
+                    <p className="text-[10px] text-[var(--muted)] mt-1">
+                      Expires: {new Date(passInfo.expiresAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Regular pass info (non-trial) */}
+            {passInfo.plan && !isFreeTrial && (
               <div className="card p-3 flex items-center justify-between">
                 <span className="text-xs text-[var(--muted)]">
                   {passInfo.isPro
@@ -579,6 +616,73 @@ export default function AnonLobbyPage() {
             <p className="text-center text-[10px] text-[var(--muted)]">
               Be respectful. Reports lead to temporary/permanent bans. Your SVNIT email is on file.
             </p>
+
+            {/* Upgrade Plans — shown during free trial */}
+            {isFreeTrial && (
+              <div className="space-y-4 mt-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                  <span className="text-xs text-[var(--muted)] font-medium">Upgrade for unlimited access</span>
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                </div>
+
+                <p className="text-center text-xs text-[var(--muted)]">
+                  Loving anonymous chat? Get a paid plan so you never lose access after the trial ends.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {ANON_PRICING.map(tier => (
+                    <div key={tier.plan} className={`p-4 rounded-xl border-2 transition-all flex flex-col ${
+                      tier.plan === 'monthly'
+                        ? 'border-[var(--primary)] bg-[var(--primary)]/5 sm:scale-105'
+                        : 'border-[var(--border)]'
+                    }`}>
+                      {tier.plan === 'monthly' && (
+                        <div className="text-[10px] font-bold text-[var(--primary)] mb-1">BEST VALUE</div>
+                      )}
+                      <div className="text-sm font-semibold text-[var(--foreground)]">{tier.label}</div>
+                      <div className="text-2xl font-bold text-[var(--primary)] mt-1">₹{tier.price}</div>
+                      <div className="text-[10px] text-[var(--muted)] mb-3">{tier.durationDays} days</div>
+                      <button
+                        onClick={() => handleSubscribeClick(tier)}
+                        className={`mt-auto w-full py-2 rounded-lg text-xs font-semibold transition-all ${
+                          tier.plan === 'monthly'
+                            ? 'bg-[var(--primary)] text-white hover:opacity-90'
+                            : 'bg-[var(--surface-light)] text-[var(--foreground)] hover:bg-[var(--primary)] hover:text-white'
+                        }`}
+                      >
+                        Upgrade ₹{tier.price}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Coupon section */}
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                  <span className="text-xs text-[var(--muted)]">or use a coupon</span>
+                  <div className="flex-1 h-px bg-[var(--border)]" />
+                </div>
+                <div className="flex gap-2 max-w-sm mx-auto">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                    placeholder="Enter coupon code"
+                    className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
+                    maxLength={30}
+                  />
+                  <button
+                    onClick={handleRedeemCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="btn-primary text-sm px-4 py-2 disabled:opacity-50"
+                  >
+                    {couponLoading ? '...' : 'Redeem'}
+                  </button>
+                </div>
+                {couponError && <p className="text-[var(--error)] text-xs text-center">{couponError}</p>}
+              </div>
+            )}
           </div>
         )}
 

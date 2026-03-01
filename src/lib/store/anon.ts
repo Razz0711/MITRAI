@@ -140,6 +140,54 @@ export async function getActivePass(userId: string): Promise<AnonPass | null> {
 }
 
 // ═══════════════════════════════════════════
+// FREE TRIAL
+// ═══════════════════════════════════════════
+
+const FREE_TRIAL_DAYS = 7;
+
+/** Check if user has ever had a free trial (active or expired) */
+export async function hasUsedFreeTrial(userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('anon_passes')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('source', 'free_trial')
+    .limit(1);
+  if (error) { console.error('hasUsedFreeTrial error:', error); return false; }
+  return (data || []).length > 0;
+}
+
+/** Grant a one-time 7-day free trial. Returns the pass if granted, null if already used. */
+export async function grantFreeTrial(userId: string): Promise<AnonPass | null> {
+  // Already has an active pass? Don't grant.
+  const existing = await hasActivePass(userId);
+  if (existing) return null;
+
+  // Already used a trial before? Don't grant.
+  const used = await hasUsedFreeTrial(userId);
+  if (used) return null;
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + FREE_TRIAL_DAYS * 24 * 60 * 60 * 1000);
+
+  const { data: pass, error } = await supabase
+    .from('anon_passes')
+    .insert({
+      user_id: userId,
+      plan: 'weekly',
+      price: 0,
+      source: 'free_trial',
+      coupon_code: '',
+      activated_at: now.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    })
+    .select()
+    .single();
+  if (error) { console.error('grantFreeTrial error:', error); return null; }
+  return snakeToPass(pass);
+}
+
+// ═══════════════════════════════════════════
 // COUPON REDEMPTION
 // ═══════════════════════════════════════════
 
