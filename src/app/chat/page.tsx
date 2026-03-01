@@ -59,7 +59,6 @@ export default function ChatPage() {
       const serverMsgs: DirectMessage[] = data.messages || [];
       setMessages(prev => {
         // Keep optimistic messages that aren't yet confirmed by server
-        const serverIds = new Set(serverMsgs.map(m => m.id));
         const optimistic = prev.filter(m => m.id.startsWith('optimistic_') && !serverMsgs.some(s => s.text === m.text && s.senderId === m.senderId));
         return [...serverMsgs, ...optimistic];
       });
