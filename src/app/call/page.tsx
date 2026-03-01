@@ -15,6 +15,7 @@ export default function CallPage() {
   const [roomCode, setRoomCode] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isInCall, setIsInCall] = useState(false);
+  const [readyToJoin, setReadyToJoin] = useState(false);
   const [buddyName, setBuddyName] = useState('');
   const [buddyOnline, setBuddyOnline] = useState<'online' | 'in-session' | 'offline' | null>(null);
 
@@ -60,9 +61,17 @@ export default function CallPage() {
       autoRoom = code;
     }
 
-    // Auto-start if all params are present (direct call from friends page)
+    // If all params are present (direct call / incoming call from link):
+    // Caller (has friendId) → auto-start (they already tapped a button)
+    // Receiver (no friendId) → show "Join Call" button (needs user gesture for getUserMedia on mobile)
     if (mode && (room || autoRoom) && savedName) {
-      setIsInCall(true);
+      if (fId) {
+        // Caller initiated — they had a user gesture on the friends page
+        setIsInCall(true);
+      } else {
+        // Receiver from link/notification — need user tap for camera/mic permission
+        setReadyToJoin(true);
+      }
     }
 
     // Check if buddy is already a friend (to hide "Add Friend" in post-call)
@@ -332,6 +341,38 @@ export default function CallPage() {
           audioOnly={callMode === 'voice'}
           onLeave={handleLeave}
         />
+      </div>
+    );
+  }
+
+  // Ready-to-join view (receiver needs to tap to grant camera/mic permission on mobile)
+  if (readyToJoin && callMode && roomCode) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-8">
+        <div className="card p-6 text-center slide-up">
+          <div className="text-5xl mb-4">{callMode === 'video' ? '📹' : '📞'}</div>
+          <h2 className="text-lg font-bold mb-1">
+            {buddyName ? `${buddyName} is calling` : 'Incoming Call'}
+          </h2>
+          <p className="text-xs text-[var(--muted)] mb-1">
+            {callMode === 'voice' ? 'Voice' : 'Video'} Call · Room <span className="font-mono text-[var(--primary-light)]">{roomCode}</span>
+          </p>
+          <p className="text-[10px] text-[var(--muted)] mb-6">
+            Tap the button below to allow camera & microphone access
+          </p>
+          <button
+            onClick={() => { setReadyToJoin(false); setIsInCall(true); }}
+            className="w-full py-3.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/20 active:scale-[0.98] transition-all mb-3"
+          >
+            ✓ Join Call
+          </button>
+          <button
+            onClick={() => { setReadyToJoin(false); setCallMode(null); }}
+            className="w-full py-2.5 rounded-xl text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all"
+          >
+            ✕ Decline
+          </button>
+        </div>
       </div>
     );
   }

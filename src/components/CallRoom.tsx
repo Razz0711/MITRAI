@@ -116,21 +116,33 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
     const init = async () => {
       // ── 1. Get local media ──
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        // Timeout getUserMedia after 15s — mobile browsers can hang silently
+        const mediaPromise = navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
           video: audioOnly ? false : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
         });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT')), 15000)
+        );
+        const stream = await Promise.race([mediaPromise, timeoutPromise]);
         if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
         localStreamRef.current = stream;
         if (localVideoRef.current && !audioOnly) {
           localVideoRef.current.srcObject = stream;
         }
-      } catch {
-        if (mounted) setError(
-          audioOnly
-            ? 'Microphone access denied. Please allow microphone access in your browser settings.'
-            : 'Camera/Microphone access denied. Please allow access in your browser settings.'
-        );
+      } catch (err) {
+        if (mounted) {
+          const msg = (err as Error)?.message || '';
+          if (msg === 'TIMEOUT') {
+            setError('Camera/Microphone permission timed out. Please tap the permission prompt in your browser, or check Settings → Site permissions.');
+          } else {
+            setError(
+              audioOnly
+                ? 'Microphone access denied. Please allow microphone access in your browser settings and reload.'
+                : 'Camera/Microphone access denied. Please allow access in your browser settings and reload.'
+            );
+          }
+        }
         return;
       }
 

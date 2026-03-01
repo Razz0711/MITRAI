@@ -39,13 +39,20 @@ export default function FriendsPage() {
       // Fire ALL notifications in parallel — don't block navigation
 
       // 1) Broadcast Realtime call-invite (triggers IncomingCallBanner)
+      //    Send multiple times over 6s to handle timing issues with receiver's channel
       try {
         const channel = supabaseBrowser.channel(`call-invite:${fId}`);
         channel.subscribe((status: string) => {
           if (status === 'SUBSCRIBED') {
-            channel.send({ type: 'broadcast', event: 'incoming-call', payload: callPayload })
-              .then(() => setTimeout(() => supabaseBrowser.removeChannel(channel), 3000))
-              .catch(() => supabaseBrowser.removeChannel(channel));
+            const sendBroadcast = () => channel.send({ type: 'broadcast', event: 'incoming-call', payload: callPayload }).catch(() => {});
+            // Send immediately + retry 3 times over 6 seconds for reliability
+            sendBroadcast();
+            setTimeout(sendBroadcast, 2000);
+            setTimeout(sendBroadcast, 4000);
+            setTimeout(() => {
+              sendBroadcast();
+              setTimeout(() => supabaseBrowser.removeChannel(channel), 2000);
+            }, 6000);
           }
         });
       } catch (e) { console.error('Realtime call-invite broadcast error:', e); }

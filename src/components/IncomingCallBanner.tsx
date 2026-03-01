@@ -27,6 +27,7 @@ export default function IncomingCallBanner() {
   const ringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const channelRef = useRef<ReturnType<typeof supabaseBrowser.channel> | null>(null);
+  const activeCallRef = useRef<string | null>(null); // track current roomCode to ignore duplicates
 
   // Cleanup timers
   const clearTimers = useCallback(() => {
@@ -43,6 +44,7 @@ export default function IncomingCallBanner() {
   // Dismiss the banner
   const dismiss = useCallback(() => {
     clearTimers();
+    activeCallRef.current = null;
     setInvite(null);
   }, [clearTimers]);
 
@@ -64,7 +66,10 @@ export default function IncomingCallBanner() {
   const startRinging = useCallback((inv: CallInvite) => {
     // Don't ring if we're already on the call page (probably the caller)
     if (window.location.pathname === '/call') return;
+    // Ignore duplicate broadcasts for the same call
+    if (activeCallRef.current === inv.roomCode) return;
 
+    activeCallRef.current = inv.roomCode;
     clearTimers();
     setInvite(inv);
 
