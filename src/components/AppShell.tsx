@@ -11,6 +11,7 @@ import TopBar from './TopBar';
 import Link from 'next/link';
 import { useTheme } from './ThemeProvider';
 import { Sun, Moon } from 'lucide-react';
+import GlobalNotificationPoller from './GlobalNotificationPoller';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -29,6 +30,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <>
         <TopBar />
+        <GlobalNotificationPoller />
         <main className="pt-16 pb-4 min-h-screen">
           {children}
         </main>

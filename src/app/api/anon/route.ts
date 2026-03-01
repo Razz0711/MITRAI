@@ -20,6 +20,8 @@ import {
   grantFreeTrial,
   getAnonLiveStats,
 } from '@/lib/store/anon';
+import { broadcastNotification } from '@/lib/store/broadcast';
+import { NOTIFICATION_TYPES } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,6 +115,18 @@ export async function POST(req: NextRequest) {
       if (ban.banned) return NextResponse.json({ success: false, error: 'BANNED', reason: ban.reason, expiresAt: ban.expiresAt }, { status: 403 });
 
       const result = await joinQueue(userId, roomType);
+
+      // Broadcast push notification to all other users
+      if (result.success) {
+        // Fire-and-forget — don't block the response
+        broadcastNotification({
+          type: NOTIFICATION_TYPES.ANON_WAITING,
+          title: '🎭 Someone is waiting in Anon Chat!',
+          message: `A fellow SVNITian is waiting in ${roomType} room. Go online and chat now!`,
+          excludeUserId: userId,
+        }).catch((err) => console.error('Broadcast error:', err));
+      }
+
       return NextResponse.json({ success: result.success, data: { alias: result.alias }, error: result.error });
     }
 
