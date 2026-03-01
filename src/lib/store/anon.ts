@@ -480,6 +480,31 @@ export async function getUserActiveRoom(userId: string): Promise<string | null> 
 // REPORTS & BLOCKS
 // ═══════════════════════════════════════════
 
+/** Get live stats: users in queue and active rooms */
+export async function getAnonStats(): Promise<{ queueCount: number; activeRooms: number; queueByType: Record<string, number> }> {
+  // Count users in queue
+  const { data: queueData, error: qErr } = await supabase
+    .from('anon_queue')
+    .select('room_type');
+  const queueCount = queueData?.length || 0;
+  const queueByType: Record<string, number> = {};
+  (queueData || []).forEach(q => {
+    queueByType[q.room_type] = (queueByType[q.room_type] || 0) + 1;
+  });
+
+  // Count active rooms
+  const { count, error: rErr } = await supabase
+    .from('anon_rooms')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'active');
+  const activeRooms = count || 0;
+
+  if (qErr) console.error('getAnonStats queue error:', qErr);
+  if (rErr) console.error('getAnonStats rooms error:', rErr);
+
+  return { queueCount, activeRooms, queueByType };
+}
+
 /** Report a user in anonymous chat */
 export async function reportAnonUser(roomId: string, reporterId: string, reportedUserId: string, reason: string, messageId?: string): Promise<boolean> {
   const { error } = await supabase.from('anon_reports').insert({

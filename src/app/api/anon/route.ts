@@ -18,6 +18,7 @@ import {
   isProSubscriber,
   hasUsedFreeTrial,
   grantFreeTrial,
+  getAnonStats,
 } from '@/lib/store/anon';
 
 export const dynamic = 'force-dynamic';
@@ -73,6 +74,12 @@ export async function GET(req: NextRequest) {
       if (!rateLimit(`anon-poll:${userId}`, 30, 60_000)) return rateLimitExceeded();
       const result = await pollForMatch(userId);
       return NextResponse.json({ success: true, data: result });
+    }
+
+    if (check === 'stats') {
+      if (!rateLimit(`anon-stats:${userId}`, 20, 60_000)) return rateLimitExceeded();
+      const stats = await getAnonStats();
+      return NextResponse.json({ success: true, data: stats });
     }
 
     return NextResponse.json({ success: false, error: 'Invalid check parameter' }, { status: 400 });

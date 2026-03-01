@@ -34,6 +34,10 @@ export default function AnonLobbyPage() {
   const [trialGranted, setTrialGranted] = useState(false);
   const [usedTrial, setUsedTrial] = useState(false);
 
+  // Live stats
+  const [stats, setStats] = useState<{ queueCount: number; activeRooms: number; queueByType: Record<string, number> } | null>(null);
+  const statsRef = useRef<NodeJS.Timeout | null>(null);
+
   // Payment modal state
   const [showPayModal, setShowPayModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<typeof ANON_PRICING[number] | null>(null);
@@ -47,12 +51,24 @@ export default function AnonLobbyPage() {
   useEffect(() => {
     if (!user) return;
     checkStatus();
+    fetchStats();
+    // Poll stats every 10 seconds
+    statsRef.current = setInterval(fetchStats, 10000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
+      if (statsRef.current) clearInterval(statsRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('/api/anon?check=stats');
+      const json = await res.json();
+      if (json.success) setStats(json.data);
+    } catch { /* ignore */ }
+  };
 
   const checkStatus = async () => {
     try {
@@ -266,7 +282,7 @@ export default function AnonLobbyPage() {
       <div className="max-w-2xl mx-auto">
         <SubTabBar group="discover" />
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-4">
           <h1 className="text-3xl font-bold text-[var(--foreground)] mb-2">
             🎭 Anonymous Chat
           </h1>
@@ -274,6 +290,27 @@ export default function AnonLobbyPage() {
             Talk freely with another SVNITian. No names, no judgments.
           </p>
         </div>
+
+        {/* Live Stats Bar */}
+        {stats && (
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              </span>
+              <span className="text-xs font-medium text-green-400">
+                {stats.activeRooms * 2} chatting
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+              <span className="text-xs">⏳</span>
+              <span className="text-xs font-medium text-amber-400">
+                {stats.queueCount} waiting
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Loading */}
         {status === 'loading' && (
@@ -582,13 +619,20 @@ export default function AnonLobbyPage() {
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{rt.emoji}</span>
-                      <div>
+                      <div className="flex-1">
                         <div className="font-semibold text-[var(--foreground)] text-sm">{rt.label}</div>
                         <div className="text-xs text-[var(--muted)]">{rt.description}</div>
                       </div>
-                      {selectedType === rt.id && (
-                        <span className="ml-auto text-[var(--primary)] text-lg">●</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {stats && (stats.queueByType[rt.id] || 0) > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-[10px] font-medium text-amber-400 border border-amber-500/20">
+                            {stats.queueByType[rt.id]} waiting
+                          </span>
+                        )}
+                        {selectedType === rt.id && (
+                          <span className="text-[var(--primary)] text-lg">●</span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 ))}
