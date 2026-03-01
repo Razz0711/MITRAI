@@ -176,7 +176,7 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         if (localVideoRef.current && stream.getVideoTracks().length > 0) {
           localVideoRef.current.srcObject = stream;
         }
-      } catch (err) {
+      } catch {
         if (mounted) {
           setError('Microphone access denied. Please allow microphone in your browser settings and reload.');
         }
@@ -358,9 +358,7 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
             if (!mounted) { clearInterval(heartbeat); return; }
             channel.send({ type: 'broadcast', event: 'ping', payload: { from: myId } }).catch(() => {});
           }, 3000);
-          // Store heartbeat interval for cleanup
-          const origCleanup = cleanup;
-          // We'll clear heartbeat on unmount via the return function below
+          // Clear heartbeat on page hide
           const clearHeartbeat = () => clearInterval(heartbeat);
           window.addEventListener('pagehide', clearHeartbeat, { once: true });
         }
