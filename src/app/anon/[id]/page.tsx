@@ -48,6 +48,7 @@ export default function AnonChatRoomPage() {
   const [closed, setClosed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pollMsgRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load room data
   const loadRoom = useCallback(async () => {
@@ -69,7 +70,28 @@ export default function AnonChatRoomPage() {
   useEffect(() => {
     if (!user) return;
     loadRoom();
-  }, [user, loadRoom]);
+
+    // Poll for new messages every 3 seconds as fallback for realtime
+    pollMsgRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/anon/${roomId}`);
+        const json = await res.json();
+        if (json.success && json.data.messages) {
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id));
+            const newMsgs = json.data.messages.filter((m: AnonMsg) => !existingIds.has(m.id));
+            if (newMsgs.length === 0) return prev;
+            return [...prev, ...newMsgs];
+          });
+          if (json.data.room.status === 'closed') setClosed(true);
+        }
+      } catch { /* ignore polling errors */ }
+    }, 3000);
+
+    return () => {
+      if (pollMsgRef.current) clearInterval(pollMsgRef.current);
+    };
+  }, [user, loadRoom, roomId]);
 
   // Realtime subscription
   useEffect(() => {
@@ -91,7 +113,17 @@ export default function AnonChatRoomPage() {
             createdAt: row.created_at,
           };
           setMessages(prev => {
+            // Skip if we already have this message (by real id or if it matches an optimistic one)
             if (prev.some(m => m.id === msg.id)) return prev;
+            // Replace optimistic message if this is the same text from same sender
+            const optimisticIndex = prev.findIndex(
+              m => m.id.startsWith('optimistic_') && m.senderId === msg.senderId && m.text === msg.text
+            );
+            if (optimisticIndex >= 0) {
+              const updated = [...prev];
+              updated[optimisticIndex] = msg;
+              return updated;
+            }
             return [...prev, msg];
           });
         },
@@ -107,17 +139,40 @@ export default function AnonChatRoomPage() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!newMsg.trim() || sending) return;
+    if (!newMsg.trim() || sending || !data) return;
+    const text = newMsg.trim();
     setSending(true);
+    setNewMsg('');
+    inputRef.current?.focus();
+
+    // Optimistically add message to UI immediately
+    const optimisticMsg: AnonMsg = {
+      id: `optimistic_${Date.now()}`,
+      roomId,
+      senderId: user!.id,
+      alias: data.myAlias,
+      text,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+
     try {
-      await fetch(`/api/anon/${roomId}`, {
+      const res = await fetch(`/api/anon/${roomId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'message', text: newMsg.trim() }),
+        body: JSON.stringify({ action: 'message', text }),
       });
-      setNewMsg('');
-      inputRef.current?.focus();
-    } catch { /* handled by realtime */ }
+      const json = await res.json();
+      if (json.success && json.data) {
+        // Replace optimistic message with the real one from server
+        setMessages(prev =>
+          prev.map(m => m.id === optimisticMsg.id
+            ? { ...json.data, roomId: json.data.roomId || roomId }
+            : m
+          )
+        );
+      }
+    } catch { /* optimistic message stays visible */ }
     setSending(false);
   };
 
