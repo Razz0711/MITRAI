@@ -58,14 +58,14 @@ export async function POST(request: NextRequest) {
       fileSize = body.fileSize;
       storedFileName = body.storedFileName;
 
-      if (!title || !department || !subject || !type || !uploadedBy || !storedFileName) {
+      if (!title || !department || !subject || !type || !storedFileName) {
         return NextResponse.json(
           { success: false, error: 'Missing required fields' },
           { status: 400 }
         );
       }
-      // Ownership: can only upload as yourself
-      if (uploadedBy !== authUser.id) return forbidden();
+      // uploadedBy from client is the display name — keep it for the record
+      // Auth is already verified via getAuthUser() above
 
       // Validate file type — block executables
       const fileCheck = validateFileType(fileName);
@@ -85,14 +85,13 @@ export async function POST(request: NextRequest) {
       uploadedByEmail = (formData.get('uploadedByEmail') as string) || '';
       const file = formData.get('file') as File | null;
 
-      if (!title || !department || !subject || !type || !uploadedBy || !file) {
+      if (!title || !department || !subject || !type || !file) {
         return NextResponse.json(
           { success: false, error: 'Missing required fields: title, department, subject, type, and file are required' },
           { status: 400 }
         );
       }
-      // Ownership: can only upload as yourself
-      if (uploadedBy !== authUser.id) return forbidden();
+      // Auth is already verified via getAuthUser() above
 
       const MAX_SIZE = 10 * 1024 * 1024;
       if (file.size > MAX_SIZE) {
@@ -147,7 +146,7 @@ export async function POST(request: NextRequest) {
     try {
       await addNotification({
         id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        userId: uploadedBy,
+        userId: authUser.id,
         type: NOTIFICATION_TYPES.GOAL_ACHIEVEMENT,
         title: 'Material Uploaded!',
         message: `Your "${title}" has been uploaded successfully 📚`,
@@ -158,7 +157,7 @@ export async function POST(request: NextRequest) {
 
     // Push notification only to students in the same department + year
     try {
-      let query = supabase.from('students').select('id').neq('id', uploadedBy);
+      let query = supabase.from('students').select('id').neq('id', authUser.id);
       if (department) query = query.eq('department', department);
       if (yearLevel) query = query.eq('year_level', yearLevel);
       const { data: peers } = await query;
