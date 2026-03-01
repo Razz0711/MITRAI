@@ -50,13 +50,19 @@ export default function ChatPage() {
     setLoading(false);
   }, [studentId]);
 
-  // Load messages for selected chat
+  // Load messages for selected chat (merges new, preserves optimistic)
   const loadMessages = useCallback(async () => {
     if (!selectedChatId || !studentId) return;
     try {
       const res = await fetch(`/api/chat?chatId=${selectedChatId}&userId=${studentId}`);
       const data = await res.json();
-      setMessages(data.messages || []);
+      const serverMsgs: DirectMessage[] = data.messages || [];
+      setMessages(prev => {
+        // Keep optimistic messages that aren't yet confirmed by server
+        const serverIds = new Set(serverMsgs.map(m => m.id));
+        const optimistic = prev.filter(m => m.id.startsWith('optimistic_') && !serverMsgs.some(s => s.text === m.text && s.senderId === m.senderId));
+        return [...serverMsgs, ...optimistic];
+      });
     } catch (err) { console.error('loadMessages:', err); }
   }, [selectedChatId, studentId]);
 
@@ -88,31 +94,69 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Supabase Realtime: subscribe to messages & threads instead of polling
+  // Supabase Realtime: insert messages directly from payload (no refetch)
   useEffect(() => {
     if (!studentId) return;
 
-    // Subscribe to new/updated messages in any chat this user participates in
     const msgChannel = supabaseBrowser
       .channel('chat-messages')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'messages' },
+        { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
           const row = payload.new as Record<string, string> | undefined;
-          if (!row) { loadThreads(); return; }
-          // Only react to messages in chats involving this user
-          if (row.sender_id === studentId || row.receiver_id === studentId) {
-            loadThreads();
-            if (selectedChatId && row.chat_id === selectedChatId) {
-              loadMessages();
-            }
+          if (!row) return;
+          if (row.sender_id !== studentId && row.receiver_id !== studentId) return;
+
+          // Refresh sidebar threads
+          loadThreads();
+
+          // If this message is in the currently open chat, add it directly
+          if (selectedChatId && row.chat_id === selectedChatId) {
+            const newMsg: DirectMessage = {
+              id: row.id,
+              chatId: row.chat_id,
+              senderId: row.sender_id,
+              senderName: row.sender_name || '',
+              receiverId: row.receiver_id || '',
+              text: row.text,
+              read: row.read === 'true',
+              createdAt: row.created_at,
+            };
+            setMessages(prev => {
+              // Skip duplicates
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              // Replace optimistic message from same sender with same text
+              const optIdx = prev.findIndex(
+                m => m.id.startsWith('optimistic_') && m.senderId === newMsg.senderId && m.text === newMsg.text
+              );
+              if (optIdx >= 0) {
+                const updated = [...prev];
+                updated[optIdx] = newMsg;
+                return updated;
+              }
+              return [...prev, newMsg];
+            });
+            // Auto mark-read if message is from the other person
+            if (row.sender_id !== studentId) markRead();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages' },
+        (payload) => {
+          const row = payload.new as Record<string, string> | undefined;
+          if (!row) return;
+          // Update read status in-place
+          if (selectedChatId && row.chat_id === selectedChatId) {
+            setMessages(prev => prev.map(m => m.id === row.id ? { ...m, read: row.read === 'true' || (row.read as unknown) === true } : m));
           }
         }
       )
       .subscribe();
 
-    // Subscribe to thread updates (unread counts, last message)
+    // Thread updates for sidebar
     const threadChannel = supabaseBrowser
       .channel('chat-threads')
       .on(
@@ -122,13 +166,19 @@ export default function ChatPage() {
       )
       .subscribe();
 
+    // Polling fallback every 5s for messages in current chat
+    const poll = setInterval(() => {
+      if (selectedChatId) loadMessages();
+    }, 5000);
+
     return () => {
       supabaseBrowser.removeChannel(msgChannel);
       supabaseBrowser.removeChannel(threadChannel);
+      clearInterval(poll);
     };
-  }, [studentId, selectedChatId, loadThreads, loadMessages]);
+  }, [studentId, selectedChatId, loadThreads, loadMessages, markRead]);
 
-  // Send message
+  // Send message — optimistic UI for instant feel
   const sendMessage = async () => {
     if (!newMsg.trim() || !selectedChatId || !studentId || sending) return;
 
@@ -144,38 +194,66 @@ export default function ChatPage() {
         ? selectedThread.user2Name
         : selectedThread.user1Name;
     } else if (pendingFriend) {
-      // No thread yet — use pending friend info from the friends page redirect
       receiverId = pendingFriend.id;
       receiverName = pendingFriend.name;
     } else {
       return;
     }
 
+    const text = newMsg.trim();
     setSending(true);
+    setNewMsg('');
+    inputRef.current?.focus();
+
+    // Optimistic: show message immediately
+    const optimisticId = `optimistic_${Date.now()}`;
+    const optimisticMsg: DirectMessage = {
+      id: optimisticId,
+      chatId: selectedChatId,
+      senderId: studentId,
+      senderName: user?.name || 'Unknown',
+      receiverId,
+      text,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+
+    // Optimistic: update thread sidebar immediately
+    setThreads(prev => {
+      const existing = prev.find(t => t.chatId === selectedChatId);
+      if (existing) {
+        return prev.map(t => t.chatId === selectedChatId
+          ? { ...t, lastMessage: text, lastMessageAt: new Date().toISOString() }
+          : t
+        );
+      }
+      return prev;
+    });
+
     try {
-      await fetch('/api/chat', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderId: studentId,
-          senderName: user?.name || 'Unknown',
-          receiverId,
-          receiverName,
-          text: newMsg.trim(),
-        }),
+        body: JSON.stringify({ senderId: studentId, senderName: user?.name || 'Unknown', receiverId, receiverName, text }),
       });
-      setNewMsg('');
+      const data = await res.json();
+      if (data.message) {
+        // Replace optimistic message with real one
+        setMessages(prev => prev.map(m => m.id === optimisticId ? { ...data.message } : m));
+      }
       setPendingFriend(null);
-      await loadMessages();
-      await loadThreads();
-      inputRef.current?.focus();
+      // Background refresh threads (non-blocking)
+      loadThreads();
     } catch (err) { console.error('sendMessage:', err); }
     setSending(false);
   };
 
-  // Delete message
+  // Delete message — optimistic removal
   const handleDeleteMessage = async (messageId: string) => {
     if (!studentId || !confirm('Delete this message?')) return;
+    // Optimistic: remove immediately
+    setMessages(prev => prev.filter(m => m.id !== messageId));
     try {
       const res = await fetch('/api/chat', {
         method: 'DELETE',
@@ -184,10 +262,15 @@ export default function ChatPage() {
       });
       const data = await res.json();
       if (data.success) {
-        await loadMessages();
-        await loadThreads();
+        loadThreads(); // Background refresh
+      } else {
+        // If delete failed, restore messages
+        loadMessages();
       }
-    } catch (err) { console.error('deleteMessage:', err); }
+    } catch (err) {
+      console.error('deleteMessage:', err);
+      loadMessages(); // Restore on error
+    }
   };
 
   // Open a chat (from friends page redirect with query params) - NO auto-send
