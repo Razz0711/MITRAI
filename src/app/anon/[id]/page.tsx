@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter, useParams } from 'next/navigation';
 import { ROOM_TYPES } from '@/lib/anon-aliases';
-import { supabase } from '@/lib/supabase';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 interface AnonMsg {
   id: string;
@@ -75,7 +75,7 @@ export default function AnonChatRoomPage() {
   useEffect(() => {
     if (!roomId) return;
 
-    const channel = supabase
+    const channel = supabaseBrowser
       .channel(`anon-room-${roomId}`)
       .on(
         'postgres_changes',
@@ -98,7 +98,7 @@ export default function AnonChatRoomPage() {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { supabaseBrowser.removeChannel(channel); };
   }, [roomId]);
 
   // Auto-scroll
