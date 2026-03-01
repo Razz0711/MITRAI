@@ -281,144 +281,184 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
       };
 
       // ── 3. Supabase Realtime Broadcast for signaling ──
-      const channel = supabaseBrowser.channel(`call:${roomName}`, {
-        config: { broadcast: { self: false } },
-      });
-      channelRef.current = channel;
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          channel.send({
-            type: 'broadcast',
-            event: 'ice',
-            payload: { candidate: event.candidate.toJSON(), from: myId },
-          });
+      // Remove any stale channel with the same name first
+      const existingChannels = supabaseBrowser.getChannels();
+      for (const ch of existingChannels) {
+        if (ch.topic === `realtime:call:${roomName}`) {
+          console.log('[Call] Removing stale channel:', ch.topic);
+          supabaseBrowser.removeChannel(ch);
         }
+      }
+      // Small delay to let Supabase Realtime WebSocket settle
+      await new Promise(r => setTimeout(r, 500));
+
+      // Helper: create channel, attach handlers, subscribe
+      const setupAndSubscribe = (attempt: number): Promise<void> => {
+        return new Promise((resolve, reject) => {
+          console.log('[Call] Creating signaling channel, attempt', attempt);
+
+          const ch = supabaseBrowser.channel(`call:${roomName}`, {
+            config: { broadcast: { self: false } },
+          });
+          channelRef.current = ch;
+
+          // Use channelRef for ICE candidates so retries work
+          pc.onicecandidate = (event) => {
+            if (event.candidate && channelRef.current) {
+              channelRef.current.send({
+                type: 'broadcast',
+                event: 'ice',
+                payload: { candidate: event.candidate.toJSON(), from: myId },
+              });
+            }
+          };
+
+          // ── Signaling handlers ──
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ch.on('broadcast', { event: 'join' }, async (msg: any) => {
+            const data = msg.payload as { from: string; name: string };
+            if (data.from === myId || !mounted || connectedRef.current) return;
+            setPartnerName(data.name || 'Study Buddy');
+            setStatus('connecting');
+            if (myId < data.from && !negotiatingRef.current) {
+              negotiatingRef.current = true;
+              try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                channelRef.current?.send({
+                  type: 'broadcast',
+                  event: 'offer',
+                  payload: { sdp: pc.localDescription!.toJSON(), from: myId, name: displayName },
+                });
+              } catch (e) { console.error('Offer error:', e); negotiatingRef.current = false; }
+            }
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ch.on('broadcast', { event: 'offer' }, async (msg: any) => {
+            const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
+            if (data.from === myId || !mounted) return;
+            if (!connectedRef.current) {
+              setPartnerName(data.name || 'Study Buddy');
+              setStatus('connecting');
+            }
+            try {
+              await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              channelRef.current?.send({
+                type: 'broadcast',
+                event: 'answer',
+                payload: { sdp: pc.localDescription!.toJSON(), from: myId, name: displayName },
+              });
+            } catch (e) { console.error('Answer error:', e); }
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ch.on('broadcast', { event: 'answer' }, async (msg: any) => {
+            const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
+            if (data.from === myId || !mounted) return;
+            if (!connectedRef.current) setPartnerName(data.name || 'Study Buddy');
+            try {
+              await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+              negotiatingRef.current = false;
+            } catch (e) { console.error('Remote desc error:', e); }
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ch.on('broadcast', { event: 'ice' }, async (msg: any) => {
+            const data = msg.payload as { candidate: RTCIceCandidateInit; from: string };
+            if (data.from === myId || !mounted) return;
+            try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch { /* late ICE ok */ }
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ch.on('broadcast', { event: 'leave' }, (msg: any) => {
+            const data = msg.payload as { from: string };
+            if (data.from === myId || !mounted) return;
+            cleanup();
+            onLeave?.();
+          });
+
+          // ── Screen share signaling ──
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ch.on('broadcast', { event: 'screen-start' }, (msg: any) => {
+            if (msg.payload.from === myId || !mounted) return;
+            setPartnerScreenSharing(true);
+          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ch.on('broadcast', { event: 'screen-stop' }, (msg: any) => {
+            if (msg.payload.from === myId || !mounted) return;
+            setPartnerScreenSharing(false);
+          });
+
+          // ── In-call chat ──
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ch.on('broadcast', { event: 'chat' }, (msg: any) => {
+            const data = msg.payload as ChatMsg;
+            if (data.from === myId || !mounted) return;
+            setChatMessages(prev => [...prev, data]);
+            if (!showChatRef.current) setUnreadChat(prev => prev + 1);
+          });
+
+          // ── Subscribe ──
+          ch.subscribe((subStatus: string) => {
+            console.log('[Call] Channel subscribe status:', subStatus, 'attempt:', attempt);
+            if (subStatus === 'SUBSCRIBED') {
+              resolve();
+            }
+            if (subStatus === 'CHANNEL_ERROR' || subStatus === 'TIMED_OUT') {
+              console.warn('[Call] Channel error:', subStatus);
+              supabaseBrowser.removeChannel(ch);
+              reject(new Error(subStatus));
+            }
+          });
+        });
       };
 
-      // ── Signaling handlers ──
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.on('broadcast', { event: 'join' }, async (msg: any) => {
-        const data = msg.payload as { from: string; name: string };
-        if (data.from === myId || !mounted || connectedRef.current) return;
-        setPartnerName(data.name || 'Study Buddy');
-        setStatus('connecting');
-        if (myId < data.from && !negotiatingRef.current) {
-          negotiatingRef.current = true;
-          try {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            channel.send({
-              type: 'broadcast',
-              event: 'offer',
-              payload: { sdp: pc.localDescription!.toJSON(), from: myId, name: displayName },
-            });
-          } catch (e) { console.error('Offer error:', e); negotiatingRef.current = false; }
-        }
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.on('broadcast', { event: 'offer' }, async (msg: any) => {
-        const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
-        if (data.from === myId || !mounted) return;
-        if (!connectedRef.current) {
-          setPartnerName(data.name || 'Study Buddy');
-          setStatus('connecting');
-        }
+      // Try up to 3 times with increasing delays
+      let subscribed = false;
+      for (let attempt = 1; attempt <= 3 && mounted; attempt++) {
         try {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          channel.send({
-            type: 'broadcast',
-            event: 'answer',
-            payload: { sdp: pc.localDescription!.toJSON(), from: myId, name: displayName },
-          });
-        } catch (e) { console.error('Answer error:', e); }
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.on('broadcast', { event: 'answer' }, async (msg: any) => {
-        const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
-        if (data.from === myId || !mounted) return;
-        if (!connectedRef.current) setPartnerName(data.name || 'Study Buddy');
-        try {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-          negotiatingRef.current = false;
-        } catch (e) { console.error('Remote desc error:', e); }
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.on('broadcast', { event: 'ice' }, async (msg: any) => {
-        const data = msg.payload as { candidate: RTCIceCandidateInit; from: string };
-        if (data.from === myId || !mounted) return;
-        try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch { /* late ICE ok */ }
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.on('broadcast', { event: 'leave' }, (msg: any) => {
-        const data = msg.payload as { from: string };
-        if (data.from === myId || !mounted) return;
-        cleanup();
-        onLeave?.();
-      });
-
-      // ── Screen share signaling ──
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.on('broadcast', { event: 'screen-start' }, (msg: any) => {
-        if (msg.payload.from === myId || !mounted) return;
-        setPartnerScreenSharing(true);
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.on('broadcast', { event: 'screen-stop' }, (msg: any) => {
-        if (msg.payload.from === myId || !mounted) return;
-        setPartnerScreenSharing(false);
-      });
-
-      // ── In-call chat ──
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      channel.on('broadcast', { event: 'chat' }, (msg: any) => {
-        const data = msg.payload as ChatMsg;
-        if (data.from === myId || !mounted) return;
-        setChatMessages(prev => [...prev, data]);
-        if (!showChatRef.current) setUnreadChat(prev => prev + 1);
-      });
-
-      // ── Subscribe & announce ──
-      channel.subscribe((subStatus: string) => {
-        console.log('[Call] Channel subscribe status:', subStatus);
-        if (subStatus === 'SUBSCRIBED' && mounted) {
-          setStatus('waiting');
-          // Announce presence every 2s (stops once connected)
-          const announce = () => {
-            channel.send({
-              type: 'broadcast',
-              event: 'join',
-              payload: { from: myId, name: displayName },
-            });
-          };
-          announce();
-          announceRef.current = setInterval(announce, 2000);
-
-          // ── Heartbeat: send 'ping' every 3s so partner can detect we're alive ──
-          const heartbeat = setInterval(() => {
-            if (!mounted) { clearInterval(heartbeat); return; }
-            channel.send({ type: 'broadcast', event: 'ping', payload: { from: myId } }).catch(() => {});
-          }, 3000);
-          // Clear heartbeat on page hide
-          const clearHeartbeat = () => clearInterval(heartbeat);
-          window.addEventListener('pagehide', clearHeartbeat, { once: true });
-        }
-        // Handle subscription errors — don't leave user stuck
-        if (subStatus === 'CHANNEL_ERROR' || subStatus === 'TIMED_OUT') {
-          console.error('[Call] Channel subscription failed:', subStatus);
-          if (mounted) {
-            setError('Failed to connect to signaling server. Please check your internet and try again.');
+          await setupAndSubscribe(attempt);
+          subscribed = true;
+          break;
+        } catch (e) {
+          console.warn('[Call] Subscribe attempt', attempt, 'failed:', e);
+          if (attempt < 3 && mounted) {
+            await new Promise(r => setTimeout(r, 1000 * attempt));
           }
         }
-      });
+      }
+
+      if (!subscribed) {
+        if (mounted) {
+          setError('Failed to connect to signaling server. Please check your internet and try again.');
+        }
+        return;
+      }
+
+      // ── Start announcing presence ──
+      if (mounted) {
+        setStatus('waiting');
+        const announce = () => {
+          channelRef.current?.send({
+            type: 'broadcast',
+            event: 'join',
+            payload: { from: myId, name: displayName },
+          });
+        };
+        announce();
+        announceRef.current = setInterval(announce, 2000);
+
+        // Heartbeat
+        const heartbeat = setInterval(() => {
+          if (!mounted) { clearInterval(heartbeat); return; }
+          channelRef.current?.send({ type: 'broadcast', event: 'ping', payload: { from: myId } }).catch(() => {});
+        }, 3000);
+        const clearHeartbeat = () => clearInterval(heartbeat);
+        window.addEventListener('pagehide', clearHeartbeat, { once: true });
+      }
       } catch (initErr) {
         console.error('[Call] init() crashed:', initErr);
         if (mounted) {
@@ -541,11 +581,12 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
 
   // ── Error screen ──
   if (error) {
+    const isPermissionError = error.toLowerCase().includes('denied') || error.toLowerCase().includes('permission') || error.toLowerCase().includes('microphone');
     return (
       <div className="h-full flex items-center justify-center bg-[#0f0f1a]">
         <div className="p-8 text-center max-w-md rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-          <div className="text-5xl mb-4">🎙️</div>
-          <h3 className="text-xl font-bold mb-2 text-[var(--error)]">Permission Required</h3>
+          <div className="text-5xl mb-4">{isPermissionError ? '🎙️' : '📡'}</div>
+          <h3 className="text-xl font-bold mb-2 text-[var(--error)]">{isPermissionError ? 'Permission Required' : 'Connection Error'}</h3>
           <p className="text-[var(--muted)] mb-6 text-sm">{error}</p>
           <div className="flex gap-3 justify-center">
             <button onClick={() => window.location.reload()} className="px-5 py-2.5 rounded-lg bg-[var(--primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity">
