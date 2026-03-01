@@ -103,7 +103,12 @@ export async function sendWebPush(
   };
 
   try {
-    await webpush.sendNotification(pushSubscription, JSON.stringify(payload));
+    // Use high urgency + short TTL for call notifications, normal for others
+    const isCall = payload.title?.includes('call');
+    const options = isCall
+      ? { TTL: 60, urgency: 'high' as const }
+      : { TTL: 3600 };
+    await webpush.sendNotification(pushSubscription, JSON.stringify(payload), options);
     console.log('Web push sent successfully to:', sub.endpoint.slice(0, 60) + '...');
     return true;
   } catch (err: unknown) {

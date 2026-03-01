@@ -27,63 +27,50 @@ export default function FriendsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Direct call: generate room code, send realtime invite + push + chat, navigate
-  const startCallWithFriend = async (fId: string, fName: string, mode: 'voice' | 'video') => {
+  const startCallWithFriend = (fId: string, fName: string, mode: 'voice' | 'video') => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
     for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
 
     if (user) {
       const userName = user.name || user.email?.split('@')[0] || 'Study Buddy';
+      const callPayload = { callerId: user.id, callerName: userName, mode, roomCode: code };
 
-      // 1) Broadcast Realtime call-invite to receiver (triggers IncomingCallBanner)
+      // Fire ALL notifications in parallel — don't block navigation
+
+      // 1) Broadcast Realtime call-invite (triggers IncomingCallBanner)
       try {
         const channel = supabaseBrowser.channel(`call-invite:${fId}`);
-        await channel.subscribe();
-        await channel.send({
-          type: 'broadcast',
-          event: 'incoming-call',
-          payload: {
-            callerId: user.id,
-            callerName: userName,
-            mode,
-            roomCode: code,
-          },
+        channel.subscribe((status: string) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({ type: 'broadcast', event: 'incoming-call', payload: callPayload })
+              .then(() => setTimeout(() => supabaseBrowser.removeChannel(channel), 3000))
+              .catch(() => supabaseBrowser.removeChannel(channel));
+          }
         });
-        // Cleanup the broadcast channel after a short delay
-        setTimeout(() => supabaseBrowser.removeChannel(channel), 3000);
       } catch (e) { console.error('Realtime call-invite broadcast error:', e); }
 
-      // 2) Send push notification (for when receiver's browser is in background)
-      try {
-        await fetch('/api/call-invite', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            receiverId: fId,
-            callerName: userName,
-            mode,
-            roomCode: code,
-          }),
-        });
-      } catch { /* ok */ }
+      // 2) Push notification + chat message in parallel (fire-and-forget)
+      fetch('/api/call-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receiverId: fId, callerName: userName, mode, roomCode: code }),
+      }).catch(() => {});
 
-      // 3) Send chat message as fallback
-      try {
-        await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            senderId: user.id,
-            senderName: userName,
-            receiverId: fId,
-            receiverName: fName,
-            text: `📞 I'm calling you! Join my ${mode} call with code: ${code}\n\nJoin here: ${window.location.origin}/call?mode=${mode}&room=${code}`,
-          }),
-        });
-      } catch { /* ok, call still starts */ }
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderId: user.id,
+          senderName: userName,
+          receiverId: fId,
+          receiverName: fName,
+          text: `📞 I'm calling you! Join my ${mode} call with code: ${code}\n\nJoin here: ${window.location.origin}/call?mode=${mode}&room=${code}`,
+        }),
+      }).catch(() => {});
     }
 
-    // Navigate to call with auto-start params
+    // Navigate immediately — don't wait for network calls
     window.location.href = `/call?mode=${mode}&room=${code}&buddy=${encodeURIComponent(fName)}&friendId=${encodeURIComponent(fId)}`;
   };
 

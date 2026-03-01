@@ -42,14 +42,21 @@ self.addEventListener('push', (event) => {
     }
   }
 
+  // Detect call notifications for special handling
+  const isCall = data.title && data.title.includes('call');
+
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: '/logo.jpg',
       badge: '/logo.jpg',
-      vibrate: [200, 100, 200],
-      tag: 'mitrai-notification',
+      vibrate: isCall
+        ? [300, 150, 300, 150, 300, 150, 300]   // long ringtone vibration
+        : [200, 100, 200],
+      tag: isCall ? 'mitrai-call-' + Date.now() : 'mitrai-notification',
       renotify: true,
+      requireInteraction: isCall,  // keep call notifications visible until dismissed
+      silent: false,               // ensure system plays notification sound
       data: { url: data.url },
     })
   );
