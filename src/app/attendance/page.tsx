@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { AttendanceRecord } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
@@ -54,6 +54,7 @@ export default function AttendancePage() {
   });
   const [subjectCalLogs, setSubjectCalLogs] = useState<AttendanceLogEntry[]>([]);
   const [subjectCalLoading, setSubjectCalLoading] = useState(false);
+  const pendingDays = useRef<Set<string>>(new Set()); // prevent double-taps
 
   const loadAttendance = useCallback(async () => {
     if (!user) return;
@@ -71,6 +72,28 @@ export default function AttendancePage() {
   }, [user, loadAttendance]);
 
   const handleUpsert = async (record: AttendanceRecord, attended: number, total: number, logStatus?: 'present' | 'absent') => {
+    // Optimistic: update UI immediately
+    setAttendance(prev =>
+      prev.map(a =>
+        a.id === record.id
+          ? { ...a, totalClasses: total, attendedClasses: attended, lastUpdated: new Date().toISOString() }
+          : a
+      )
+    );
+    // If subject calendar is open for this record, update its logs too
+    if (subjectCalId === record.id && logStatus) {
+      const today = new Date().toISOString().slice(0, 10);
+      setSubjectCalLogs(prev => {
+        const idx = prev.findIndex(l => l.date === today);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = { ...updated[idx], status: logStatus };
+          return updated;
+        }
+        return [...prev, { id: `temp_${today}`, userId: record.userId, subject: record.subject, date: today, status: logStatus, createdAt: new Date().toISOString() }];
+      });
+    }
+    // Fire API in background
     try {
       const res = await fetch('/api/attendance', {
         method: 'PUT',
@@ -86,18 +109,19 @@ export default function AttendancePage() {
         }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (!data.success) {
+        // Revert on failure
         setAttendance(prev =>
-          prev.map(a =>
-            a.id === record.id
-              ? { ...a, totalClasses: total, attendedClasses: attended, lastUpdated: new Date().toISOString() }
-              : a
-          )
+          prev.map(a => a.id === record.id ? record : a)
         );
-        // Refresh calendar if open
-        if (showCalendar) loadCalendarLogs();
+      } else if (showCalendar) {
+        // Quietly refresh global calendar in background
+        loadCalendarLogs();
       }
-    } catch (err) { console.error('upsertAttendance:', err); }
+    } catch (err) {
+      console.error('upsertAttendance:', err);
+      setAttendance(prev => prev.map(a => a.id === record.id ? record : a));
+    }
   };
 
   const handleAddSubject = async () => {
@@ -284,7 +308,11 @@ export default function AttendancePage() {
 
   const handleToggleDay = async (record: AttendanceRecord, dateStr: string) => {
     if (!user) return;
-    // Determine current status for this day
+    // Prevent double-tap on same day while API is in-flight
+    if (pendingDays.current.has(dateStr)) return;
+    pendingDays.current.add(dateStr);
+
+    // Read current status from state
     const existing = subjectCalLogs.find(l => l.date === dateStr);
     const prevStatus = existing?.status || null;
 
@@ -292,8 +320,54 @@ export default function AttendancePage() {
     let action: 'present' | 'absent' | 'remove';
     if (!prevStatus) action = 'present';
     else if (prevStatus === 'present') action = 'absent';
-    else action = 'remove'; // absent → remove
+    else action = 'remove';
 
+    // Calculate expected deltas
+    let totalDelta = 0;
+    let attendedDelta = 0;
+    if (action === 'remove') {
+      if (prevStatus === 'present') { totalDelta = -1; attendedDelta = -1; }
+      else if (prevStatus === 'absent') { totalDelta = -1; }
+    } else if (prevStatus === null) {
+      totalDelta = 1;
+      attendedDelta = action === 'present' ? 1 : 0;
+    } else if (prevStatus === 'present' && action === 'absent') {
+      attendedDelta = -1;
+    } else if (prevStatus === 'absent' && action === 'present') {
+      attendedDelta = 1;
+    }
+
+    // OPTIMISTIC: update UI instantly
+    const prevLogs = [...subjectCalLogs];
+    const prevAttendance = attendance.find(a => a.id === record.id)!;
+
+    if (action === 'remove') {
+      setSubjectCalLogs(prev => prev.filter(l => l.date !== dateStr));
+    } else {
+      setSubjectCalLogs(prev => {
+        const idx = prev.findIndex(l => l.date === dateStr);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = { ...updated[idx], status: action as 'present' | 'absent' };
+          return updated;
+        }
+        return [...prev, { id: `temp_${dateStr}`, userId: user.id, subject: record.subject, date: dateStr, status: action as 'present' | 'absent', createdAt: new Date().toISOString() }];
+      });
+    }
+    setAttendance(prev =>
+      prev.map(a =>
+        a.id === record.id
+          ? {
+              ...a,
+              totalClasses: Math.max(0, a.totalClasses + totalDelta),
+              attendedClasses: Math.max(0, a.attendedClasses + attendedDelta),
+              lastUpdated: new Date().toISOString(),
+            }
+          : a
+      )
+    );
+
+    // Fire API in background
     try {
       const res = await fetch('/api/attendance', {
         method: 'PATCH',
@@ -307,39 +381,20 @@ export default function AttendancePage() {
         }),
       });
       const data = await res.json();
-      if (data.success) {
-        // Update local attendance record counts
-        const { totalDelta, attendedDelta } = data.data;
-        setAttendance(prev =>
-          prev.map(a =>
-            a.id === record.id
-              ? {
-                  ...a,
-                  totalClasses: Math.max(0, a.totalClasses + totalDelta),
-                  attendedClasses: Math.max(0, a.attendedClasses + attendedDelta),
-                  lastUpdated: new Date().toISOString(),
-                }
-              : a
-          )
-        );
-        // Update local subject calendar logs
-        if (action === 'remove') {
-          setSubjectCalLogs(prev => prev.filter(l => l.date !== dateStr));
-        } else {
-          setSubjectCalLogs(prev => {
-            const idx = prev.findIndex(l => l.date === dateStr);
-            if (idx >= 0) {
-              const updated = [...prev];
-              updated[idx] = { ...updated[idx], status: action };
-              return updated;
-            }
-            return [...prev, { id: `temp_${dateStr}`, userId: user.id, subject: record.subject, date: dateStr, status: action, createdAt: new Date().toISOString() }];
-          });
-        }
-        // Refresh global calendar if open
-        if (showCalendar) loadCalendarLogs();
+      if (!data.success) {
+        // Revert on failure
+        setSubjectCalLogs(prevLogs);
+        setAttendance(prev => prev.map(a => a.id === record.id ? prevAttendance : a));
+      } else if (showCalendar) {
+        loadCalendarLogs(); // Quietly refresh global calendar
       }
-    } catch (err) { console.error('handleToggleDay:', err); }
+    } catch (err) {
+      console.error('handleToggleDay:', err);
+      setSubjectCalLogs(prevLogs);
+      setAttendance(prev => prev.map(a => a.id === record.id ? prevAttendance : a));
+    } finally {
+      pendingDays.current.delete(dateStr);
+    }
   };
 
   if (loading) {
@@ -748,30 +803,49 @@ export default function AttendancePage() {
 
                 {/* Per-subject mini calendar */}
                 {subjectCalId === a.id && (
-                  <div className="mt-3 pt-3 border-t border-[var(--border)] fade-in">
-                    {/* Month nav */}
+                  <div className="mt-4 pt-4 border-t border-[var(--border)] fade-in">
+                    {/* Month nav — sleek */}
                     <div className="flex items-center justify-between mb-3">
-                      <button onClick={subjectCalPrevMonth} className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors">◀</button>
-                      <h4 className="text-xs font-semibold">
-                        {monthNames[subjectCalMonth.month]} {subjectCalMonth.year}
-                      </h4>
-                      <button onClick={subjectCalNextMonth} className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors">▶</button>
+                      <button onClick={subjectCalPrevMonth} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/10 transition-all active:scale-90 text-[var(--muted)]">◀</button>
+                      <div className="text-center">
+                        <h4 className="text-xs font-bold tracking-wide">
+                          {monthNames[subjectCalMonth.month]} {subjectCalMonth.year}
+                        </h4>
+                        {/* Month stats */}
+                        {!subjectCalLoading && (() => {
+                          const { year, month } = subjectCalMonth;
+                          const daysInMonth = new Date(year, month + 1, 0).getDate();
+                          const presentCount = subjectCalLogs.filter(l => l.status === 'present').length;
+                          const absentCount = subjectCalLogs.filter(l => l.status === 'absent').length;
+                          const unmarked = daysInMonth - presentCount - absentCount;
+                          return (
+                            <p className="text-[9px] text-[var(--muted)] mt-0.5">
+                              <span className="text-green-400 font-medium">{presentCount}P</span>
+                              {' · '}
+                              <span className="text-red-400 font-medium">{absentCount}A</span>
+                              {' · '}
+                              <span>{unmarked} unmarked</span>
+                            </p>
+                          );
+                        })()}
+                      </div>
+                      <button onClick={subjectCalNextMonth} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/10 transition-all active:scale-90 text-[var(--muted)]">▶</button>
                     </div>
 
                     {subjectCalLoading ? (
-                      <div className="text-center py-4">
-                        <p className="text-[10px] text-[var(--muted)]">Loading...</p>
+                      <div className="text-center py-6">
+                        <div className="inline-block w-5 h-5 border-2 border-[var(--primary)]/30 border-t-[var(--primary)] rounded-full animate-spin" />
                       </div>
                     ) : (
                       <>
                         {/* Day headers */}
-                        <div className="grid grid-cols-7 gap-1 mb-1">
+                        <div className="grid grid-cols-7 gap-[3px] mb-[3px]">
                           {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                            <div key={`${d}-${i}`} className="text-center text-[8px] text-[var(--muted)] font-medium">{d}</div>
+                            <div key={`${d}-${i}`} className="text-center text-[9px] text-[var(--muted)] font-semibold py-1">{d}</div>
                           ))}
                         </div>
 
-                        {/* Mini calendar grid */}
+                        {/* Calendar grid */}
                         {(() => {
                           const { year, month } = subjectCalMonth;
                           const firstDay = new Date(year, month, 1).getDay();
@@ -780,61 +854,81 @@ export default function AttendancePage() {
                           const cells: React.ReactNode[] = [];
 
                           for (let i = 0; i < firstDay; i++) {
-                            cells.push(<div key={`se-${i}`} />);
+                            cells.push(<div key={`se-${i}`} className="min-h-[32px]" />);
                           }
 
                           for (let d = 1; d <= daysInMonth; d++) {
                             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                             const log = subjectCalLogs.find(l => l.date === dateStr);
                             const isToday = dateStr === today;
+                            const isFuture = dateStr > today;
+                            const isPending = pendingDays.current.has(dateStr);
 
-                            let bgClass = 'hover:bg-white/10';
-                            let ringClass = '';
+                            let cellBg = 'bg-white/[0.03] hover:bg-white/10';
+                            let cellText = '';
+                            let cellRing = '';
+                            let statusIcon = '';
                             if (log?.status === 'present') {
-                              bgClass = 'bg-green-500/25 text-green-300';
-                              ringClass = 'ring-1 ring-green-500/40';
+                              cellBg = 'bg-green-500/20 hover:bg-green-500/30';
+                              cellText = 'text-green-300 font-semibold';
+                              cellRing = 'ring-1 ring-green-500/30';
+                              statusIcon = '✓';
                             } else if (log?.status === 'absent') {
-                              bgClass = 'bg-red-500/25 text-red-300';
-                              ringClass = 'ring-1 ring-red-500/40';
+                              cellBg = 'bg-red-500/20 hover:bg-red-500/30';
+                              cellText = 'text-red-300 font-semibold';
+                              cellRing = 'ring-1 ring-red-500/30';
+                              statusIcon = '✗';
                             }
 
                             cells.push(
                               <button
                                 key={dateStr}
-                                onClick={() => handleToggleDay(a, dateStr)}
-                                className={`flex items-center justify-center rounded text-[10px] min-h-[28px] transition-all ${bgClass} ${ringClass} ${
-                                  isToday ? 'font-bold underline' : ''
+                                onClick={() => !isFuture && !isPending && handleToggleDay(a, dateStr)}
+                                disabled={isFuture || isPending}
+                                className={`relative flex flex-col items-center justify-center rounded-lg min-h-[32px] transition-all duration-150 ${
+                                  isFuture ? 'opacity-25 cursor-not-allowed' :
+                                  isPending ? 'opacity-50 animate-pulse' :
+                                  'cursor-pointer active:scale-90'
+                                } ${cellBg} ${cellText} ${cellRing} ${
+                                  isToday ? 'ring-2 ring-[var(--primary)]/50' : ''
                                 }`}
-                                title={log ? `${log.status} — tap to cycle` : 'Tap to mark present'}
+                                title={
+                                  isFuture ? 'Future date' :
+                                  log ? `${log.status} — tap to change` :
+                                  'Tap to mark present'
+                                }
                               >
-                                {d}
+                                <span className={`text-[11px] leading-none ${isToday && !log ? 'text-[var(--primary-light)] font-bold' : ''}`}>{d}</span>
+                                {statusIcon && (
+                                  <span className="text-[7px] leading-none mt-[1px]">{statusIcon}</span>
+                                )}
                               </button>
                             );
                           }
 
                           return (
-                            <div className="grid grid-cols-7 gap-1">
+                            <div className="grid grid-cols-7 gap-[3px]">
                               {cells}
                             </div>
                           );
                         })()}
 
                         {/* Legend */}
-                        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[var(--border)]">
-                          <span className="text-[8px] text-[var(--muted)]">Tap to cycle:</span>
-                          <div className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded bg-green-500/40 ring-1 ring-green-500/40" />
-                            <span className="text-[8px] text-[var(--muted)]">Present</span>
+                        <div className="flex items-center justify-center gap-4 mt-3 pt-2 border-t border-[var(--border)]">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded bg-green-500/25 ring-1 ring-green-500/30 flex items-center justify-center text-[6px] text-green-300">✓</span>
+                            <span className="text-[9px] text-[var(--muted)]">Present</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded bg-red-500/40 ring-1 ring-red-500/40" />
-                            <span className="text-[8px] text-[var(--muted)]">Absent</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded bg-red-500/25 ring-1 ring-red-500/30 flex items-center justify-center text-[6px] text-red-300">✗</span>
+                            <span className="text-[9px] text-[var(--muted)]">Absent</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded bg-white/10" />
-                            <span className="text-[8px] text-[var(--muted)]">Clear</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded bg-white/[0.03]" />
+                            <span className="text-[9px] text-[var(--muted)]">Empty</span>
                           </div>
                         </div>
+                        <p className="text-[8px] text-center text-[var(--muted)] mt-1">Tap a day to cycle: empty → present → absent → clear</p>
                       </>
                     )}
                   </div>
