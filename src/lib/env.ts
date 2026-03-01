@@ -27,3 +27,8 @@ export const GEMINI_API_KEY = optionalEnv('GEMINI_API_KEY');
 
 // --- Admin ---
 export const ADMIN_KEY = optionalEnv('ADMIN_KEY');
+
+// --- Web Push (VAPID) ---
+export const VAPID_PUBLIC_KEY = optionalEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY');
+export const VAPID_PRIVATE_KEY = optionalEnv('VAPID_PRIVATE_KEY');
+export const VAPID_SUBJECT = optionalEnv('VAPID_SUBJECT', 'mailto:mitrai@svnit.ac.in');

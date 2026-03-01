@@ -1,9 +1,14 @@
 // ============================================
-// MitrAI - Global Notification Poller
+// MitrAI - Global Notification Manager
 // Runs on every authenticated page inside AppShell.
-// Registers service worker, requests permission,
-// polls /api/notifications every 30s,
-// and shows native push pop-ups for new items.
+//
+// TWO notification channels:
+// 1. REAL Web Push (server → push service → phone)
+//    Works even when browser is FULLY CLOSED.
+//    Handled by usePushNotifications hook + service worker.
+//
+// 2. Polling fallback (for in-app badge updates)
+//    Polls every 60s to update unread count when tab is open.
 // ============================================
 
 'use client';

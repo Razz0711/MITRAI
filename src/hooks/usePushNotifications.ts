@@ -1,7 +1,8 @@
 // ============================================
-// MitrAI - Web Push Notification Hook
-// Registers service worker, requests permission,
-// and exposes showNotification() for native pop-ups.
+// MitrAI - Web Push Notification Hook (REAL Push API)
+// Uses PushManager.subscribe() with VAPID for
+// server-sent notifications that work even when
+// the browser/tab is CLOSED.
 // ============================================
 
 'use client';
@@ -10,37 +11,83 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 type PermissionState = 'default' | 'granted' | 'denied' | 'unsupported';
 
+// VAPID public key from env (available at build time via NEXT_PUBLIC_ prefix)
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
+
+/** Convert URL-safe base64 VAPID key → Uint8Array for PushManager */
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
 export function usePushNotifications() {
   const [permission, setPermission] = useState<PermissionState>('default');
   const swReg = useRef<ServiceWorkerRegistration | null>(null);
-  const ready = useRef(false);
+  const subscribed = useRef(false);
 
-  // Register service worker + check permission
+  /** Subscribe to Web Push via PushManager and send subscription to our server */
+  const subscribeToPush = useCallback(async (reg: ServiceWorkerRegistration) => {
+    if (subscribed.current || !VAPID_PUBLIC_KEY) return;
+    try {
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
+        });
+      }
+      // Send subscription to our server to store in DB
+      const subJson = sub.toJSON();
+      await fetch('/api/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: {
+            endpoint: sub.endpoint,
+            keys: {
+              p256dh: subJson.keys?.p256dh || '',
+              auth: subJson.keys?.auth || '',
+            },
+          },
+        }),
+      });
+      subscribed.current = true;
+    } catch (err) {
+      console.warn('Push subscribe failed:', err);
+    }
+  }, []);
+
+  // Register service worker on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!('Notification' in window)) {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
       setPermission('unsupported');
       return;
     }
     setPermission(Notification.permission as PermissionState);
 
-    // Register SW
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((reg) => {
-          swReg.current = reg;
-          ready.current = true;
-        })
-        .catch((err) => console.warn('SW registration failed:', err));
-    }
-  }, []);
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => {
+        swReg.current = reg;
+        // If already granted, auto-subscribe to push
+        if (Notification.permission === 'granted') {
+          subscribeToPush(reg);
+        }
+      })
+      .catch((err) => console.warn('SW registration failed:', err));
+  }, [subscribeToPush]);
 
-  // Request permission (call early, e.g. on first user interaction)
+  /** Request notification permission, then subscribe to push */
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (typeof window === 'undefined' || !('Notification' in window)) return false;
     if (Notification.permission === 'granted') {
       setPermission('granted');
+      if (swReg.current) subscribeToPush(swReg.current);
       return true;
     }
     if (Notification.permission === 'denied') {
@@ -50,17 +97,19 @@ export function usePushNotifications() {
     try {
       const result = await Notification.requestPermission();
       setPermission(result as PermissionState);
+      if (result === 'granted' && swReg.current) {
+        await subscribeToPush(swReg.current);
+      }
       return result === 'granted';
     } catch {
       return false;
     }
-  }, []);
+  }, [subscribeToPush]);
 
-  // Show a native notification pop-up
+  /** Fallback: show a local notification (for when tab IS active) */
   const showNotification = useCallback(
     (title: string, body: string, options?: { url?: string; tag?: string }) => {
       if (permission !== 'granted') return;
-
       const tag = options?.tag || `mitrai-${Date.now()}`;
       const notifOptions = {
         body,
@@ -70,13 +119,10 @@ export function usePushNotifications() {
         tag,
         renotify: true,
         data: { url: options?.url || '/dashboard' },
-        silent: false,
       } as NotificationOptions;
 
-      // Prefer service worker (works on mobile / when tab backgrounded)
       if (swReg.current) {
         swReg.current.showNotification(title, notifOptions).catch(() => {
-          // Fallback to Notification constructor (desktop)
           try { new Notification(title, notifOptions); } catch { /* noop */ }
         });
       } else {
@@ -86,5 +132,10 @@ export function usePushNotifications() {
     [permission],
   );
 
-  return { permission, requestPermission, showNotification, isSupported: permission !== 'unsupported' };
+  return {
+    permission,
+    requestPermission,
+    showNotification,
+    isSupported: permission !== 'unsupported',
+  };
 }
