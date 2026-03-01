@@ -18,10 +18,26 @@ interface CallRoomProps {
   audioOnly?: boolean;
 }
 
-// Fallback STUN servers (used while fetching TURN credentials)
+// Fallback ICE servers — includes free TURN for NAT traversal on mobile
 const FALLBACK_ICE: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  // OpenRelay free TURN servers (provided by metered.ca community)
+  {
+    urls: 'turn:openrelay.metered.ca:80',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 // Metered.ca TURN credentials (fetched dynamically)
@@ -34,21 +50,36 @@ let _fetchingIce = false;
 async function getIceServers(): Promise<RTCIceServer[]> {
   if (_cachedIceServers) return _cachedIceServers;
   if (_fetchingIce) {
-    // Wait for the in-flight fetch
     await new Promise(r => setTimeout(r, 1500));
     return _cachedIceServers || FALLBACK_ICE;
   }
   _fetchingIce = true;
   try {
-    const res = await fetch(`https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_API_KEY}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(
+      `https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_API_KEY}`,
+      { signal: controller.signal },
+    );
+    clearTimeout(timeoutId);
+    if (!res.ok) {
+      console.warn('[ICE] Metered API returned status', res.status, '— using fallback TURN');
+      return FALLBACK_ICE;
+    }
     const servers = await res.json();
     if (Array.isArray(servers) && servers.length > 0) {
-      _cachedIceServers = servers;
+      // Merge STUN fallback + Metered TURN for best coverage
+      _cachedIceServers = [...FALLBACK_ICE, ...servers];
       console.log('[ICE] Fetched', servers.length, 'TURN servers from Metered.ca');
-      return servers;
+      return _cachedIceServers;
     }
+    console.warn('[ICE] Metered returned empty/invalid data — using fallback TURN');
   } catch (e) {
-    console.error('[ICE] Failed to fetch TURN credentials:', e);
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      console.warn('[ICE] Metered API timed out after 5s — using fallback TURN');
+    } else {
+      console.error('[ICE] Failed to fetch TURN credentials:', e);
+    }
   } finally {
     _fetchingIce = false;
   }
@@ -143,6 +174,7 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
     let mounted = true;
 
     const init = async () => {
+      try {
       // ── 1. Get local media (progressive: audio first, then video) ──
       let stream: MediaStream;
       try {
@@ -184,17 +216,30 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         if (localVideoRef.current && stream.getVideoTracks().length > 0) {
           localVideoRef.current.srcObject = stream;
         }
-      } catch {
+        console.log('[Call] Media acquired:', stream.getTracks().map(t => t.kind).join(', '));
+      } catch (mediaErr) {
+        console.error('[Call] getUserMedia failed:', mediaErr);
         if (mounted) {
           setError('Microphone access denied. Please allow microphone in your browser settings and reload.');
         }
         return;
       }
 
+      // Show progress immediately after media is acquired
+      if (mounted) setStatus('waiting');
+
       // ── 2. Fetch TURN credentials & create RTCPeerConnection ──
-      const iceServers = await getIceServers();
+      let iceServers: RTCIceServer[];
+      try {
+        iceServers = await getIceServers();
+        console.log('[Call] Using', iceServers.length, 'ICE servers');
+      } catch {
+        console.warn('[Call] getIceServers threw, using fallback');
+        iceServers = FALLBACK_ICE;
+      }
       const pc = new RTCPeerConnection({ iceServers });
       pcRef.current = pc;
+      console.log('[Call] RTCPeerConnection created');
 
       localStreamRef.current!.getTracks().forEach(track => {
         pc.addTrack(track, localStreamRef.current!);
@@ -349,6 +394,7 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
 
       // ── Subscribe & announce ──
       channel.subscribe((subStatus: string) => {
+        console.log('[Call] Channel subscribe status:', subStatus);
         if (subStatus === 'SUBSCRIBED' && mounted) {
           setStatus('waiting');
           // Announce presence every 2s (stops once connected)
@@ -371,7 +417,20 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
           const clearHeartbeat = () => clearInterval(heartbeat);
           window.addEventListener('pagehide', clearHeartbeat, { once: true });
         }
+        // Handle subscription errors — don't leave user stuck
+        if (subStatus === 'CHANNEL_ERROR' || subStatus === 'TIMED_OUT') {
+          console.error('[Call] Channel subscription failed:', subStatus);
+          if (mounted) {
+            setError('Failed to connect to signaling server. Please check your internet and try again.');
+          }
+        }
       });
+      } catch (initErr) {
+        console.error('[Call] init() crashed:', initErr);
+        if (mounted) {
+          setError('Something went wrong setting up the call. Please reload and try again.');
+        }
+      }
     };
 
     // beforeunload + pagehide → auto-hangup when tab/browser closes
@@ -478,11 +537,12 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
     // Send leave event multiple times for reliability (mobile networks can drop single messages)
     const ch = channelRef.current;
     if (ch) {
-      ch.send({ type: 'broadcast', event: 'leave', payload: { from: myId } }).catch(() => {});
-      setTimeout(() => ch.send({ type: 'broadcast', event: 'leave', payload: { from: myId } }).catch(() => {}), 100);
-      setTimeout(() => ch.send({ type: 'broadcast', event: 'leave', payload: { from: myId } }).catch(() => {}), 300);
+      try { ch.send({ type: 'broadcast', event: 'leave', payload: { from: myId } }); } catch { /* best effort */ }
+      setTimeout(() => { try { ch.send({ type: 'broadcast', event: 'leave', payload: { from: myId } }); } catch { /* */ } }, 100);
+      setTimeout(() => { try { ch.send({ type: 'broadcast', event: 'leave', payload: { from: myId } }); } catch { /* */ } }, 300);
     }
-    setTimeout(() => { cleanup(); onLeave?.(); }, 500);
+    // Always cleanup + navigate away, even if channel doesn't exist yet (stuck in setup)
+    setTimeout(() => { cleanup(); onLeave?.(); }, ch ? 500 : 0);
   };
 
   // ── Error screen ──
