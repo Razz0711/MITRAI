@@ -344,7 +344,7 @@ export default function DashboardPage() {
               )}
             </button>
             {showNotifs && (
-              <div className="absolute right-0 top-10 w-72 max-h-80 overflow-y-auto card p-2 z-50 shadow-xl fade-in">
+              <div className="absolute left-0 sm:left-auto sm:right-0 top-10 w-72 max-h-80 overflow-y-auto card p-2 z-50 shadow-xl fade-in">
                 <p className="text-xs font-semibold px-2 py-1.5 border-b border-[var(--border)]">Notifications</p>
                 {notifications.length === 0 ? (
                   <p className="text-xs text-[var(--muted)] p-3 text-center">No notifications yet</p>
