@@ -4,12 +4,25 @@
 // ============================================
 
 import { supabase } from './core';
-import webpush from 'web-push';
-import { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } from '../env';
 
-// Configure web-push with VAPID keys (only on server)
-if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+// Lazy-loaded web-push (avoids crashing at build / import time)
+let _webpush: typeof import('web-push') | null = null;
+let _vapidConfigured = false;
+
+async function getWebPush() {
+  if (!_webpush) {
+    _webpush = (await import('web-push')).default as unknown as typeof import('web-push');
+  }
+  if (!_vapidConfigured) {
+    const pubKey = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '').replace(/=+$/, '').trim();
+    const privKey = (process.env.VAPID_PRIVATE_KEY || '').trim();
+    const subject = process.env.VAPID_SUBJECT || 'mailto:mitrai@svnit.ac.in';
+    if (pubKey && privKey) {
+      _webpush.setVapidDetails(subject, pubKey, privKey);
+      _vapidConfigured = true;
+    }
+  }
+  return _webpush;
 }
 
 export interface PushSubscriptionRecord {
@@ -75,15 +88,18 @@ export async function sendWebPush(
   sub: { endpoint: string; p256dh: string; auth: string },
   payload: { title: string; body: string; url?: string },
 ): Promise<boolean> {
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return false;
+  const pubKey = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '').trim();
+  const privKey = (process.env.VAPID_PRIVATE_KEY || '').trim();
+  if (!pubKey || !privKey) return false;
 
+  const wp = await getWebPush();
   const pushSubscription = {
     endpoint: sub.endpoint,
     keys: { p256dh: sub.p256dh, auth: sub.auth },
   };
 
   try {
-    await webpush.sendNotification(pushSubscription, JSON.stringify(payload));
+    await wp.sendNotification(pushSubscription, JSON.stringify(payload));
     return true;
   } catch (err: unknown) {
     const statusCode = (err as { statusCode?: number })?.statusCode;
