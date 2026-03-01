@@ -18,34 +18,42 @@ interface CallRoomProps {
   audioOnly?: boolean;
 }
 
-// STUN + TURN servers for NAT traversal
-// TURN is essential for 4G/5G symmetric NATs (common on Indian mobile networks)
-const ICE_SERVERS: RTCIceServer[] = [
+// Fallback STUN servers (used while fetching TURN credentials)
+const FALLBACK_ICE: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  // Free TURN relay servers (OpenRelay project) — works for most connections
-  {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  // Additional free TURN (Metered.ca public)
-  {
-    urls: 'turns:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
 ];
+
+// Metered.ca TURN credentials (fetched dynamically)
+const METERED_API_KEY = '85heS8uebI0d0CNV_IGQwtoskEUR0MYeKIP5AcI8kgS_sp0T';
+const METERED_DOMAIN = 'mitrai.metered.live';
+
+let _cachedIceServers: RTCIceServer[] | null = null;
+let _fetchingIce = false;
+
+async function getIceServers(): Promise<RTCIceServer[]> {
+  if (_cachedIceServers) return _cachedIceServers;
+  if (_fetchingIce) {
+    // Wait for the in-flight fetch
+    await new Promise(r => setTimeout(r, 1500));
+    return _cachedIceServers || FALLBACK_ICE;
+  }
+  _fetchingIce = true;
+  try {
+    const res = await fetch(`https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_API_KEY}`);
+    const servers = await res.json();
+    if (Array.isArray(servers) && servers.length > 0) {
+      _cachedIceServers = servers;
+      console.log('[ICE] Fetched', servers.length, 'TURN servers from Metered.ca');
+      return servers;
+    }
+  } catch (e) {
+    console.error('[ICE] Failed to fetch TURN credentials:', e);
+  } finally {
+    _fetchingIce = false;
+  }
+  return FALLBACK_ICE;
+}
 
 /** Detect mobile device for adaptive constraints */
 const isMobile = () => typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -183,8 +191,9 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         return;
       }
 
-      // ── 2. Create RTCPeerConnection ──
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      // ── 2. Fetch TURN credentials & create RTCPeerConnection ──
+      const iceServers = await getIceServers();
+      const pc = new RTCPeerConnection({ iceServers });
       pcRef.current = pc;
 
       localStreamRef.current!.getTracks().forEach(track => {
