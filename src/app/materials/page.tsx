@@ -64,12 +64,12 @@ export default function MaterialsPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  // Upload form state
+  // Upload form state — default to user's own department & year
   const [showUpload, setShowUpload] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [department, setDepartment] = useState('');
-  const [yearLevel, setYearLevel] = useState('');
+  const [department, setDepartment] = useState(user?.department || '');
+  const [yearLevel, setYearLevel] = useState(user?.yearLevel || '');
   const [subject, setSubject] = useState('');
   const [materialType, setMaterialType] = useState<MaterialType>('notes');
   const [file, setFile] = useState<File | null>(null);
@@ -77,12 +77,12 @@ export default function MaterialsPage() {
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
 
-  // List state
+  // List state — default filters to user's own department & year
   const [materials, setMaterials] = useState<StudyMaterial[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterDept, setFilterDept] = useState('all');
+  const [filterDept, setFilterDept] = useState(user?.department || 'all');
   const [filterType, setFilterType] = useState('all');
-  const [filterYear, setFilterYear] = useState('all');
+  const [filterYear, setFilterYear] = useState(user?.yearLevel || 'all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchMaterials = useCallback(async () => {
