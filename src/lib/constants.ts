@@ -16,6 +16,14 @@ export const NOTIFICATION_TYPES = {
   SESSION_REQUEST: 'session_request',
   SESSION_ACCEPTED: 'session_accepted',
   SESSION_DECLINED: 'session_declined',
+  // Engagement notifications
+  ROOM_JOIN: 'room_join',
+  ROOM_MESSAGE: 'room_message',
+  FRIEND_REQUEST: 'friend_request',
+  FRIEND_ACCEPTED: 'friend_accepted',
+  ANON_WAITING: 'anon_waiting',
+  DOUBT_POSTED: 'doubt_posted',
+  MATERIAL_UPLOADED: 'material_uploaded',
 } as const;
 
 /** Union type derived from the constants object */

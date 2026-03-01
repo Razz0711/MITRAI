@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BirthdayInfo } from '@/lib/types';
 
 interface BirthdayBannerProps {
@@ -17,8 +17,32 @@ interface BirthdayBannerProps {
 export default function BirthdayBanner({ birthdays, currentUserId, wishedMap, onWish }: BirthdayBannerProps) {
   const [wishingId, setWishingId] = useState<string | null>(null);
   const [localWished, setLocalWished] = useState<Record<string, boolean>>({});
+  const [currentDate, setCurrentDate] = useState(() => new Date().toDateString());
 
-  const todayBirthdays = birthdays.filter(b => b.isToday && b.userId !== currentUserId);
+  // Check every minute if the date has changed; if so, force re-filter
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date().toDateString();
+      if (now !== currentDate) {
+        setCurrentDate(now);
+      }
+    }, 60_000); // check every 60 seconds
+    return () => clearInterval(interval);
+  }, [currentDate]);
+
+  // Re-filter birthdays based on current client date
+  const todayBirthdays = birthdays.filter(b => {
+    if (b.userId === currentUserId) return false;
+    // Validate isToday against the client's current date
+    if (!b.isToday) return false;
+    // Double-check: if dayMonth is available, verify against current client date
+    if (b.dayMonth) {
+      const now = new Date();
+      const todayDM = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      return b.dayMonth === todayDM;
+    }
+    return true;
+  });
 
   if (todayBirthdays.length === 0) return null;
 

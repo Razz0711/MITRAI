@@ -14,7 +14,7 @@ import SubTabBar from '@/components/SubTabBar';
 type Status = 'loading' | 'no-pass' | 'pending-payment' | 'banned' | 'idle' | 'queuing' | 'matched';
 
 export default function AnonLobbyPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
   const [status, setStatus] = useState<Status>('loading');
@@ -228,6 +228,17 @@ export default function AnonLobbyPage() {
     const upiUrl = generateUpiLink(amount);
     return `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(upiUrl)}&bgcolor=1a1a2e&color=ffffff&format=png`;
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[var(--muted)] text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

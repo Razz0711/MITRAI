@@ -45,6 +45,16 @@ export default function CallPage() {
     if (room) setRoomCode(room);
     if (buddy) setBuddyName(buddy);
 
+    // Auto-generate room code if coming from a link with mode but no room
+    if (mode && !room) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      setRoomCode(code);
+    }
+
     // Auto-start if all params are present
     if (mode && room && savedName) {
       setIsInCall(true);
@@ -79,7 +89,22 @@ export default function CallPage() {
   };
 
   const startCall = () => {
-    if (!roomCode || !displayName || !callMode) return;
+    if (!callMode) return;
+    if (!displayName.trim()) {
+      // Try to get name from localStorage as fallback
+      const savedName = localStorage.getItem('mitrai_student_name');
+      if (savedName) {
+        setDisplayName(savedName);
+      } else {
+        alert('Please enter your name before starting a call');
+        return;
+      }
+    }
+    if (!roomCode) {
+      // Auto-generate if missing
+      generateRoomCode();
+      return;
+    }
     setIsInCall(true);
   };
 

@@ -25,9 +25,24 @@ export default function SessionPage() {
   const [student2Id, setStudent2Id] = useState('');
   const [callMode, setCallMode] = useState<'voice' | 'video' | null>(null);
   const [studentName, setStudentName] = useState('');
+  const [callRoomId] = useState(() => `session_${Date.now().toString(36)}`);
 
   useEffect(() => {
     loadStudents();
+    // Restore session state from sessionStorage if it exists
+    try {
+      const saved = sessionStorage.getItem('mitrai_active_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.topic && parsed.sessionStarted) {
+          setTopic(parsed.topic);
+          setGoal(parsed.goal || '');
+          setSessionStarted(true);
+          setSessionTime(parsed.sessionTime || 0);
+          setMessages(parsed.messages || []);
+        }
+      }
+    } catch { /* ignore corrupted data */ }
   }, []);
 
   useEffect(() => {
@@ -37,6 +52,19 @@ export default function SessionPage() {
     }
     return () => clearInterval(interval);
   }, [sessionStarted]);
+
+  // Persist active session to sessionStorage so it survives refresh
+  useEffect(() => {
+    if (sessionStarted) {
+      sessionStorage.setItem('mitrai_active_session', JSON.stringify({
+        topic,
+        goal,
+        sessionStarted: true,
+        sessionTime,
+        messages: messages.slice(-50), // keep last 50 messages to limit storage
+      }));
+    }
+  }, [sessionStarted, topic, goal, sessionTime, messages]);
 
   const loadStudents = async () => {
     try {
@@ -80,6 +108,8 @@ export default function SessionPage() {
     };
     setMessages(prev => [...prev, summaryMsg]);
     setSessionStarted(false);
+    // Clear persisted session state
+    sessionStorage.removeItem('mitrai_active_session');
   };
 
   const handleSendMessage = async (userMessage: string) => {
@@ -271,7 +301,7 @@ export default function SessionPage() {
         {callMode && (
           <div className="w-1/2 overflow-hidden fade-in">
             <CallRoom
-              roomName={`session_${topic.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now().toString(36)}`}
+              roomName={`${callRoomId}_${topic.replace(/[^a-zA-Z0-9]/g, '_')}`}
               displayName={studentName || 'Student'}
               audioOnly={callMode === 'voice'}
               onLeave={() => setCallMode(null)}

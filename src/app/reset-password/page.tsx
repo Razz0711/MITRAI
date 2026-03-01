@@ -20,26 +20,59 @@ function ResetPasswordInner() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Check if we arrived from a password reset redirect (Supabase puts tokens in URL hash)
+  // Check if we arrived from a password reset redirect
+  // Supabase PKCE flow sends ?code=...&type=recovery as query params
+  // Legacy implicit flow sends #access_token=...&type=recovery as hash fragments
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get('type') || searchParams.get('type');
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
+    let handled = false;
 
-    if (type === 'recovery' && accessToken) {
-      // Set the session from the recovery tokens
-      supabaseBrowser.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken || '',
-      }).then(({ error }) => {
+    // 1) PKCE flow: exchange the ?code= parameter for a session
+    const code = searchParams.get('code');
+    const typeParam = searchParams.get('type');
+    if (code) {
+      handled = true;
+      supabaseBrowser.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (error) {
           setError('Invalid or expired reset link. Please request a new one.');
+        } else if (typeParam === 'recovery') {
+          setStep('update');
         } else {
           setStep('update');
         }
       });
     }
+
+    // 2) Legacy implicit flow: tokens in URL hash
+    if (!handled) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const hashType = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+
+      if (hashType === 'recovery' && accessToken) {
+        handled = true;
+        supabaseBrowser.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        }).then(({ error }) => {
+          if (error) {
+            setError('Invalid or expired reset link. Please request a new one.');
+          } else {
+            setStep('update');
+          }
+        });
+      }
+    }
+
+    // 3) Listen for PASSWORD_RECOVERY auth event as a fallback
+    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setStep('update');
+        setError('');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [searchParams]);
 
   const handleRequestReset = async (e: React.FormEvent) => {
@@ -89,6 +122,8 @@ function ResetPasswordInner() {
         setError(error.message || 'Failed to update password');
       } else {
         setMessage('Password updated successfully! Redirecting to login...');
+        // Sign out the recovery session so user can log in fresh
+        await supabaseBrowser.auth.signOut();
         setTimeout(() => router.push('/login'), 2000);
       }
     } catch {

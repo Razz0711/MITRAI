@@ -85,6 +85,20 @@ export default function DashboardPage() {
     if (user) { loadBirthdays(); loadNotifications(); loadStatus(); }
   }, [user, loadBirthdays, loadNotifications, loadStatus]);
 
+  // Re-fetch birthdays when the date changes (e.g., user stays on page past midnight)
+  useEffect(() => {
+    if (!user) return;
+    let lastDate = new Date().toDateString();
+    const dateCheck = setInterval(() => {
+      const now = new Date().toDateString();
+      if (now !== lastDate) {
+        lastDate = now;
+        loadBirthdays(); // Re-fetch from server so isToday is recalculated
+      }
+    }, 60_000); // check every minute
+    return () => clearInterval(dateCheck);
+  }, [user, loadBirthdays]);
+
   // Load gamification data
   useEffect(() => {
     if (!user) return;

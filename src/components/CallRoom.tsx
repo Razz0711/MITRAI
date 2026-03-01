@@ -229,8 +229,9 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         ref={iframeRef}
         src={getJitsiUrl()}
         className="flex-1 w-full border-0"
-        allow="camera; microphone; display-capture; autoplay; clipboard-write"
+        allow="camera; microphone; display-capture; autoplay; clipboard-write; fullscreen"
         allowFullScreen
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"
         style={{ minHeight: 0 }}
       />
     </div>
