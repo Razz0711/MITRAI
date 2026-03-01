@@ -18,16 +18,37 @@ interface CallRoomProps {
   audioOnly?: boolean;
 }
 
-// Free STUN servers for NAT traversal (handles 85%+ of network configs)
+// STUN + TURN servers for NAT traversal
+// TURN is essential for 4G/5G symmetric NATs (common on Indian mobile networks)
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  { urls: 'stun:stun4.l.google.com:19302' },
-  { urls: 'stun:stun.stunprotocol.org:3478' },
-  { urls: 'stun:stun.voipbuster.com:3478' },
+  // Free TURN relay servers (OpenRelay project) — works for most connections
+  {
+    urls: 'turn:openrelay.metered.ca:80',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  // Additional free TURN (Metered.ca public)
+  {
+    urls: 'turns:openrelay.metered.ca:443',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
+
+/** Detect mobile device for adaptive constraints */
+const isMobile = () => typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 type CallStatus = 'getting-media' | 'waiting' | 'connecting' | 'connected' | 'failed';
 
@@ -114,34 +135,50 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
     let mounted = true;
 
     const init = async () => {
-      // ── 1. Get local media ──
+      // ── 1. Get local media (progressive: audio first, then video) ──
+      let stream: MediaStream;
       try {
-        // Timeout getUserMedia after 15s — mobile browsers can hang silently
-        const mediaPromise = navigator.mediaDevices.getUserMedia({
+        // Step A: Always get audio first (lightweight, rarely fails)
+        const audioStream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-          video: audioOnly ? false : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+          video: false,
         });
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('TIMEOUT')), 15000)
-        );
-        const stream = await Promise.race([mediaPromise, timeoutPromise]);
-        if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
+        if (!mounted) { audioStream.getTracks().forEach(t => t.stop()); return; }
+
+        if (audioOnly) {
+          stream = audioStream;
+        } else {
+          // Step B: Then add video with mobile-adaptive constraints
+          try {
+            const videoConstraints = isMobile()
+              ? { width: { ideal: 480 }, height: { ideal: 640 }, facingMode: 'user', frameRate: { ideal: 24 } }
+              : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' };
+
+            const videoStream = await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: videoConstraints,
+            });
+            if (!mounted) { audioStream.getTracks().forEach(t => t.stop()); videoStream.getTracks().forEach(t => t.stop()); return; }
+
+            // Merge audio + video into one stream
+            stream = new MediaStream([
+              ...audioStream.getAudioTracks(),
+              ...videoStream.getVideoTracks(),
+            ]);
+          } catch {
+            // Camera denied/failed — fall back to audio-only
+            console.warn('Camera failed, falling back to audio-only');
+            stream = audioStream;
+          }
+        }
+
         localStreamRef.current = stream;
-        if (localVideoRef.current && !audioOnly) {
+        if (localVideoRef.current && stream.getVideoTracks().length > 0) {
           localVideoRef.current.srcObject = stream;
         }
       } catch (err) {
         if (mounted) {
-          const msg = (err as Error)?.message || '';
-          if (msg === 'TIMEOUT') {
-            setError('Camera/Microphone permission timed out. Please tap the permission prompt in your browser, or check Settings → Site permissions.');
-          } else {
-            setError(
-              audioOnly
-                ? 'Microphone access denied. Please allow microphone access in your browser settings and reload.'
-                : 'Camera/Microphone access denied. Please allow access in your browser settings and reload.'
-            );
-          }
+          setError('Microphone access denied. Please allow microphone in your browser settings and reload.');
         }
         return;
       }
@@ -305,6 +342,7 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
       channel.subscribe((subStatus: string) => {
         if (subStatus === 'SUBSCRIBED' && mounted) {
           setStatus('waiting');
+          // Announce presence every 2s (stops once connected)
           const announce = () => {
             channel.send({
               type: 'broadcast',
@@ -314,23 +352,41 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
           };
           announce();
           announceRef.current = setInterval(announce, 2000);
+
+          // ── Heartbeat: send 'ping' every 3s so partner can detect we're alive ──
+          const heartbeat = setInterval(() => {
+            if (!mounted) { clearInterval(heartbeat); return; }
+            channel.send({ type: 'broadcast', event: 'ping', payload: { from: myId } }).catch(() => {});
+          }, 3000);
+          // Store heartbeat interval for cleanup
+          const origCleanup = cleanup;
+          // We'll clear heartbeat on unmount via the return function below
+          const clearHeartbeat = () => clearInterval(heartbeat);
+          window.addEventListener('pagehide', clearHeartbeat, { once: true });
         }
       });
     };
 
-    // beforeunload → auto-hangup when tab/browser closes
+    // beforeunload + pagehide → auto-hangup when tab/browser closes
     const handleBeforeUnload = () => {
-      channelRef.current?.send({ type: 'broadcast', event: 'leave', payload: { from: myId } });
+      // Use sendBeacon-style: try broadcast, it's best-effort on unload
+      try {
+        channelRef.current?.send({ type: 'broadcast', event: 'leave', payload: { from: myId } });
+      } catch { /* best effort */ }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
 
     init();
 
     return () => {
       mounted = false;
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
       if (channelRef.current) {
-        channelRef.current.send({ type: 'broadcast', event: 'leave', payload: { from: myId } });
+        try {
+          channelRef.current.send({ type: 'broadcast', event: 'leave', payload: { from: myId } });
+        } catch { /* best effort */ }
       }
       cleanup();
     };
@@ -412,8 +468,14 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
   };
 
   const endCall = () => {
-    channelRef.current?.send({ type: 'broadcast', event: 'leave', payload: { from: myId } });
-    setTimeout(() => { cleanup(); onLeave?.(); }, 150);
+    // Send leave event multiple times for reliability (mobile networks can drop single messages)
+    const ch = channelRef.current;
+    if (ch) {
+      ch.send({ type: 'broadcast', event: 'leave', payload: { from: myId } }).catch(() => {});
+      setTimeout(() => ch.send({ type: 'broadcast', event: 'leave', payload: { from: myId } }).catch(() => {}), 100);
+      setTimeout(() => ch.send({ type: 'broadcast', event: 'leave', payload: { from: myId } }).catch(() => {}), 300);
+    }
+    setTimeout(() => { cleanup(); onLeave?.(); }, 500);
   };
 
   // ── Error screen ──
