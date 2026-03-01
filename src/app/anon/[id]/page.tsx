@@ -420,7 +420,7 @@ export default function AnonChatRoomPage() {
           <div className="bg-[var(--background)] border border-[var(--border)] rounded-2xl p-6 max-w-sm w-full">
             <h3 className="text-lg font-bold text-[var(--foreground)] mb-2">🚫 Block User</h3>
             <p className="text-sm text-[var(--muted)] mb-4">
-              Are you sure you want to block this user? This will close the chat and they won't be matched with you again.
+              Are you sure you want to block this user? This will close the chat and they won&apos;t be matched with you again.
             </p>
             <div className="flex gap-2">
               <button onClick={() => setShowBlockConfirm(false)} className="flex-1 py-2.5 rounded-lg border border-[var(--border)] text-[var(--muted)] text-sm">
