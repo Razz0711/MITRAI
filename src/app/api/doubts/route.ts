@@ -13,6 +13,7 @@ import {
   upvoteDoubt,
   closeDoubt,
   awardXP,
+  cleanupExpiredDoubts,
 } from '@/lib/store';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
@@ -26,6 +27,9 @@ export async function GET(req: NextRequest) {
 
   const department = req.nextUrl.searchParams.get('department') || undefined;
   const status = req.nextUrl.searchParams.get('status') || undefined;
+
+  // Auto-cleanup doubts older than 24 hours
+  await cleanupExpiredDoubts();
 
   const doubts = await getDoubts({ department, status });
   return NextResponse.json({ success: true, data: { doubts } });

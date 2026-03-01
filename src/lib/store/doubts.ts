@@ -29,6 +29,24 @@ export interface DoubtReply {
 }
 
 // ── Doubts CRUD ──
+
+// Auto-delete doubts (and their replies) older than 24 hours
+export async function cleanupExpiredDoubts(): Promise<number> {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  // First delete replies for expired doubts
+  const { data: oldDoubts } = await supabase.from('doubts').select('id').lt('created_at', cutoff);
+  if (oldDoubts && oldDoubts.length > 0) {
+    const ids = oldDoubts.map(d => d.id);
+    await supabase.from('doubt_replies').delete().in('doubt_id', ids);
+  }
+  // Then delete the expired doubts
+  const { data, error } = await supabase.from('doubts').delete().lt('created_at', cutoff).select('id');
+  if (error) { console.error('cleanupExpiredDoubts error:', error); return 0; }
+  const count = data?.length || 0;
+  if (count > 0) console.log(`[Doubts] Cleaned up ${count} expired doubt(s)`);
+  return count;
+}
+
 export async function getDoubts(filters?: { department?: string; status?: string }, limit = 50): Promise<Doubt[]> {
   let query = supabase.from('doubts').select('*').order('created_at', { ascending: false }).limit(limit);
   if (filters?.department) query = query.eq('department', filters.department);
