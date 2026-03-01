@@ -28,7 +28,7 @@ async function sendOtpEmail(to: string, code: string) {
     html: `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #1a1a2e; border-radius: 16px; overflow: hidden;">
         <div style="background: #1a1a2e; padding: 28px 24px 12px; text-align: center;">
-          <img src="https://mitrai-study.vercel.app/logo.jpg" alt="MitrAI" width="72" style="display: block; margin: 0 auto; border-radius: 18px;" />
+          <img src="https://mitrai-study.vercel.app/logo.jpg" alt="MitrAI" width="120" style="display: block; margin: 0 auto; height: auto; border-radius: 14px;" />
         </div>
         <div style="background: linear-gradient(180deg, #1a1a2e 0%, #7c3aed 80%, #a855f7 100%); padding: 8px 24px 24px; text-align: center;">
           <h1 style="color: white; font-size: 22px; margin: 0;">MitrAI</h1>

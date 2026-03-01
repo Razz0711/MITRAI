@@ -227,7 +227,7 @@ function LoginPageInner() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/logo.jpg" alt="MitrAI" className="w-14 h-14 mx-auto mb-3" />
+          <img src="/logo.jpg" alt="MitrAI" className="h-14 w-auto mx-auto mb-3" />
           <h1 className="text-xl font-bold text-[var(--foreground)]">
             {isSignup ? 'Join MitrAI' : 'Welcome back'}
           </h1>

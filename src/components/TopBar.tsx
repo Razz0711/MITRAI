@@ -31,7 +31,7 @@ export default function TopBar() {
       <div className="flex items-center h-14 px-3 max-w-7xl mx-auto">
         {/* Logo — compact */}
         <Link href="/home" className="flex items-center gap-1.5 shrink-0 mr-3">
-          <img src="/logo.jpg" alt="MitrAI" className="h-7 w-auto" />
+          <img src="/logo.jpg" alt="MitrAI" className="h-8 w-auto" />
           <span className="text-sm font-bold text-[var(--foreground)] hidden sm:inline">MitrAI</span>
         </Link>
 

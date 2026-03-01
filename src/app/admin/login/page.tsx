@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <img src="/logo.jpg" alt="MitrAI" className="w-16 h-16 mx-auto mb-4" />
+          <img src="/logo.jpg" alt="MitrAI" className="h-14 w-auto mx-auto mb-4" />
           <h1 className="text-xl font-bold text-[var(--foreground)]">Admin Login</h1>
           <p className="text-xs text-[var(--muted)] mt-1">MitrAI Administration Panel</p>
         </div>
