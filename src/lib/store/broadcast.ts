@@ -4,7 +4,6 @@
 
 import { addNotification } from './notifications';
 import { getAllStudents } from './students';
-import { Notification } from '../types';
 import { NotificationType } from '../constants';
 
 /** Broadcast a notification to all users */
