@@ -12,6 +12,7 @@ import {
   getAttendanceRecordById,
   getAttendanceLogs,
   upsertAttendanceLog,
+  deleteAttendanceLog,
   AttendanceLogEntry,
 } from '@/lib/store';
 import { AttendanceRecord } from '@/lib/types';
@@ -141,5 +142,76 @@ export async function DELETE(req: NextRequest) {
   } catch (error) {
     console.error('Attendance DELETE error:', error);
     return NextResponse.json({ success: false, error: 'Failed to delete attendance' }, { status: 500 });
+  }
+}
+
+// PATCH /api/attendance — toggle a specific day's log for a subject + adjust aggregate counts
+// body: { recordId, userId, subject, date, action: 'present' | 'absent' | 'remove' }
+export async function PATCH(req: NextRequest) {
+  const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  try {
+    const body = await req.json();
+    const { recordId, userId, subject, date, action } = body;
+    if (!recordId || !userId || !subject || !date || !action) {
+      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
+    }
+    if (userId !== authUser.id) return forbidden();
+    if (!['present', 'absent', 'remove'].includes(action)) {
+      return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
+    }
+
+    // Get the attendance record to adjust counts
+    const record = await getAttendanceRecordById(recordId);
+    if (!record || record.userId !== authUser.id) {
+      return NextResponse.json({ success: false, error: 'Record not found' }, { status: 404 });
+    }
+
+    // Find existing log for this (user, subject, date) to know prev state
+    const existingLogs = await getAttendanceLogs(userId, date, date);
+    const existingLog = existingLogs.find(l => l.subject === subject);
+    const prevStatus: 'present' | 'absent' | null = existingLog ? existingLog.status : null;
+
+    // Calculate count adjustments
+    let totalDelta = 0;
+    let attendedDelta = 0;
+
+    if (action === 'remove') {
+      if (prevStatus === 'present') { totalDelta = -1; attendedDelta = -1; }
+      else if (prevStatus === 'absent') { totalDelta = -1; }
+      // Delete the log
+      await deleteAttendanceLog(userId, subject, date);
+    } else {
+      // action is 'present' or 'absent'
+      if (prevStatus === null) {
+        // New entry
+        totalDelta = 1;
+        attendedDelta = action === 'present' ? 1 : 0;
+      } else if (prevStatus === 'present' && action === 'absent') {
+        attendedDelta = -1;
+      } else if (prevStatus === 'absent' && action === 'present') {
+        attendedDelta = 1;
+      }
+      // Upsert the log
+      const logEntry: AttendanceLogEntry = {
+        id: existingLog?.id || `alog_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        userId, subject: subject.trim(), date, status: action as 'present' | 'absent',
+        createdAt: existingLog?.createdAt || new Date().toISOString(),
+      };
+      await upsertAttendanceLog(logEntry);
+    }
+
+    // Update aggregate counts
+    const newTotal = Math.max(0, record.totalClasses + totalDelta);
+    const newAttended = Math.max(0, Math.min(record.attendedClasses + attendedDelta, newTotal));
+    const updated: AttendanceRecord = {
+      ...record, totalClasses: newTotal, attendedClasses: newAttended,
+      lastUpdated: new Date().toISOString(),
+    };
+    await upsertAttendance(updated);
+
+    return NextResponse.json({ success: true, data: { record: updated, totalDelta, attendedDelta } });
+  } catch (error) {
+    console.error('Attendance PATCH error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to toggle day' }, { status: 500 });
   }
 }

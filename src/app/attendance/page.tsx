@@ -46,6 +46,15 @@ export default function AttendancePage() {
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
+  // Per-subject calendar
+  const [subjectCalId, setSubjectCalId] = useState<string | null>(null); // attendance record id
+  const [subjectCalMonth, setSubjectCalMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [subjectCalLogs, setSubjectCalLogs] = useState<AttendanceLogEntry[]>([]);
+  const [subjectCalLoading, setSubjectCalLoading] = useState(false);
+
   const loadAttendance = useCallback(async () => {
     if (!user) return;
     try {
@@ -215,6 +224,122 @@ export default function AttendancePage() {
       return { ...prev, month: prev.month + 1 };
     });
     setSelectedDay(null);
+  };
+
+  // ── Per-subject calendar helpers ──
+  const loadSubjectCalLogs = useCallback(async (subject: string) => {
+    if (!user) return;
+    setSubjectCalLoading(true);
+    const y = subjectCalMonth.year;
+    const m = subjectCalMonth.month;
+    const start = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const end = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    try {
+      const res = await fetch(`/api/attendance?userId=${user.id}&logs=true&start=${start}&end=${end}`);
+      const data = await res.json();
+      if (data.success) {
+        // Filter logs for this specific subject
+        const logs = (data.data || []).filter((l: AttendanceLogEntry) => l.subject === subject);
+        setSubjectCalLogs(logs);
+      }
+    } catch (err) { console.error('loadSubjectCalLogs:', err); }
+    setSubjectCalLoading(false);
+  }, [user, subjectCalMonth]);
+
+  // Load subject calendar logs when expanded or month changes
+  useEffect(() => {
+    if (subjectCalId && user) {
+      const record = attendance.find(a => a.id === subjectCalId);
+      if (record) loadSubjectCalLogs(record.subject);
+    }
+  }, [subjectCalId, subjectCalMonth, user, attendance, loadSubjectCalLogs]);
+
+  const toggleSubjectCal = (recordId: string) => {
+    if (subjectCalId === recordId) {
+      setSubjectCalId(null);
+      setSubjectCalLogs([]);
+    } else {
+      setSubjectCalId(recordId);
+      setSubjectCalMonth(() => {
+        const now = new Date();
+        return { year: now.getFullYear(), month: now.getMonth() };
+      });
+    }
+  };
+
+  const subjectCalPrevMonth = () => {
+    setSubjectCalMonth(prev => {
+      if (prev.month === 0) return { year: prev.year - 1, month: 11 };
+      return { ...prev, month: prev.month - 1 };
+    });
+  };
+
+  const subjectCalNextMonth = () => {
+    setSubjectCalMonth(prev => {
+      if (prev.month === 11) return { year: prev.year + 1, month: 0 };
+      return { ...prev, month: prev.month + 1 };
+    });
+  };
+
+  const handleToggleDay = async (record: AttendanceRecord, dateStr: string) => {
+    if (!user) return;
+    // Determine current status for this day
+    const existing = subjectCalLogs.find(l => l.date === dateStr);
+    const prevStatus = existing?.status || null;
+
+    // Cycle: null → present → absent → remove
+    let action: 'present' | 'absent' | 'remove';
+    if (!prevStatus) action = 'present';
+    else if (prevStatus === 'present') action = 'absent';
+    else action = 'remove'; // absent → remove
+
+    try {
+      const res = await fetch('/api/attendance', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recordId: record.id,
+          userId: user.id,
+          subject: record.subject,
+          date: dateStr,
+          action,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Update local attendance record counts
+        const { totalDelta, attendedDelta } = data.data;
+        setAttendance(prev =>
+          prev.map(a =>
+            a.id === record.id
+              ? {
+                  ...a,
+                  totalClasses: Math.max(0, a.totalClasses + totalDelta),
+                  attendedClasses: Math.max(0, a.attendedClasses + attendedDelta),
+                  lastUpdated: new Date().toISOString(),
+                }
+              : a
+          )
+        );
+        // Update local subject calendar logs
+        if (action === 'remove') {
+          setSubjectCalLogs(prev => prev.filter(l => l.date !== dateStr));
+        } else {
+          setSubjectCalLogs(prev => {
+            const idx = prev.findIndex(l => l.date === dateStr);
+            if (idx >= 0) {
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], status: action };
+              return updated;
+            }
+            return [...prev, { id: `temp_${dateStr}`, userId: user.id, subject: record.subject, date: dateStr, status: action, createdAt: new Date().toISOString() }];
+          });
+        }
+        // Refresh global calendar if open
+        if (showCalendar) loadCalendarLogs();
+      }
+    } catch (err) { console.error('handleToggleDay:', err); }
   };
 
   if (loading) {
@@ -555,6 +680,15 @@ export default function AttendancePage() {
                         ✗ Absent
                       </button>
                       <button
+                        onClick={() => toggleSubjectCal(a.id)}
+                        className={`text-xs px-2 py-1.5 rounded-lg transition-colors ${
+                          subjectCalId === a.id ? 'bg-[var(--primary)]/20 text-[var(--primary-light)]' : 'hover:bg-white/10 text-[var(--muted)]'
+                        }`}
+                        title="Day-wise calendar"
+                      >
+                        📅
+                      </button>
+                      <button
                         onClick={() => { setEditingId(a.id); setEditTotal(a.totalClasses); setEditAttended(a.attendedClasses); }}
                         className="text-xs px-2 py-1.5 rounded-lg hover:bg-white/10 text-[var(--muted)] transition-colors"
                         title="Edit manually"
@@ -611,6 +745,100 @@ export default function AttendancePage() {
                     </div>
                   )}
                 </div>
+
+                {/* Per-subject mini calendar */}
+                {subjectCalId === a.id && (
+                  <div className="mt-3 pt-3 border-t border-[var(--border)] fade-in">
+                    {/* Month nav */}
+                    <div className="flex items-center justify-between mb-3">
+                      <button onClick={subjectCalPrevMonth} className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors">◀</button>
+                      <h4 className="text-xs font-semibold">
+                        {monthNames[subjectCalMonth.month]} {subjectCalMonth.year}
+                      </h4>
+                      <button onClick={subjectCalNextMonth} className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors">▶</button>
+                    </div>
+
+                    {subjectCalLoading ? (
+                      <div className="text-center py-4">
+                        <p className="text-[10px] text-[var(--muted)]">Loading...</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Day headers */}
+                        <div className="grid grid-cols-7 gap-1 mb-1">
+                          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                            <div key={`${d}-${i}`} className="text-center text-[8px] text-[var(--muted)] font-medium">{d}</div>
+                          ))}
+                        </div>
+
+                        {/* Mini calendar grid */}
+                        {(() => {
+                          const { year, month } = subjectCalMonth;
+                          const firstDay = new Date(year, month, 1).getDay();
+                          const daysInMonth = new Date(year, month + 1, 0).getDate();
+                          const today = new Date().toISOString().slice(0, 10);
+                          const cells: React.ReactNode[] = [];
+
+                          for (let i = 0; i < firstDay; i++) {
+                            cells.push(<div key={`se-${i}`} />);
+                          }
+
+                          for (let d = 1; d <= daysInMonth; d++) {
+                            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                            const log = subjectCalLogs.find(l => l.date === dateStr);
+                            const isToday = dateStr === today;
+
+                            let bgClass = 'hover:bg-white/10';
+                            let ringClass = '';
+                            if (log?.status === 'present') {
+                              bgClass = 'bg-green-500/25 text-green-300';
+                              ringClass = 'ring-1 ring-green-500/40';
+                            } else if (log?.status === 'absent') {
+                              bgClass = 'bg-red-500/25 text-red-300';
+                              ringClass = 'ring-1 ring-red-500/40';
+                            }
+
+                            cells.push(
+                              <button
+                                key={dateStr}
+                                onClick={() => handleToggleDay(a, dateStr)}
+                                className={`flex items-center justify-center rounded text-[10px] min-h-[28px] transition-all ${bgClass} ${ringClass} ${
+                                  isToday ? 'font-bold underline' : ''
+                                }`}
+                                title={log ? `${log.status} — tap to cycle` : 'Tap to mark present'}
+                              >
+                                {d}
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <div className="grid grid-cols-7 gap-1">
+                              {cells}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Legend */}
+                        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[var(--border)]">
+                          <span className="text-[8px] text-[var(--muted)]">Tap to cycle:</span>
+                          <div className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded bg-green-500/40 ring-1 ring-green-500/40" />
+                            <span className="text-[8px] text-[var(--muted)]">Present</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded bg-red-500/40 ring-1 ring-red-500/40" />
+                            <span className="text-[8px] text-[var(--muted)]">Absent</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="w-2 h-2 rounded bg-white/10" />
+                            <span className="text-[8px] text-[var(--muted)]">Clear</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

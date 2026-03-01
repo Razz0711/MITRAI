@@ -23,6 +23,13 @@ CREATE INDEX IF NOT EXISTS idx_attendance_log_user_month ON attendance_log(user_
 -- RLS policies
 ALTER TABLE attendance_log ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if any (safe re-run)
+DROP POLICY IF EXISTS "Users can view own attendance logs" ON attendance_log;
+DROP POLICY IF EXISTS "Users can insert own attendance logs" ON attendance_log;
+DROP POLICY IF EXISTS "Users can update own attendance logs" ON attendance_log;
+DROP POLICY IF EXISTS "Users can delete own attendance logs" ON attendance_log;
+DROP POLICY IF EXISTS "Service role full access to attendance_log" ON attendance_log;
+
 -- Users can only see and modify their own logs
 CREATE POLICY "Users can view own attendance logs"
   ON attendance_log FOR SELECT
