@@ -29,7 +29,6 @@ export default function CallPage() {
   const [sendingFriendReq, setSendingFriendReq] = useState(false);
   // Friendship check
   const [isAlreadyFriend, setIsAlreadyFriend] = useState(false);
-  const [friendId, setFriendId] = useState('');
 
   useEffect(() => {
     // Load saved user info
@@ -48,7 +47,6 @@ export default function CallPage() {
     if (mode) setCallMode(mode);
     if (room) setRoomCode(room);
     if (buddy) setBuddyName(buddy);
-    if (fId) setFriendId(fId);
 
     // Auto-generate room code if coming from a link with mode but no room
     let autoRoom = room;
