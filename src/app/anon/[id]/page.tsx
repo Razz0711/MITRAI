@@ -44,8 +44,11 @@ export default function AnonChatRoomPage() {
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [showReveal, setShowReveal] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [error, setError] = useState('');
   const [closed, setClosed] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollMsgRef = useRef<NodeJS.Timeout | null>(null);
@@ -201,12 +204,12 @@ export default function AnonChatRoomPage() {
   };
 
   const handleBlock = async () => {
-    if (!confirm('Block this user and close the chat? They won\'t be matched with you again.')) return;
     await fetch(`/api/anon/${roomId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'block' }),
     });
+    setShowBlockConfirm(false);
     setClosed(true);
   };
 
@@ -219,6 +222,17 @@ export default function AnonChatRoomPage() {
     });
     setClosed(true);
   };
+
+  // Close menu when tapping outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMenu]);
 
   if (authLoading) {
     return (
@@ -288,33 +302,44 @@ export default function AnonChatRoomPage() {
                 ✓ Revealed
               </span>
             )}
-            <button
-              onClick={() => setShowReport(true)}
-              className="text-[10px] px-2 py-1 rounded-md text-[var(--muted)] hover:bg-[var(--surface-light)] transition-colors"
-              title="Report"
-            >
-              🚩
-            </button>
-            <button
-              onClick={handleBlock}
-              className="text-[10px] px-2 py-1 rounded-md text-[var(--muted)] hover:bg-red-500/20 hover:text-red-400 transition-colors"
-              title="Block & Leave"
-            >
-              🚫
-            </button>
-            <button
-              onClick={handleClose}
-              className="text-[10px] px-2 py-1 rounded-md text-[var(--muted)] hover:bg-red-500/20 hover:text-red-400 transition-colors"
-              title="Leave Chat"
-            >
-              ✕
-            </button>
+            {/* ⋯ Menu (replaces exposed report/block buttons) */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="text-lg px-2 py-1 rounded-md text-[var(--muted)] hover:bg-[var(--surface-light)] transition-colors"
+                title="More options"
+              >
+                ⋯
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-1 w-48 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-lg overflow-hidden z-50">
+                  <button
+                    onClick={() => { setShowMenu(false); setShowReport(true); }}
+                    className="w-full px-4 py-3 text-left text-sm text-[var(--foreground)] hover:bg-[var(--surface-light)] transition-colors flex items-center gap-2"
+                  >
+                    🚩 Report User
+                  </button>
+                  <button
+                    onClick={() => { setShowMenu(false); setShowBlockConfirm(true); }}
+                    className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2 border-t border-[var(--border)]"
+                  >
+                    🚫 Block & Leave
+                  </button>
+                  <button
+                    onClick={() => { setShowMenu(false); handleClose(); }}
+                    className="w-full px-4 py-3 text-left text-sm text-[var(--muted)] hover:bg-[var(--surface-light)] transition-colors flex items-center gap-2 border-t border-[var(--border)]"
+                  >
+                    ✕ Leave Chat
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 pt-28 pb-20 px-4 overflow-y-auto">
+      <div className="flex-1 pt-28 pb-24 px-4 overflow-y-auto">
         <div className="max-w-2xl mx-auto space-y-3">
           {/* System message */}
           <div className="text-center py-4">
@@ -366,7 +391,7 @@ export default function AnonChatRoomPage() {
 
       {/* Input bar */}
       {!closed && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--background)] border-t border-[var(--border)]">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--background)] border-t border-[var(--border)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <div className="max-w-2xl mx-auto px-4 py-3 flex gap-2">
             <input
               ref={inputRef}
@@ -385,6 +410,29 @@ export default function AnonChatRoomPage() {
             >
               Send
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Block Confirmation Modal */}
+      {showBlockConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-[var(--background)] border border-[var(--border)] rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold text-[var(--foreground)] mb-2">🚫 Block User</h3>
+            <p className="text-sm text-[var(--muted)] mb-4">
+              Are you sure you want to block this user? This will close the chat and they won't be matched with you again.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowBlockConfirm(false)} className="flex-1 py-2.5 rounded-lg border border-[var(--border)] text-[var(--muted)] text-sm">
+                Cancel
+              </button>
+              <button
+                onClick={handleBlock}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                Block User
+              </button>
+            </div>
           </div>
         </div>
       )}
