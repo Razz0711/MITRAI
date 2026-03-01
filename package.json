@@ -14,7 +14,7 @@
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
+    "@google/generative-ai": "^0.22.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.78.0",
     "lucide-react": "^0.575.0",
