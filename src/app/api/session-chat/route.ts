@@ -94,7 +94,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: { response } });
   } catch (error) {
-    console.error('Session chat error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to get response' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('Session chat error:', msg, error);
+    // Return the AI error details so we can debug
+    return NextResponse.json({
+      success: false,
+      error: `AI error: ${msg}`,
+      data: { response: `I'm having trouble right now (${msg.slice(0, 100)}). Could you try again?` },
+    }, { status: 500 });
   }
 }
