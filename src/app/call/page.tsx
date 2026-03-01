@@ -27,6 +27,9 @@ export default function CallPage() {
   // Friend request
   const [friendRequestSent, setFriendRequestSent] = useState(false);
   const [sendingFriendReq, setSendingFriendReq] = useState(false);
+  // Friendship check
+  const [isAlreadyFriend, setIsAlreadyFriend] = useState(false);
+  const [friendId, setFriendId] = useState('');
 
   useEffect(() => {
     // Load saved user info
@@ -40,12 +43,15 @@ export default function CallPage() {
     const mode = params.get('mode') as 'voice' | 'video' | null;
     const room = params.get('room');
     const buddy = params.get('buddy');
+    const fId = params.get('friendId');
 
     if (mode) setCallMode(mode);
     if (room) setRoomCode(room);
     if (buddy) setBuddyName(buddy);
+    if (fId) setFriendId(fId);
 
     // Auto-generate room code if coming from a link with mode but no room
+    let autoRoom = room;
     if (mode && !room) {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let code = '';
@@ -53,11 +59,36 @@ export default function CallPage() {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       setRoomCode(code);
+      autoRoom = code;
     }
 
-    // Auto-start if all params are present
-    if (mode && room && savedName) {
+    // Auto-start if all params are present (direct call from friends page)
+    if (mode && (room || autoRoom) && savedName) {
       setIsInCall(true);
+    }
+
+    // Check if buddy is already a friend (to hide "Add Friend" in post-call)
+    if (fId) {
+      setIsAlreadyFriend(true); // Coming from friends page → already friends
+    } else if (buddy) {
+      try {
+        const session = localStorage.getItem('mitrai_session');
+        const userData = session ? JSON.parse(session) : null;
+        if (userData?.id) {
+          fetch(`/api/friends?userId=${userData.id}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.data?.friends) {
+                const found = data.data.friends.some((f: { user1Name: string; user2Name: string }) =>
+                  f.user1Name.toLowerCase() === buddy.toLowerCase() ||
+                  f.user2Name.toLowerCase() === buddy.toLowerCase()
+                );
+                if (found) setIsAlreadyFriend(true);
+              }
+            })
+            .catch(() => {});
+        }
+      } catch { /* ok */ }
     }
 
     // Check buddy online status
@@ -247,26 +278,28 @@ export default function CallPage() {
                 />
               </div>
 
-              {/* Add Friend Button */}
-              <div className="mb-5 p-3 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold">Add {buddyName} as friend?</p>
-                    <p className="text-[10px] text-[var(--muted)]">Stay connected for future sessions</p>
+              {/* Add Friend Button — hidden if already friends */}
+              {!isAlreadyFriend && (
+                <div className="mb-5 p-3 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)]/20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold">Add {buddyName} as friend?</p>
+                      <p className="text-[10px] text-[var(--muted)]">Stay connected for future sessions</p>
+                    </div>
+                    <button
+                      onClick={handleSendFriendRequest}
+                      disabled={friendRequestSent || sendingFriendReq}
+                      className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
+                        friendRequestSent
+                          ? 'bg-green-500/15 text-green-400 border border-green-500/25'
+                          : 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30 hover:bg-[var(--primary)]/30'
+                      } disabled:opacity-70`}
+                    >
+                      {sendingFriendReq ? '...' : friendRequestSent ? '✓ Sent!' : '👋 Add Friend'}
+                    </button>
                   </div>
-                  <button
-                    onClick={handleSendFriendRequest}
-                    disabled={friendRequestSent || sendingFriendReq}
-                    className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-                      friendRequestSent
-                        ? 'bg-green-500/15 text-green-400 border border-green-500/25'
-                        : 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30 hover:bg-[var(--primary)]/30'
-                    } disabled:opacity-70`}
-                  >
-                    {sendingFriendReq ? '...' : friendRequestSent ? '✓ Sent!' : '👋 Add Friend'}
-                  </button>
                 </div>
-              </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex gap-2">
@@ -461,25 +494,25 @@ export default function CallPage() {
         <h3 className="text-sm font-semibold mb-3 text-center">How Calling Works</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="text-center p-3">
-            <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-[var(--primary)]/15 flex items-center justify-center text-xs font-bold text-[var(--primary-light)]">
-              1
+            <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-green-500/15 flex items-center justify-center text-xs font-bold text-green-400">
+              ⚡
             </div>
-            <p className="text-xs font-medium mb-0.5">Generate a Room Code</p>
-            <p className="text-[10px] text-[var(--muted)]">Create a unique code for your session</p>
+            <p className="text-xs font-medium mb-0.5">Call from Friends</p>
+            <p className="text-[10px] text-[var(--muted)]">Tap 🎤 or 📹 on a friend — instant call!</p>
           </div>
           <div className="text-center p-3">
             <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-[var(--primary)]/15 flex items-center justify-center text-xs font-bold text-[var(--primary-light)]">
-              2
+              🔗
             </div>
-            <p className="text-xs font-medium mb-0.5">Share with Buddy</p>
-            <p className="text-[10px] text-[var(--muted)]">Send the code to your study partner</p>
+            <p className="text-xs font-medium mb-0.5">Or Use a Room Code</p>
+            <p className="text-[10px] text-[var(--muted)]">Generate & share a code to call anyone</p>
           </div>
           <div className="text-center p-3">
-            <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-[var(--primary)]/15 flex items-center justify-center text-xs font-bold text-[var(--primary-light)]">
-              3
+            <div className="w-8 h-8 mx-auto mb-2 rounded-lg bg-blue-500/15 flex items-center justify-center text-xs font-bold text-blue-400">
+              🖥️
             </div>
-            <p className="text-xs font-medium mb-0.5">Study Together</p>
-            <p className="text-[10px] text-[var(--muted)]">Both enter the same code and start</p>
+            <p className="text-xs font-medium mb-0.5">Share & Chat</p>
+            <p className="text-[10px] text-[var(--muted)]">Screen share + in-call chat built-in</p>
           </div>
         </div>
       </div>

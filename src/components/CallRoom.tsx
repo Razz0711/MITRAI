@@ -2,6 +2,7 @@
 // MitrAI - Native WebRTC Voice/Video Call
 // Uses Supabase Realtime Broadcast for signaling
 // P2P media — zero lag, no third-party iframe
+// Features: screen share, in-call chat, auto-hangup
 // ============================================
 
 'use client';
@@ -29,6 +30,14 @@ const ICE_SERVERS: RTCIceServer[] = [
 
 type CallStatus = 'getting-media' | 'waiting' | 'connecting' | 'connected' | 'failed';
 
+interface ChatMsg {
+  id: string;
+  from: string;
+  name: string;
+  text: string;
+  ts: number;
+}
+
 export default function CallRoom({ roomName, displayName, onLeave, audioOnly = false }: CallRoomProps) {
   const [status, setStatus] = useState<CallStatus>('getting-media');
   const [isMuted, setIsMuted] = useState(false);
@@ -38,11 +47,22 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
   const [error, setError] = useState('');
   const [codeCopied, setCodeCopied] = useState(false);
 
+  // Screen sharing
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [partnerScreenSharing, setPartnerScreenSharing] = useState(false);
+
+  // In-call chat
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [showChat, setShowChat] = useState(false);
+  const [unreadChat, setUnreadChat] = useState(0);
+
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channelRef = useRef<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -50,6 +70,16 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
   const myId = useRef(`${Date.now()}_${Math.random().toString(36).slice(2, 10)}`).current;
   const negotiatingRef = useRef(false);
   const connectedRef = useRef(false);
+  const showChatRef = useRef(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Keep ref in sync
+  useEffect(() => { showChatRef.current = showChat; }, [showChat]);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   const formatDuration = (s: number) => {
     const m = Math.floor(s / 60);
@@ -62,6 +92,8 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
     if (announceRef.current) { clearInterval(announceRef.current); announceRef.current = null; }
     localStreamRef.current?.getTracks().forEach(t => t.stop());
     localStreamRef.current = null;
+    screenStreamRef.current?.getTracks().forEach(t => t.stop());
+    screenStreamRef.current = null;
     if (pcRef.current) {
       pcRef.current.ontrack = null;
       pcRef.current.onicecandidate = null;
@@ -130,13 +162,21 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         if (s === 'failed') {
           pc.restartIce();
           setTimeout(() => {
-            if (mounted && pc.iceConnectionState === 'failed') setStatus('failed');
+            if (mounted && pc.iceConnectionState === 'failed') {
+              // Auto-end the call on failure
+              cleanup();
+              onLeave?.();
+            }
           }, 6000);
         }
         if (s === 'disconnected') {
+          // Partner's connection dropped — auto-end call after 5 seconds
           setTimeout(() => {
-            if (mounted && pc.iceConnectionState === 'disconnected') setStatus('failed');
-          }, 10000);
+            if (mounted && pc.iceConnectionState === 'disconnected') {
+              cleanup();
+              onLeave?.();
+            }
+          }, 5000);
         }
       };
 
@@ -182,8 +222,10 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
       channel.on('broadcast', { event: 'offer' }, async (msg: any) => {
         const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
         if (data.from === myId || !mounted) return;
-        setPartnerName(data.name || 'Study Buddy');
-        setStatus('connecting');
+        if (!connectedRef.current) {
+          setPartnerName(data.name || 'Study Buddy');
+          setStatus('connecting');
+        }
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
           const answer = await pc.createAnswer();
@@ -200,9 +242,10 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
       channel.on('broadcast', { event: 'answer' }, async (msg: any) => {
         const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
         if (data.from === myId || !mounted) return;
-        setPartnerName(data.name || 'Study Buddy');
+        if (!connectedRef.current) setPartnerName(data.name || 'Study Buddy');
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+          negotiatingRef.current = false;
         } catch (e) { console.error('Remote desc error:', e); }
       });
 
@@ -219,6 +262,28 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         if (data.from === myId || !mounted) return;
         cleanup();
         onLeave?.();
+      });
+
+      // ── Screen share signaling ──
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      channel.on('broadcast', { event: 'screen-start' }, (msg: any) => {
+        if (msg.payload.from === myId || !mounted) return;
+        setPartnerScreenSharing(true);
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      channel.on('broadcast', { event: 'screen-stop' }, (msg: any) => {
+        if (msg.payload.from === myId || !mounted) return;
+        setPartnerScreenSharing(false);
+      });
+
+      // ── In-call chat ──
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      channel.on('broadcast', { event: 'chat' }, (msg: any) => {
+        const data = msg.payload as ChatMsg;
+        if (data.from === myId || !mounted) return;
+        setChatMessages(prev => [...prev, data]);
+        if (!showChatRef.current) setUnreadChat(prev => prev + 1);
       });
 
       // ── Subscribe & announce ──
@@ -238,10 +303,17 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
       });
     };
 
+    // beforeunload → auto-hangup when tab/browser closes
+    const handleBeforeUnload = () => {
+      channelRef.current?.send({ type: 'broadcast', event: 'leave', payload: { from: myId } });
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     init();
 
     return () => {
       mounted = false;
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       if (channelRef.current) {
         channelRef.current.send({ type: 'broadcast', event: 'leave', payload: { from: myId } });
       }
@@ -258,6 +330,70 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
   const toggleVideo = () => {
     localStreamRef.current?.getVideoTracks().forEach(t => { t.enabled = !t.enabled; });
     setIsVideoOff(prev => !prev);
+  };
+
+  const toggleScreenShare = async () => {
+    if (!pcRef.current || status !== 'connected') return;
+
+    if (isScreenSharing) {
+      // ── Stop screen share → swap back to camera ──
+      screenStreamRef.current?.getTracks().forEach(t => t.stop());
+      const videoSender = pcRef.current.getSenders().find(s => s.track?.kind === 'video');
+      const cameraTrack = localStreamRef.current?.getVideoTracks()[0];
+      if (videoSender && cameraTrack) await videoSender.replaceTrack(cameraTrack);
+      screenStreamRef.current = null;
+      setIsScreenSharing(false);
+      channelRef.current?.send({ type: 'broadcast', event: 'screen-stop', payload: { from: myId } });
+    } else {
+      // ── Start screen share ──
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false,
+        });
+        screenStreamRef.current = screenStream;
+        const screenTrack = screenStream.getVideoTracks()[0];
+
+        // Handle browser's native "Stop sharing" button
+        screenTrack.addEventListener('ended', async () => {
+          const camTrack = localStreamRef.current?.getVideoTracks()[0];
+          const sender = pcRef.current?.getSenders().find(s => s.track?.kind === 'video');
+          if (sender && camTrack) await sender.replaceTrack(camTrack);
+          screenStreamRef.current = null;
+          setIsScreenSharing(false);
+          channelRef.current?.send({ type: 'broadcast', event: 'screen-stop', payload: { from: myId } });
+        });
+
+        // Replace camera track with screen track on the sender
+        const videoSender = pcRef.current.getSenders().find(s => s.track?.kind === 'video');
+        if (videoSender) {
+          await videoSender.replaceTrack(screenTrack);
+        }
+        setIsScreenSharing(true);
+        channelRef.current?.send({ type: 'broadcast', event: 'screen-start', payload: { from: myId } });
+      } catch {
+        // User cancelled screen share picker
+      }
+    }
+  };
+
+  const sendChatMessage = () => {
+    if (!chatInput.trim() || !channelRef.current) return;
+    const msg: ChatMsg = {
+      id: `${myId}_${Date.now()}`,
+      from: myId,
+      name: displayName,
+      text: chatInput.trim(),
+      ts: Date.now(),
+    };
+    channelRef.current.send({ type: 'broadcast', event: 'chat', payload: msg });
+    setChatMessages(prev => [...prev, msg]);
+    setChatInput('');
+  };
+
+  const toggleChat = () => {
+    setShowChat(prev => !prev);
+    setUnreadChat(0);
   };
 
   const endCall = () => {
@@ -291,14 +427,31 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
     <div className="h-full flex flex-col bg-[#0f0f1a] relative overflow-hidden select-none">
       <audio ref={remoteAudioRef} autoPlay playsInline />
 
-      {/* Remote Video */}
+      {/* Remote Video (shows camera or screen share via replaceTrack) */}
       {!audioOnly && (
         <video
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${status === 'connected' ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
+            status === 'connected' ? 'opacity-100' : 'opacity-0'
+          } ${partnerScreenSharing ? 'object-contain bg-black' : 'object-cover'}`}
         />
+      )}
+
+      {/* Screen share indicator — partner sharing */}
+      {partnerScreenSharing && status === 'connected' && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full bg-blue-500/90 backdrop-blur-sm text-white text-xs font-medium flex items-center gap-2 shadow-lg">
+          📺 {partnerName} is sharing screen
+        </div>
+      )}
+
+      {/* Screen share indicator — you sharing */}
+      {isScreenSharing && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full bg-red-500/90 backdrop-blur-sm text-white text-xs font-medium flex items-center gap-2 shadow-lg animate-pulse">
+          <span className="w-2 h-2 rounded-full bg-white" />
+          You are sharing your screen
+        </div>
       )}
 
       {/* Waiting / Connecting */}
@@ -411,11 +564,58 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         </div>
       )}
 
+      {/* ── In-call Chat Panel ── */}
+      {showChat && (
+        <div className="absolute bottom-28 left-3 right-3 sm:left-auto sm:right-4 sm:w-80 z-30 bg-black/85 backdrop-blur-xl rounded-2xl border border-white/10 flex flex-col shadow-2xl" style={{ maxHeight: '50vh' }}>
+          <div className="px-4 py-2.5 border-b border-white/10 flex items-center justify-between">
+            <span className="text-xs font-semibold text-white">💬 Chat</span>
+            <button onClick={toggleChat} className="text-gray-400 hover:text-white text-sm transition-colors">✕</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: '35vh', minHeight: '120px' }}>
+            {chatMessages.length === 0 && (
+              <p className="text-center text-xs text-gray-500 py-6">No messages yet. Say hi! 👋</p>
+            )}
+            {chatMessages.map(msg => (
+              <div key={msg.id} className={`flex ${msg.from === myId ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-xs leading-relaxed ${
+                  msg.from === myId
+                    ? 'bg-[var(--primary)]/40 text-white rounded-br-md'
+                    : 'bg-white/10 text-gray-200 rounded-bl-md'
+                }`}>
+                  {msg.from !== myId && <p className="font-semibold text-[var(--primary-light)] text-[10px] mb-0.5">{msg.name}</p>}
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+          <div className="p-2 border-t border-white/10 flex gap-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') sendChatMessage(); }}
+              placeholder="Type a message..."
+              className="flex-1 bg-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 outline-none focus:ring-1 focus:ring-[var(--primary)]/50"
+              autoComplete="off"
+            />
+            <button
+              onClick={sendChatMessage}
+              disabled={!chatInput.trim()}
+              className="px-3 py-2 rounded-xl bg-[var(--primary)] text-white text-xs font-medium hover:opacity-90 disabled:opacity-30 transition-opacity"
+            >
+              ↑
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Bottom controls */}
-      <div className="absolute bottom-8 left-0 right-0 z-20 flex items-center justify-center gap-5">
+      <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-center gap-3 sm:gap-4">
+        {/* Mute */}
         <button
           onClick={toggleMute}
-          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all shadow-lg ${
+          className={`w-12 h-12 rounded-full flex items-center justify-center text-lg transition-all shadow-lg ${
             isMuted ? 'bg-red-500 text-white ring-2 ring-red-400/50' : 'bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm'
           }`}
           title={isMuted ? 'Unmute' : 'Mute'}
@@ -423,10 +623,11 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
           {isMuted ? '🔇' : '🎤'}
         </button>
 
+        {/* Camera toggle */}
         {!audioOnly && (
           <button
             onClick={toggleVideo}
-            className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all shadow-lg ${
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-lg transition-all shadow-lg ${
               isVideoOff ? 'bg-red-500 text-white ring-2 ring-red-400/50' : 'bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm'
             }`}
             title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
@@ -435,9 +636,41 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
           </button>
         )}
 
+        {/* Screen share (video calls only, when connected) */}
+        {!audioOnly && status === 'connected' && (
+          <button
+            onClick={toggleScreenShare}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-lg transition-all shadow-lg ${
+              isScreenSharing ? 'bg-blue-500 text-white ring-2 ring-blue-400/50' : 'bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm'
+            }`}
+            title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
+          >
+            🖥️
+          </button>
+        )}
+
+        {/* Chat toggle (when connected) */}
+        {status === 'connected' && (
+          <button
+            onClick={toggleChat}
+            className={`w-12 h-12 rounded-full flex items-center justify-center text-lg transition-all shadow-lg relative ${
+              showChat ? 'bg-[var(--primary)] text-white ring-2 ring-purple-400/50' : 'bg-white/15 text-white hover:bg-white/25 backdrop-blur-sm'
+            }`}
+            title="Chat"
+          >
+            💬
+            {unreadChat > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center font-bold animate-bounce">
+                {unreadChat > 9 ? '9+' : unreadChat}
+              </span>
+            )}
+          </button>
+        )}
+
+        {/* End call */}
         <button
           onClick={endCall}
-          className="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center text-2xl hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 ring-2 ring-red-400/20 active:scale-95"
+          className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center text-xl hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 ring-2 ring-red-400/20 active:scale-95"
           title="End Call"
         >
           📞

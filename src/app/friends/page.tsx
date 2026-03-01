@@ -23,6 +23,34 @@ export default function FriendsPage() {
   const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Direct call: generate room code, send chat notification, navigate
+  const startCallWithFriend = async (fId: string, fName: string, mode: 'voice' | 'video') => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+
+    // Send auto-chat message so friend sees the call invite
+    if (user) {
+      try {
+        const userName = user.name || user.email?.split('@')[0] || 'Study Buddy';
+        await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            senderId: user.id,
+            senderName: userName,
+            receiverId: fId,
+            receiverName: fName,
+            text: `📞 I'm calling you! Join my ${mode} call with code: ${code}\n\nJoin here: ${window.location.origin}/call?mode=${mode}&room=${code}`,
+          }),
+        });
+      } catch { /* ok, call still starts */ }
+    }
+
+    // Navigate to call with auto-start params
+    window.location.href = `/call?mode=${mode}&room=${code}&buddy=${encodeURIComponent(fName)}&friendId=${encodeURIComponent(fId)}`;
+  };
+
   const loadData = useCallback(async () => {
     if (!user) return;
     try {
@@ -204,24 +232,32 @@ export default function FriendsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <Link
                       href={`/chat?friendId=${encodeURIComponent(friendId)}&friendName=${encodeURIComponent(friendName)}`}
-                      className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-blue-500/15 text-blue-400 border border-blue-500/25 hover:bg-blue-500/25 transition-all"
+                      className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-blue-500/15 text-blue-400 border border-blue-500/25 hover:bg-blue-500/25 transition-all"
                     >
-                      💬 Chat
-                    </Link>
-                    <Link
-                      href={`/call?buddy=${encodeURIComponent(friendName)}`}
-                      className="px-3 py-1.5 rounded-lg text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25 hover:bg-green-500/25 transition-all"
-                    >
-                      📞 Call
+                      💬
                     </Link>
                     <button
-                      onClick={() => handleRemoveFriend(friendId)}
-                      className="px-3 py-1.5 rounded-lg text-[10px] font-medium text-red-400 hover:bg-red-500/10 transition-all"
+                      onClick={() => startCallWithFriend(friendId, friendName, 'voice')}
+                      className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-green-500/15 text-green-400 border border-green-500/25 hover:bg-green-500/25 transition-all"
+                      title="Voice Call"
                     >
-                      Remove
+                      🎤
+                    </button>
+                    <button
+                      onClick={() => startCallWithFriend(friendId, friendName, 'video')}
+                      className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-purple-500/15 text-purple-400 border border-purple-500/25 hover:bg-purple-500/25 transition-all"
+                      title="Video Call"
+                    >
+                      📹
+                    </button>
+                    <button
+                      onClick={() => handleRemoveFriend(friendId)}
+                      className="px-2.5 py-1.5 rounded-lg text-[10px] font-medium text-red-400 hover:bg-red-500/10 transition-all"
+                    >
+                      ✕
                     </button>
                   </div>
                 </div>
