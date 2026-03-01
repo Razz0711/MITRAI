@@ -11,12 +11,15 @@ import { useAuth } from '@/lib/auth';
 import BirthdayBanner, { UpcomingBirthdays } from '@/components/BirthdayBanner';
 import { StatusDot } from '@/components/StatusIndicator';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { play: playSound } = useNotificationSound();
+  const { permission, requestPermission, showNotification } = usePushNotifications();
   const prevUnreadRef = useRef<number>(0);
+  const prevNotifIdsRef = useRef<Set<string>>(new Set());
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [myProfiles, setMyProfiles] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,11 +81,24 @@ export default function DashboardPage() {
         if (newUnread > prevUnreadRef.current && prevUnreadRef.current >= 0) {
           playSound('important');
         }
+        // 📱 Show native push notification for genuinely new items
+        const newItems = notifs.filter(n => !n.read && !prevNotifIdsRef.current.has(n.id));
+        if (newItems.length > 0 && prevNotifIdsRef.current.size > 0) {
+          // Show the most recent new notification as a pop-up
+          const latest = newItems[0];
+          showNotification(
+            latest.title,
+            latest.message,
+            { tag: `notif-${latest.id}` }
+          );
+        }
+        // Track seen notification IDs
+        prevNotifIdsRef.current = new Set(notifs.map(n => n.id));
         prevUnreadRef.current = newUnread;
         setNotifications(notifs);
       }
     } catch (err) { console.error('loadNotifications:', err); }
-  }, [user, playSound]);
+  }, [user, playSound, showNotification]);
 
   const loadStatus = useCallback(async () => {
     if (!user) return;
@@ -96,6 +112,21 @@ export default function DashboardPage() {
   useEffect(() => {
     if (user) { loadBirthdays(); loadNotifications(); loadStatus(); }
   }, [user, loadBirthdays, loadNotifications, loadStatus]);
+
+  // Request notification permission on first user interaction
+  useEffect(() => {
+    if (!user || permission !== 'default') return;
+    // Auto-request after a brief delay (better UX than on page load)
+    const timer = setTimeout(() => requestPermission(), 2000);
+    return () => clearTimeout(timer);
+  }, [user, permission, requestPermission]);
+
+  // Poll for new notifications every 30s so user gets pop-ups even without refresh
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(loadNotifications, 30_000);
+    return () => clearInterval(interval);
+  }, [user, loadNotifications]);
 
   // Re-fetch birthdays when the date changes (e.g., user stays on page past midnight)
   useEffect(() => {
@@ -285,12 +316,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold">
+            <h1 className="text-xl font-bold truncate">
               Welcome back, <span className="gradient-text">{student?.name || user?.name || 'Student'}</span>
             </h1>
             {myStatus && <StatusDot status={myStatus.status} size="md" />}
@@ -298,7 +329,7 @@ export default function DashboardPage() {
           <p className="text-xs text-[var(--muted)] mt-0.5">Your study overview</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
           {/* Notifications Bell */}
           <div className="relative">
             <button
@@ -338,7 +369,7 @@ export default function DashboardPage() {
           <select
             value={selectedStudentId}
             onChange={(e) => handleStudentSelect(e.target.value)}
-            className="input-field text-xs w-40"
+            className="input-field text-xs w-36 sm:w-40 truncate"
           >
             {myProfiles.map(s => (
               <option key={s.id} value={s.id}>{s.name} — {s.targetExam || 'Profile'}</option>
@@ -358,6 +389,19 @@ export default function DashboardPage() {
           wishedMap={wishedMap}
           onWish={handleWish}
         />
+      )}
+
+      {/* Notification Permission Prompt */}
+      {permission === 'default' && (
+        <div className="card p-3 mb-4 flex items-center justify-between gap-3 border-amber-500/20 fade-in">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-lg">🔔</span>
+            <p className="text-xs text-[var(--muted)]">Enable push notifications so you never miss a match, message, or session</p>
+          </div>
+          <button onClick={requestPermission} className="btn-primary text-xs px-3 py-1.5 whitespace-nowrap flex-shrink-0">
+            Enable
+          </button>
+        </div>
       )}
 
       {student ? (
@@ -703,9 +747,9 @@ function StatCard({ label, value, color }: { label: string; value: string; color
   };
 
   return (
-    <div className={`card p-3 ${colorClasses[color]}`}>
-      <p className="text-[10px] text-[var(--muted)] uppercase tracking-wide">{label}</p>
-      <p className="text-sm font-bold mt-0.5">{value}</p>
+    <div className={`card p-3 min-w-0 overflow-hidden ${colorClasses[color]}`}>
+      <p className="text-[10px] text-[var(--muted)] uppercase tracking-wide truncate">{label}</p>
+      <p className="text-sm font-bold mt-0.5 truncate">{value}</p>
     </div>
   );
 }
