@@ -96,11 +96,15 @@ function LoginPageInner() {
     setOtpSending(true);
     setError('');
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
       const res = await fetch('/api/otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'send', email: trimmedEmail }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       const data = await res.json();
       if (data.success) {
         setOtpStep(true);
@@ -110,7 +114,11 @@ function LoginPageInner() {
       }
     } catch (err) {
       console.error('sendOtp:', err);
-      setError('Network error. Please try again.');
+      if ((err as Error).name === 'AbortError') {
+        setError('Request timed out — please check your internet and try again.');
+      } else {
+        setError('Network error — please check your internet and try again.');
+      }
     } finally {
       setOtpSending(false);
     }
@@ -121,11 +129,15 @@ function LoginPageInner() {
     setOtpVerifying(true);
     setError('');
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
       const res = await fetch('/api/otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'verify', email: trimmedEmail, code: otpCode.trim() }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       const data = await res.json();
       if (!data.success) {
         setError(data.error || 'Invalid code');
@@ -166,7 +178,11 @@ function LoginPageInner() {
       }
     } catch (err) {
       console.error('verifyOtp:', err);
-      setError('Network error. Please try again.');
+      if ((err as Error).name === 'AbortError') {
+        setError('Request timed out — please check your internet and try again.');
+      } else {
+        setError('Network error — please check your internet and try again.');
+      }
     } finally {
       setOtpVerifying(false);
     }

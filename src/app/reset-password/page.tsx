@@ -1,82 +1,34 @@
 // ============================================
-// MitrAI - Password Reset Page
-// Handles both: requesting a reset & setting new password
+// MitrAI - Password Reset Page (OTP-based)
+// 3-step flow: enter email → enter OTP → set new password
 // ============================================
 
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { supabaseBrowser } from '@/lib/supabase-browser';
+import { useRouter } from 'next/navigation';
 
 function ResetPasswordInner() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [step, setStep] = useState<'request' | 'update'>('request');
+  const [step, setStep] = useState<'email' | 'otp' | 'password'>('email');
   const [email, setEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
 
-  // Check if we arrived from a password reset redirect
-  // Supabase PKCE flow sends ?code=...&type=recovery as query params
-  // Legacy implicit flow sends #access_token=...&type=recovery as hash fragments
+  // Countdown for resend
   useEffect(() => {
-    let handled = false;
+    if (resendTimer <= 0) return;
+    const t = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendTimer]);
 
-    // 1) PKCE flow: exchange the ?code= parameter for a session
-    const code = searchParams.get('code');
-    const typeParam = searchParams.get('type');
-    if (code) {
-      handled = true;
-      supabaseBrowser.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) {
-          setError('Invalid or expired reset link. Please request a new one.');
-        } else if (typeParam === 'recovery') {
-          setStep('update');
-        } else {
-          setStep('update');
-        }
-      });
-    }
-
-    // 2) Legacy implicit flow: tokens in URL hash
-    if (!handled) {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const hashType = hashParams.get('type');
-      const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
-
-      if (hashType === 'recovery' && accessToken) {
-        handled = true;
-        supabaseBrowser.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken || '',
-        }).then(({ error }) => {
-          if (error) {
-            setError('Invalid or expired reset link. Please request a new one.');
-          } else {
-            setStep('update');
-          }
-        });
-      }
-    }
-
-    // 3) Listen for PASSWORD_RECOVERY auth event as a fallback
-    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setStep('update');
-        setError('');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [searchParams]);
-
-  const handleRequestReset = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError('');
     setMessage('');
     setLoading(true);
@@ -90,12 +42,40 @@ function ResetPasswordInner() {
       const data = await res.json();
 
       if (data.success) {
-        setMessage('If an account with this email exists, a password reset link has been sent. Please check your inbox.');
+        setStep('otp');
+        setResendTimer(30);
+        setMessage('A 6-digit code has been sent to your email.');
       } else {
-        setError(data.error || 'Failed to send reset email');
+        setError(data.error || 'Failed to send reset code');
       }
     } catch {
-      setError('Network error. Please try again.');
+      setError('Network error — please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    setError('');
+    setMessage('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', email: email.trim().toLowerCase(), code: otpCode.trim() }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setStep('password');
+        setMessage('');
+      } else {
+        setError(data.error || 'Invalid code');
+      }
+    } catch {
+      setError('Network error — please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -117,17 +97,21 @@ function ResetPasswordInner() {
 
     setLoading(true);
     try {
-      const { error } = await supabaseBrowser.auth.updateUser({ password });
-      if (error) {
-        setError(error.message || 'Failed to update password');
-      } else {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', email: email.trim().toLowerCase(), password }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
         setMessage('Password updated successfully! Redirecting to login...');
-        // Sign out the recovery session so user can log in fresh
-        await supabaseBrowser.auth.signOut();
         setTimeout(() => router.push('/login'), 2000);
+      } else {
+        setError(data.error || 'Failed to update password');
       }
     } catch {
-      setError('Failed to update password. Please try again.');
+      setError('Network error — please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -139,17 +123,20 @@ function ResetPasswordInner() {
         <div className="text-center mb-8">
           <img src="/logo.jpg" alt="MitrAI" className="h-14 w-auto mx-auto mb-3" />
           <h1 className="text-xl font-bold text-[var(--foreground)]">
-            {step === 'request' ? 'Reset Password' : 'Set New Password'}
+            {step === 'email' ? 'Reset Password' : step === 'otp' ? 'Verify Email' : 'Set New Password'}
           </h1>
           <p className="text-sm text-[var(--muted)] mt-1">
-            {step === 'request'
-              ? 'Enter your SVNIT email to receive a reset link'
-              : 'Choose a new password for your account'}
+            {step === 'email'
+              ? 'Enter your SVNIT email to receive a reset code'
+              : step === 'otp'
+                ? <>Enter the 6-digit code sent to <strong className="text-[var(--primary-light)]">{email}</strong></>
+                : 'Choose a new password for your account'}
           </p>
         </div>
 
-        {step === 'request' ? (
-          <form onSubmit={handleRequestReset} className="space-y-3">
+        {/* Step 1: Email */}
+        {step === 'email' && (
+          <form onSubmit={handleSendCode} className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">SVNIT Email</label>
               <input
@@ -175,10 +162,63 @@ function ResetPasswordInner() {
             )}
 
             <button type="submit" className="btn-primary w-full text-sm py-2.5" disabled={loading}>
-              {loading ? 'Sending...' : 'Send Reset Link'}
+              {loading ? 'Sending...' : 'Send Reset Code'}
             </button>
           </form>
-        ) : (
+        )}
+
+        {/* Step 2: OTP Verification */}
+        {step === 'otp' && (
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              className="input-field text-center text-2xl font-mono tracking-[0.5em] py-3"
+              maxLength={6}
+              autoFocus
+            />
+
+            {message && (
+              <p className="text-xs text-[var(--success)] bg-[var(--success)]/10 border border-[var(--success)]/20 rounded-lg px-3 py-2">
+                {message}
+              </p>
+            )}
+            {error && (
+              <p className="text-xs text-[var(--error)] bg-[var(--error)]/10 border border-[var(--error)]/20 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
+
+            <button
+              onClick={handleVerifyCode}
+              disabled={otpCode.length !== 6 || loading}
+              className="btn-primary w-full text-sm py-2.5 disabled:opacity-50"
+            >
+              {loading ? 'Verifying...' : 'Verify Code'}
+            </button>
+
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => { setStep('email'); setOtpCode(''); setError(''); setMessage(''); }}
+                className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+              >
+                ← Change email
+              </button>
+              <button
+                onClick={() => handleSendCode()}
+                disabled={resendTimer > 0 || loading}
+                className="text-xs text-[var(--primary-light)] hover:underline disabled:opacity-50 disabled:no-underline"
+              >
+                {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend code'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: New Password */}
+        {step === 'password' && (
           <form onSubmit={handleUpdatePassword} className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">New Password</label>
