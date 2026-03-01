@@ -21,6 +21,7 @@ import {
   addNotification,
 } from '@/lib/store';
 import { NOTIFICATION_TYPES } from '@/lib/constants';
+import { sendPushToUser } from '@/lib/store/push-subscriptions';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
         message: `${fromUserName || 'Someone'} sent you a friend request!`,
         read: false, createdAt: new Date().toISOString(),
       });
+      sendPushToUser(toUserId, { title: '👋 New Friend Request', body: `${fromUserName || 'Someone'} sent you a friend request!`, url: '/friends' }).catch(() => {});
       return NextResponse.json({ success: true, data: request });
     }
 
@@ -101,6 +103,7 @@ export async function POST(req: NextRequest) {
         message: `${fromUserName || 'Someone'} rated you ${rating}/10${review ? `: "${review}"` : ''}`,
         read: false, createdAt: new Date().toISOString(),
       });
+      sendPushToUser(toUserId, { title: '⭐ New Rating', body: `${fromUserName || 'Someone'} rated you ${rating}/10`, url: '/friends' }).catch(() => {});
       return NextResponse.json({ success: true, data: newRating });
     }
 
@@ -145,6 +148,7 @@ export async function PATCH(req: NextRequest) {
         message: `${updated.toUserName} accepted your friend request 🎉`,
         read: false, createdAt: new Date().toISOString(),
       });
+      sendPushToUser(updated.fromUserId, { title: '🎉 Friend Request Accepted!', body: `${updated.toUserName} accepted your friend request!`, url: '/friends' }).catch(() => {});
     }
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {

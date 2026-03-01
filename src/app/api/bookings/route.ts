@@ -11,6 +11,7 @@ import {
 } from '@/lib/store';
 import { SessionBooking } from '@/lib/types';
 import { NOTIFICATION_TYPES } from '@/lib/constants';
+import { sendPushToUser } from '@/lib/store/push-subscriptions';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
       message: `${requesterName} wants to study "${topic || 'together'}" on ${day} at ${hour > 12 ? hour - 12 : hour}${hour >= 12 ? 'PM' : 'AM'}`,
       read: false, createdAt: new Date().toISOString(),
     });
+    sendPushToUser(targetId, { title: '📅 Session Request', body: `${requesterName} wants to study "${topic || 'together'}" on ${day}`, url: '/session' }).catch(() => {});
     return NextResponse.json({ success: true, data: booking });
   } catch (error) {
     console.error('Bookings POST error:', error);
@@ -88,6 +90,7 @@ export async function PATCH(request: NextRequest) {
         message: `${booking.targetName} accepted your session request for ${booking.day} at ${booking.hour > 12 ? booking.hour - 12 : booking.hour}${booking.hour >= 12 ? 'PM' : 'AM'}`,
         read: false, createdAt: new Date().toISOString(),
       });
+      sendPushToUser(booking.requesterId, { title: '✅ Session Accepted!', body: `${booking.targetName} accepted your session request for ${booking.day}`, url: '/session' }).catch(() => {});
     } else {
       await updateBooking(bookingId, { status: 'declined' });
       await addNotification({
@@ -95,6 +98,7 @@ export async function PATCH(request: NextRequest) {
         message: `${booking.targetName} declined your session request for ${booking.day}`,
         read: false, createdAt: new Date().toISOString(),
       });
+      sendPushToUser(booking.requesterId, { title: '❌ Session Declined', body: `${booking.targetName} declined your session request for ${booking.day}`, url: '/session' }).catch(() => {});
     }
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getAllMaterials, createMaterial, saveUploadedFile, addNotification } from '@/lib/store';
 import { StudyMaterial } from '@/lib/types';
 import { NOTIFICATION_TYPES } from '@/lib/constants';
+import { broadcastWebPush } from '@/lib/store/push-subscriptions';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 import { validateFileType, validateFileSize } from '@/lib/file-validation';
@@ -152,6 +153,8 @@ export async function POST(request: NextRequest) {
         read: false,
         createdAt: new Date().toISOString(),
       });
+      // Notify all users about new material
+      broadcastWebPush({ title: '📚 New Study Material', body: `"${title}" — check it out!`, url: '/materials' }, uploadedBy).catch(() => {});
     } catch { /* non-critical: upload notification */ }
 
     return NextResponse.json({ success: true, data: material });

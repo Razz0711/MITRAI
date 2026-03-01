@@ -13,6 +13,7 @@ import {
 } from '@/lib/store';
 import { DirectMessage } from '@/lib/types';
 import { NOTIFICATION_TYPES } from '@/lib/constants';
+import { sendPushToUser } from '@/lib/store/push-subscriptions';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
         message: `${senderName || 'Someone'}: ${text.trim().slice(0, 50)}${text.length > 50 ? '...' : ''}`,
         read: false, createdAt: new Date().toISOString(),
       });
+      sendPushToUser(receiverId, { title: '💬 New Message', body: `${senderName || 'Someone'}: ${text.trim().slice(0, 50)}`, url: '/chat' }).catch(() => {});
     } catch { /* non-critical: notification send */ }
     if (receiverName) await updateThreadUserName(chatId, receiverId, receiverName);
     if (senderName) await updateThreadUserName(chatId, senderId, senderName);

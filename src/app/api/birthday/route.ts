@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getAllStudents, addNotification, hasWishedToday, addBirthdayWish, getBirthdayWishesForUser } from '@/lib/store';
 import { BirthdayInfo } from '@/lib/types';
 import { NOTIFICATION_TYPES } from '@/lib/constants';
+import { sendPushToUser } from '@/lib/store/push-subscriptions';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -132,6 +133,7 @@ export async function POST(request: NextRequest) {
       read: false,
       createdAt: new Date().toISOString(),
     });
+    sendPushToUser(toUserId, { title: '🎂 Birthday Wish!', body: `${fromUserName || 'Someone'} wished you Happy Birthday! 🎉`, url: '/dashboard' }).catch(() => {});
 
     // Count total wishes
     const wishes = await getBirthdayWishesForUser(toUserId);
