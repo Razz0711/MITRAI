@@ -9,7 +9,7 @@ import { StudyMaterial } from '@/lib/types';
 import { NOTIFICATION_TYPES } from '@/lib/constants';
 import { sendPushToUsers } from '@/lib/store/push-subscriptions';
 import { supabase } from '@/lib/store/core';
-import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 import { validateFileType, validateFileSize } from '@/lib/file-validation';
 
