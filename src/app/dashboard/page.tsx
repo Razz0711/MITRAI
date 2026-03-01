@@ -17,7 +17,7 @@ import LoadingSkeleton from '@/components/LoadingSkeleton';
 export default function DashboardPage() {
   const { user } = useAuth();
   const { play: playSound } = useNotificationSound();
-  const { permission, subscriptionStatus, requestPermission, resubscribe, showNotification } = usePushNotifications();
+  const { permission, requestPermission, showNotification } = usePushNotifications();
   const prevUnreadRef = useRef<number>(0);
   const prevNotifIdsRef = useRef<Set<string>>(new Set());
   const [student, setStudent] = useState<StudentProfile | null>(null);
@@ -401,52 +401,6 @@ export default function DashboardPage() {
           <button onClick={requestPermission} className="btn-primary text-xs px-3 py-1.5 whitespace-nowrap flex-shrink-0">
             Enable
           </button>
-        </div>
-      )}
-
-      {/* Push subscription status + test button (visible when granted) */}
-      {permission === 'granted' && (
-        <div className="card p-3 mb-4 flex items-center justify-between gap-3 border-green-500/20 fade-in">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-lg">{subscriptionStatus === 'subscribed' ? '✅' : subscriptionStatus === 'error' ? '❌' : '⏳'}</span>
-            <p className="text-xs text-[var(--muted)]">
-              Push: {subscriptionStatus === 'subscribed' ? 'Active' : subscriptionStatus === 'subscribing' ? 'Subscribing...' : subscriptionStatus === 'error' ? 'Error — tap Retry' : 'Connecting...'}
-            </p>
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
-            {subscriptionStatus !== 'subscribed' && (
-              <button onClick={resubscribe} className="text-xs px-3 py-1.5 rounded bg-amber-600 text-white whitespace-nowrap">
-                Retry
-              </button>
-            )}
-            <button
-              onClick={async () => {
-                try {
-                  // If not subscribed yet, try subscribing first
-                  if (subscriptionStatus !== 'subscribed') {
-                    await resubscribe();
-                    // Small delay for the subscription to be saved
-                    await new Promise(r => setTimeout(r, 1500));
-                  }
-                  const res = await fetch('/api/push/test', { method: 'POST' });
-                  const data = await res.json();
-                  if (data.success) {
-                    alert(`✅ Test push sent to ${data.subscriptionCount} device(s)! Check your notifications.`);
-                  } else {
-                    // Show debug info if 0 subscriptions
-                    const debugRes = await fetch('/api/push/test');
-                    const debug = await debugRes.json();
-                    alert(`❌ ${data.message || data.error}\n\nDebug:\n` + JSON.stringify(debug.data, null, 2));
-                  }
-                } catch (err) {
-                  alert('❌ Network error: ' + String(err));
-                }
-              }}
-              className="btn-primary text-xs px-3 py-1.5 whitespace-nowrap"
-            >
-              Test Push
-            </button>
-          </div>
         </div>
       )}
 
