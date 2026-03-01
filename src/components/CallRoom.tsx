@@ -169,10 +169,85 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
 
     const init = async () => {
       try {
-      // ── 1. Get local media (progressive: audio first, then video) ──
+      // ── 1. FIRST: Subscribe to signaling channel (lightweight, do this before heavy work) ──
+      console.log('[Call] Step 1: Subscribing to signaling channel...');
+
+      // Remove any stale channel with the same name
+      try {
+        const existingChannels = supabaseBrowser.getChannels();
+        for (const ch of existingChannels) {
+          if (ch.topic === `realtime:call:${roomName}`) {
+            console.log('[Call] Removing stale channel:', ch.topic);
+            supabaseBrowser.removeChannel(ch);
+          }
+        }
+      } catch { /* ignore */ }
+
+      const channel = supabaseBrowser.channel(`call:${roomName}`, {
+        config: { broadcast: { self: false } },
+      });
+      channelRef.current = channel;
+
+      // Subscribe and wait for SUBSCRIBED status
+      const channelReady = await new Promise<boolean>((resolve) => {
+        const timeout = setTimeout(() => {
+          console.warn('[Call] Channel subscribe timed out after 10s');
+          resolve(false);
+        }, 10000);
+
+        channel.subscribe((subStatus: string) => {
+          console.log('[Call] Channel status:', subStatus);
+          if (subStatus === 'SUBSCRIBED') {
+            clearTimeout(timeout);
+            resolve(true);
+          }
+          if (subStatus === 'CHANNEL_ERROR' || subStatus === 'TIMED_OUT') {
+            clearTimeout(timeout);
+            resolve(false);
+          }
+        });
+      });
+
+      if (!channelReady) {
+        console.warn('[Call] First channel attempt failed, retrying...');
+        // Remove failed channel
+        try { supabaseBrowser.removeChannel(channel); } catch { /* */ }
+        channelRef.current = null;
+
+        // Wait and retry once
+        await new Promise(r => setTimeout(r, 2000));
+        if (!mounted) return;
+
+        const channel2 = supabaseBrowser.channel(`call:${roomName}`, {
+          config: { broadcast: { self: false } },
+        });
+        channelRef.current = channel2;
+
+        const retry = await new Promise<boolean>((resolve) => {
+          const timeout = setTimeout(() => resolve(false), 10000);
+          channel2.subscribe((s: string) => {
+            console.log('[Call] Retry channel status:', s);
+            if (s === 'SUBSCRIBED') { clearTimeout(timeout); resolve(true); }
+            if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') { clearTimeout(timeout); resolve(false); }
+          });
+        });
+
+        if (!retry) {
+          try { supabaseBrowser.removeChannel(channel2); } catch { /* */ }
+          if (mounted) {
+            setError('Cannot connect to signaling server. This may be a Supabase Realtime issue. Please try again in a few seconds.');
+          }
+          return;
+        }
+      }
+
+      if (!mounted) return;
+      console.log('[Call] Signaling channel connected!');
+
+      // ── 2. Get local media (progressive: audio first, then video) ──
+      console.log('[Call] Step 2: Getting media...');
       let stream: MediaStream;
       try {
-        // Step A: Always get audio first (lightweight, rarely fails)
         const audioStream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
           video: false,
@@ -182,7 +257,6 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         if (audioOnly) {
           stream = audioStream;
         } else {
-          // Step B: Then add video with mobile-adaptive constraints
           try {
             const videoConstraints = isMobile()
               ? { width: { ideal: 480 }, height: { ideal: 640 }, facingMode: 'user', frameRate: { ideal: 24 } }
@@ -194,14 +268,12 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
             });
             if (!mounted) { audioStream.getTracks().forEach(t => t.stop()); videoStream.getTracks().forEach(t => t.stop()); return; }
 
-            // Merge audio + video into one stream
             stream = new MediaStream([
               ...audioStream.getAudioTracks(),
               ...videoStream.getVideoTracks(),
             ]);
           } catch {
-            // Camera denied/failed — fall back to audio-only
-            console.warn('Camera failed, falling back to audio-only');
+            console.warn('[Call] Camera failed, falling back to audio-only');
             stream = audioStream;
           }
         }
@@ -219,10 +291,10 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         return;
       }
 
-      // Show progress immediately after media is acquired
       if (mounted) setStatus('waiting');
 
-      // ── 2. Fetch TURN credentials & create RTCPeerConnection ──
+      // ── 3. Fetch TURN credentials & create RTCPeerConnection ──
+      console.log('[Call] Step 3: Getting ICE servers...');
       let iceServers: RTCIceServer[];
       try {
         iceServers = await getIceServers();
@@ -249,10 +321,10 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
       pc.oniceconnectionstatechange = () => {
         if (!mounted) return;
         const s = pc.iceConnectionState;
+        console.log('[Call] ICE state:', s);
         if ((s === 'connected' || s === 'completed') && !connectedRef.current) {
           connectedRef.current = true;
           setStatus('connected');
-          // 🔊 Play call-connected sound
           playNotificationSound('call');
           if (announceRef.current) { clearInterval(announceRef.current); announceRef.current = null; }
           if (!timerRef.current) {
@@ -263,14 +335,12 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
           pc.restartIce();
           setTimeout(() => {
             if (mounted && pc.iceConnectionState === 'failed') {
-              // Auto-end the call on failure
               cleanup();
               onLeave?.();
             }
           }, 6000);
         }
         if (s === 'disconnected') {
-          // Partner's connection dropped — auto-end call after 5 seconds
           setTimeout(() => {
             if (mounted && pc.iceConnectionState === 'disconnected') {
               cleanup();
@@ -280,185 +350,123 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         }
       };
 
-      // ── 3. Supabase Realtime Broadcast for signaling ──
-      // Remove any stale channel with the same name first
-      const existingChannels = supabaseBrowser.getChannels();
-      for (const ch of existingChannels) {
-        if (ch.topic === `realtime:call:${roomName}`) {
-          console.log('[Call] Removing stale channel:', ch.topic);
-          supabaseBrowser.removeChannel(ch);
+      // ── 4. Attach signaling handlers to the already-subscribed channel ──
+      const activeChannel = channelRef.current!;
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate && channelRef.current) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'ice',
+            payload: { candidate: event.candidate.toJSON(), from: myId },
+          });
         }
-      }
-      // Small delay to let Supabase Realtime WebSocket settle
-      await new Promise(r => setTimeout(r, 500));
-
-      // Helper: create channel, attach handlers, subscribe
-      const setupAndSubscribe = (attempt: number): Promise<void> => {
-        return new Promise((resolve, reject) => {
-          console.log('[Call] Creating signaling channel, attempt', attempt);
-
-          const ch = supabaseBrowser.channel(`call:${roomName}`, {
-            config: { broadcast: { self: false } },
-          });
-          channelRef.current = ch;
-
-          // Use channelRef for ICE candidates so retries work
-          pc.onicecandidate = (event) => {
-            if (event.candidate && channelRef.current) {
-              channelRef.current.send({
-                type: 'broadcast',
-                event: 'ice',
-                payload: { candidate: event.candidate.toJSON(), from: myId },
-              });
-            }
-          };
-
-          // ── Signaling handlers ──
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ch.on('broadcast', { event: 'join' }, async (msg: any) => {
-            const data = msg.payload as { from: string; name: string };
-            if (data.from === myId || !mounted || connectedRef.current) return;
-            setPartnerName(data.name || 'Study Buddy');
-            setStatus('connecting');
-            if (myId < data.from && !negotiatingRef.current) {
-              negotiatingRef.current = true;
-              try {
-                const offer = await pc.createOffer();
-                await pc.setLocalDescription(offer);
-                channelRef.current?.send({
-                  type: 'broadcast',
-                  event: 'offer',
-                  payload: { sdp: pc.localDescription!.toJSON(), from: myId, name: displayName },
-                });
-              } catch (e) { console.error('Offer error:', e); negotiatingRef.current = false; }
-            }
-          });
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ch.on('broadcast', { event: 'offer' }, async (msg: any) => {
-            const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
-            if (data.from === myId || !mounted) return;
-            if (!connectedRef.current) {
-              setPartnerName(data.name || 'Study Buddy');
-              setStatus('connecting');
-            }
-            try {
-              await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-              const answer = await pc.createAnswer();
-              await pc.setLocalDescription(answer);
-              channelRef.current?.send({
-                type: 'broadcast',
-                event: 'answer',
-                payload: { sdp: pc.localDescription!.toJSON(), from: myId, name: displayName },
-              });
-            } catch (e) { console.error('Answer error:', e); }
-          });
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ch.on('broadcast', { event: 'answer' }, async (msg: any) => {
-            const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
-            if (data.from === myId || !mounted) return;
-            if (!connectedRef.current) setPartnerName(data.name || 'Study Buddy');
-            try {
-              await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-              negotiatingRef.current = false;
-            } catch (e) { console.error('Remote desc error:', e); }
-          });
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ch.on('broadcast', { event: 'ice' }, async (msg: any) => {
-            const data = msg.payload as { candidate: RTCIceCandidateInit; from: string };
-            if (data.from === myId || !mounted) return;
-            try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch { /* late ICE ok */ }
-          });
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ch.on('broadcast', { event: 'leave' }, (msg: any) => {
-            const data = msg.payload as { from: string };
-            if (data.from === myId || !mounted) return;
-            cleanup();
-            onLeave?.();
-          });
-
-          // ── Screen share signaling ──
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ch.on('broadcast', { event: 'screen-start' }, (msg: any) => {
-            if (msg.payload.from === myId || !mounted) return;
-            setPartnerScreenSharing(true);
-          });
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ch.on('broadcast', { event: 'screen-stop' }, (msg: any) => {
-            if (msg.payload.from === myId || !mounted) return;
-            setPartnerScreenSharing(false);
-          });
-
-          // ── In-call chat ──
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ch.on('broadcast', { event: 'chat' }, (msg: any) => {
-            const data = msg.payload as ChatMsg;
-            if (data.from === myId || !mounted) return;
-            setChatMessages(prev => [...prev, data]);
-            if (!showChatRef.current) setUnreadChat(prev => prev + 1);
-          });
-
-          // ── Subscribe ──
-          ch.subscribe((subStatus: string) => {
-            console.log('[Call] Channel subscribe status:', subStatus, 'attempt:', attempt);
-            if (subStatus === 'SUBSCRIBED') {
-              resolve();
-            }
-            if (subStatus === 'CHANNEL_ERROR' || subStatus === 'TIMED_OUT') {
-              console.warn('[Call] Channel error:', subStatus);
-              supabaseBrowser.removeChannel(ch);
-              reject(new Error(subStatus));
-            }
-          });
-        });
       };
 
-      // Try up to 3 times with increasing delays
-      let subscribed = false;
-      for (let attempt = 1; attempt <= 3 && mounted; attempt++) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      activeChannel.on('broadcast', { event: 'join' }, async (msg: any) => {
+        const data = msg.payload as { from: string; name: string };
+        if (data.from === myId || !mounted || connectedRef.current) return;
+        setPartnerName(data.name || 'Study Buddy');
+        setStatus('connecting');
+        if (myId < data.from && !negotiatingRef.current) {
+          negotiatingRef.current = true;
+          try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            channelRef.current?.send({
+              type: 'broadcast',
+              event: 'offer',
+              payload: { sdp: pc.localDescription!.toJSON(), from: myId, name: displayName },
+            });
+          } catch (e) { console.error('Offer error:', e); negotiatingRef.current = false; }
+        }
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      activeChannel.on('broadcast', { event: 'offer' }, async (msg: any) => {
+        const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
+        if (data.from === myId || !mounted) return;
+        if (!connectedRef.current) {
+          setPartnerName(data.name || 'Study Buddy');
+          setStatus('connecting');
+        }
         try {
-          await setupAndSubscribe(attempt);
-          subscribed = true;
-          break;
-        } catch (e) {
-          console.warn('[Call] Subscribe attempt', attempt, 'failed:', e);
-          if (attempt < 3 && mounted) {
-            await new Promise(r => setTimeout(r, 1000 * attempt));
-          }
-        }
-      }
-
-      if (!subscribed) {
-        if (mounted) {
-          setError('Failed to connect to signaling server. Please check your internet and try again.');
-        }
-        return;
-      }
-
-      // ── Start announcing presence ──
-      if (mounted) {
-        setStatus('waiting');
-        const announce = () => {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
           channelRef.current?.send({
             type: 'broadcast',
-            event: 'join',
-            payload: { from: myId, name: displayName },
+            event: 'answer',
+            payload: { sdp: pc.localDescription!.toJSON(), from: myId, name: displayName },
           });
-        };
-        announce();
-        announceRef.current = setInterval(announce, 2000);
+        } catch (e) { console.error('Answer error:', e); }
+      });
 
-        // Heartbeat
-        const heartbeat = setInterval(() => {
-          if (!mounted) { clearInterval(heartbeat); return; }
-          channelRef.current?.send({ type: 'broadcast', event: 'ping', payload: { from: myId } }).catch(() => {});
-        }, 3000);
-        const clearHeartbeat = () => clearInterval(heartbeat);
-        window.addEventListener('pagehide', clearHeartbeat, { once: true });
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      activeChannel.on('broadcast', { event: 'answer' }, async (msg: any) => {
+        const data = msg.payload as { sdp: RTCSessionDescriptionInit; from: string; name: string };
+        if (data.from === myId || !mounted) return;
+        if (!connectedRef.current) setPartnerName(data.name || 'Study Buddy');
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+          negotiatingRef.current = false;
+        } catch (e) { console.error('Remote desc error:', e); }
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      activeChannel.on('broadcast', { event: 'ice' }, async (msg: any) => {
+        const data = msg.payload as { candidate: RTCIceCandidateInit; from: string };
+        if (data.from === myId || !mounted) return;
+        try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch { /* late ICE ok */ }
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      activeChannel.on('broadcast', { event: 'leave' }, (msg: any) => {
+        const data = msg.payload as { from: string };
+        if (data.from === myId || !mounted) return;
+        cleanup();
+        onLeave?.();
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      activeChannel.on('broadcast', { event: 'screen-start' }, (msg: any) => {
+        if (msg.payload.from === myId || !mounted) return;
+        setPartnerScreenSharing(true);
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      activeChannel.on('broadcast', { event: 'screen-stop' }, (msg: any) => {
+        if (msg.payload.from === myId || !mounted) return;
+        setPartnerScreenSharing(false);
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      activeChannel.on('broadcast', { event: 'chat' }, (msg: any) => {
+        const data = msg.payload as ChatMsg;
+        if (data.from === myId || !mounted) return;
+        setChatMessages(prev => [...prev, data]);
+        if (!showChatRef.current) setUnreadChat(prev => prev + 1);
+      });
+
+      // ── 5. Start announcing presence ──
+      console.log('[Call] Step 4: Announcing presence...');
+      const announce = () => {
+        channelRef.current?.send({
+          type: 'broadcast',
+          event: 'join',
+          payload: { from: myId, name: displayName },
+        });
+      };
+      announce();
+      announceRef.current = setInterval(announce, 2000);
+
+      // Heartbeat
+      const heartbeat = setInterval(() => {
+        if (!mounted) { clearInterval(heartbeat); return; }
+        channelRef.current?.send({ type: 'broadcast', event: 'ping', payload: { from: myId } }).catch(() => {});
+      }, 3000);
+      const clearHeartbeat = () => clearInterval(heartbeat);
+      window.addEventListener('pagehide', clearHeartbeat, { once: true });
       } catch (initErr) {
         console.error('[Call] init() crashed:', initErr);
         if (mounted) {
