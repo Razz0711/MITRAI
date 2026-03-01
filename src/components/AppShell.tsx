@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useTheme } from './ThemeProvider';
 import { Sun, Moon } from 'lucide-react';
 import GlobalNotificationPoller from './GlobalNotificationPoller';
+import IncomingCallBanner from './IncomingCallBanner';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -31,6 +32,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <>
         <TopBar />
         <GlobalNotificationPoller />
+        <IncomingCallBanner />
         <main className="pt-16 pb-4 min-h-screen">
           {children}
         </main>

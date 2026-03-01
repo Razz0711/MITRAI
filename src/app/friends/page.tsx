@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Friendship, FriendRequest, BuddyRating, UserStatus } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import SubTabBar from '@/components/SubTabBar';
@@ -25,16 +26,49 @@ export default function FriendsPage() {
   const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Direct call: generate room code, send chat notification, navigate
+  // Direct call: generate room code, send realtime invite + push + chat, navigate
   const startCallWithFriend = async (fId: string, fName: string, mode: 'voice' | 'video') => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
     for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
 
-    // Send auto-chat message so friend sees the call invite
     if (user) {
+      const userName = user.name || user.email?.split('@')[0] || 'Study Buddy';
+
+      // 1) Broadcast Realtime call-invite to receiver (triggers IncomingCallBanner)
       try {
-        const userName = user.name || user.email?.split('@')[0] || 'Study Buddy';
+        const channel = supabaseBrowser.channel(`call-invite:${fId}`);
+        await channel.subscribe();
+        await channel.send({
+          type: 'broadcast',
+          event: 'incoming-call',
+          payload: {
+            callerId: user.id,
+            callerName: userName,
+            mode,
+            roomCode: code,
+          },
+        });
+        // Cleanup the broadcast channel after a short delay
+        setTimeout(() => supabaseBrowser.removeChannel(channel), 3000);
+      } catch (e) { console.error('Realtime call-invite broadcast error:', e); }
+
+      // 2) Send push notification (for when receiver's browser is in background)
+      try {
+        await fetch('/api/call-invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            receiverId: fId,
+            callerName: userName,
+            mode,
+            roomCode: code,
+          }),
+        });
+      } catch { /* ok */ }
+
+      // 3) Send chat message as fallback
+      try {
         await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
