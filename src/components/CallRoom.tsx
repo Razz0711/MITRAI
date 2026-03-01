@@ -40,10 +40,6 @@ const FALLBACK_ICE: RTCIceServer[] = [
   },
 ];
 
-// Metered.ca TURN credentials (fetched dynamically)
-const METERED_API_KEY = '85heS8uebI0d0CNV_IGQwtoskEUR0MYeKIP5AcI8kgS_sp0T';
-const METERED_DOMAIN = 'mitrai.metered.live';
-
 let _cachedIceServers: RTCIceServer[] | null = null;
 let _fetchingIce = false;
 
@@ -55,28 +51,26 @@ async function getIceServers(): Promise<RTCIceServer[]> {
   }
   _fetchingIce = true;
   try {
+    // Fetch TURN credentials via our server-side API route (keeps secret key safe)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(
-      `https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_API_KEY}`,
-      { signal: controller.signal },
-    );
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch('/api/turn-credentials', { signal: controller.signal });
     clearTimeout(timeoutId);
     if (!res.ok) {
-      console.warn('[ICE] Metered API returned status', res.status, '— using fallback TURN');
+      console.warn('[ICE] /api/turn-credentials returned status', res.status, '— using fallback TURN');
       return FALLBACK_ICE;
     }
-    const servers = await res.json();
-    if (Array.isArray(servers) && servers.length > 0) {
-      // Merge STUN fallback + Metered TURN for best coverage
-      _cachedIceServers = [...FALLBACK_ICE, ...servers];
-      console.log('[ICE] Fetched', servers.length, 'TURN servers from Metered.ca');
+    const data = await res.json();
+    if (Array.isArray(data.servers) && data.servers.length > 0) {
+      // Merge STUN/OpenRelay fallback + Metered TURN for best coverage
+      _cachedIceServers = [...FALLBACK_ICE, ...data.servers];
+      console.log('[ICE] Fetched', data.servers.length, 'TURN servers from Metered via API');
       return _cachedIceServers;
     }
-    console.warn('[ICE] Metered returned empty/invalid data — using fallback TURN');
+    console.warn('[ICE] API returned empty servers — using fallback TURN');
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
-      console.warn('[ICE] Metered API timed out after 5s — using fallback TURN');
+      console.warn('[ICE] TURN API timed out — using fallback TURN');
     } else {
       console.error('[ICE] Failed to fetch TURN credentials:', e);
     }
