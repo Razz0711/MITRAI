@@ -10,9 +10,11 @@ import { useAuth } from '@/lib/auth';
 import { DirectMessage, ChatThread, UserStatus } from '@/lib/types';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import SubTabBar from '@/components/SubTabBar';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 export default function ChatPage() {
   const { user } = useAuth();
+  const { play: playSound } = useNotificationSound();
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
@@ -106,6 +108,11 @@ export default function ChatPage() {
           const row = payload.new as Record<string, string> | undefined;
           if (!row) return;
           if (row.sender_id !== studentId && row.receiver_id !== studentId) return;
+
+          // 🔊 Play sound for incoming messages from others
+          if (row.sender_id !== studentId) {
+            playSound('message');
+          }
 
           // Refresh sidebar threads
           loadThreads();

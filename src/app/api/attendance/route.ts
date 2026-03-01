@@ -10,11 +10,14 @@ import {
   upsertBulkAttendance,
   deleteAttendance,
   getAttendanceRecordById,
+  getAttendanceLogs,
+  upsertAttendanceLog,
+  AttendanceLogEntry,
 } from '@/lib/store';
 import { AttendanceRecord } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
 
-// GET /api/attendance?userId=xxx
+// GET /api/attendance?userId=xxx  OR  /api/attendance?userId=xxx&logs=true&start=YYYY-MM-DD&end=YYYY-MM-DD
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
@@ -23,6 +26,16 @@ export async function GET(req: NextRequest) {
 
     // Ownership: can only view own attendance
     if (userId !== authUser.id) return forbidden();
+
+    // Calendar logs mode
+    const logsMode = req.nextUrl.searchParams.get('logs');
+    if (logsMode === 'true') {
+      const start = req.nextUrl.searchParams.get('start');
+      const end = req.nextUrl.searchParams.get('end');
+      if (!start || !end) return NextResponse.json({ success: false, error: 'Missing start/end dates' }, { status: 400 });
+      const logs = await getAttendanceLogs(userId, start, end);
+      return NextResponse.json({ success: true, data: logs });
+    }
 
     const records = await getAttendanceForUser(userId);
     return NextResponse.json({ success: true, data: records });
@@ -75,12 +88,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PUT /api/attendance — update an existing record
+// PUT /api/attendance — update an existing record (+ auto-log daily entry)
 export async function PUT(req: NextRequest) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
   try {
     const body = await req.json();
-    const { id, userId, subject, totalClasses, attendedClasses, createdAt } = body;
+    const { id, userId, subject, totalClasses, attendedClasses, createdAt, logStatus } = body;
     if (!id || !userId || !subject) {
       return NextResponse.json({ success: false, error: 'Missing id, userId or subject' }, { status: 400 });
     }
@@ -91,6 +104,21 @@ export async function PUT(req: NextRequest) {
       lastUpdated: new Date().toISOString(), createdAt: createdAt || new Date().toISOString(),
     };
     const result = await upsertAttendance(record);
+
+    // Auto-log daily attendance entry for calendar if logStatus provided
+    if (logStatus === 'present' || logStatus === 'absent') {
+      const today = new Date().toISOString().slice(0, 10);
+      const logEntry: AttendanceLogEntry = {
+        id: `alog_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        userId,
+        subject: subject.trim(),
+        date: today,
+        status: logStatus,
+        createdAt: new Date().toISOString(),
+      };
+      await upsertAttendanceLog(logEntry);
+    }
+
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Attendance PUT error:', error);

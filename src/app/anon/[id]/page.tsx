@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useRouter, useParams } from 'next/navigation';
 import { ROOM_TYPES } from '@/lib/anon-aliases';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 interface AnonMsg {
   id: string;
@@ -36,6 +37,7 @@ export default function AnonChatRoomPage() {
   const router = useRouter();
   const params = useParams();
   const roomId = params.id as string;
+  const { play: playSound } = useNotificationSound();
 
   const [data, setData] = useState<RoomData | null>(null);
   const [messages, setMessages] = useState<AnonMsg[]>([]);
@@ -115,6 +117,10 @@ export default function AnonChatRoomPage() {
             text: row.text,
             createdAt: row.created_at,
           };
+          // 🔊 Play sound for incoming messages from partner
+          if (msg.senderId !== user?.id) {
+            playSound('message');
+          }
           setMessages(prev => {
             // Skip if we already have this message (by real id or if it matches an optimistic one)
             if (prev.some(m => m.id === msg.id)) return prev;

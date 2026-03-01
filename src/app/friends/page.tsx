@@ -10,9 +10,11 @@ import { useAuth } from '@/lib/auth';
 import { Friendship, FriendRequest, BuddyRating, UserStatus } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import SubTabBar from '@/components/SubTabBar';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 export default function FriendsPage() {
   const { user } = useAuth();
+  const { play: playSound } = useNotificationSound();
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [ratingsReceived, setRatingsReceived] = useState<BuddyRating[]>([]);
@@ -58,7 +60,14 @@ export default function FriendsPage() {
       const data = await res.json();
       if (data.success) {
         setFriends(data.data.friends || []);
-        setPendingRequests(data.data.pendingRequests || []);
+        const newPending: FriendRequest[] = data.data.pendingRequests || [];
+        // 🔊 Play sound if there are new pending friend requests
+        setPendingRequests(prev => {
+          if (newPending.length > prev.length && prev.length > 0) {
+            playSound('important');
+          }
+          return newPending;
+        });
         setRatingsReceived(data.data.ratingsReceived || []);
         setRatingsGiven(data.data.ratingsGiven || []);
         setAvgRating(data.data.averageRating || 0);

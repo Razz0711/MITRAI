@@ -10,12 +10,14 @@ import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { ROOM_TYPES, ANON_PRICING, UPI_CONFIG } from '@/lib/anon-aliases';
 import SubTabBar from '@/components/SubTabBar';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 type Status = 'loading' | 'no-pass' | 'pending-payment' | 'banned' | 'idle' | 'queuing' | 'matched';
 
 export default function AnonLobbyPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const { play: playSound } = useNotificationSound();
 
   const [status, setStatus] = useState<Status>('loading');
   const [banInfo, setBanInfo] = useState<{ reason?: string; expiresAt?: string }>({});
@@ -157,6 +159,8 @@ export default function AnonLobbyPage() {
         if (data.success && data.data.matched) {
           if (pollRef.current) clearInterval(pollRef.current);
           if (timerRef.current) clearInterval(timerRef.current);
+          // 🔊 Play match found sound
+          playSound('match');
           setStatus('matched');
           setTimeout(() => router.push(`/anon/${data.data.roomId}`), 800);
         }

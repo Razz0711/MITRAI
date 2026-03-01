@@ -9,6 +9,15 @@ import { useAuth } from '@/lib/auth';
 import { AttendanceRecord } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 
+interface AttendanceLogEntry {
+  id: string;
+  userId: string;
+  subject: string;
+  date: string;
+  status: 'present' | 'absent';
+  createdAt: string;
+}
+
 export default function AttendancePage() {
   const { user } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -27,6 +36,16 @@ export default function AttendancePage() {
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [bulkText, setBulkText] = useState('');
 
+  // Calendar
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [calendarLogs, setCalendarLogs] = useState<AttendanceLogEntry[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
   const loadAttendance = useCallback(async () => {
     if (!user) return;
     try {
@@ -42,7 +61,7 @@ export default function AttendancePage() {
     else setLoading(false);
   }, [user, loadAttendance]);
 
-  const handleUpsert = async (record: AttendanceRecord, attended: number, total: number) => {
+  const handleUpsert = async (record: AttendanceRecord, attended: number, total: number, logStatus?: 'present' | 'absent') => {
     try {
       const res = await fetch('/api/attendance', {
         method: 'PUT',
@@ -54,6 +73,7 @@ export default function AttendancePage() {
           totalClasses: total,
           attendedClasses: attended,
           createdAt: record.createdAt,
+          logStatus,
         }),
       });
       const data = await res.json();
@@ -65,6 +85,8 @@ export default function AttendancePage() {
               : a
           )
         );
+        // Refresh calendar if open
+        if (showCalendar) loadCalendarLogs();
       }
     } catch (err) { console.error('upsertAttendance:', err); }
   };
@@ -137,6 +159,64 @@ export default function AttendancePage() {
   const subjectsBelow75 = attendance.filter(a => a.totalClasses > 0 && (a.attendedClasses / a.totalClasses) < 0.75);
   const subjectsAbove90 = attendance.filter(a => a.totalClasses > 0 && (a.attendedClasses / a.totalClasses) >= 0.9);
 
+  // ── Calendar helpers ──
+  const loadCalendarLogs = useCallback(async () => {
+    if (!user) return;
+    setCalendarLoading(true);
+    const y = calendarMonth.year;
+    const m = calendarMonth.month;
+    const start = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const end = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    try {
+      const res = await fetch(`/api/attendance?userId=${user.id}&logs=true&start=${start}&end=${end}`);
+      const data = await res.json();
+      if (data.success) setCalendarLogs(data.data || []);
+    } catch (err) { console.error('loadCalendarLogs:', err); }
+    setCalendarLoading(false);
+  }, [user, calendarMonth]);
+
+  useEffect(() => {
+    if (showCalendar && user) loadCalendarLogs();
+  }, [showCalendar, calendarMonth, user, loadCalendarLogs]);
+
+  // Build calendar grid data
+  const getCalendarDays = () => {
+    const { year, month } = calendarMonth;
+    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days: { date: string; day: number; present: number; absent: number; total: number }[] = [];
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dayLogs = calendarLogs.filter(l => l.date === dateStr);
+      const present = dayLogs.filter(l => l.status === 'present').length;
+      const absent = dayLogs.filter(l => l.status === 'absent').length;
+      days.push({ date: dateStr, day: d, present, absent, total: present + absent });
+    }
+
+    return { days, firstDay };
+  };
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const prevMonth = () => {
+    setCalendarMonth(prev => {
+      if (prev.month === 0) return { year: prev.year - 1, month: 11 };
+      return { ...prev, month: prev.month - 1 };
+    });
+    setSelectedDay(null);
+  };
+
+  const nextMonth = () => {
+    setCalendarMonth(prev => {
+      if (prev.month === 11) return { year: prev.year + 1, month: 0 };
+      return { ...prev, month: prev.month + 1 };
+    });
+    setSelectedDay(null);
+  };
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
@@ -206,6 +286,146 @@ export default function AttendancePage() {
             <p className="text-lg font-bold text-green-400">{subjectsAbove90.length}</p>
             <p className="text-[10px] text-[var(--muted)]">Excellent!</p>
           </div>
+        </div>
+      )}
+
+      {/* Expandable Calendar */}
+      {attendance.length > 0 && (
+        <div className="mb-6">
+          <button
+            onClick={() => setShowCalendar(!showCalendar)}
+            className="w-full card p-3 flex items-center justify-between hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm">📅</span>
+              <span className="text-xs font-semibold">Attendance Calendar</span>
+              <span className="text-[10px] text-[var(--muted)]">Daily attendance log</span>
+            </div>
+            <span className={`text-xs transition-transform duration-200 ${showCalendar ? 'rotate-180' : ''}`}>▼</span>
+          </button>
+
+          {showCalendar && (
+            <div className="card p-4 mt-1 fade-in">
+              {/* Month navigation */}
+              <div className="flex items-center justify-between mb-4">
+                <button onClick={prevMonth} className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors">◀</button>
+                <h3 className="text-sm font-bold">
+                  {monthNames[calendarMonth.month]} {calendarMonth.year}
+                </h3>
+                <button onClick={nextMonth} className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors">▶</button>
+              </div>
+
+              {calendarLoading ? (
+                <div className="text-center py-6">
+                  <p className="text-xs text-[var(--muted)]">Loading calendar...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Day headers */}
+                  <div className="grid grid-cols-7 gap-1 mb-1">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                      <div key={d} className="text-center text-[9px] text-[var(--muted)] font-medium py-1">{d}</div>
+                    ))}
+                  </div>
+
+                  {/* Calendar grid */}
+                  {(() => {
+                    const { days, firstDay } = getCalendarDays();
+                    const today = new Date().toISOString().slice(0, 10);
+                    const cells: React.ReactNode[] = [];
+
+                    // Empty cells for offset
+                    for (let i = 0; i < firstDay; i++) {
+                      cells.push(<div key={`empty-${i}`} />);
+                    }
+
+                    // Day cells
+                    days.forEach(d => {
+                      const isToday = d.date === today;
+                      const isSelected = selectedDay === d.date;
+                      let dotColor = '';
+                      if (d.total > 0) {
+                        const ratio = d.present / d.total;
+                        if (ratio >= 0.75) dotColor = 'bg-green-500';
+                        else if (ratio >= 0.5) dotColor = 'bg-amber-500';
+                        else dotColor = 'bg-red-500';
+                      }
+
+                      cells.push(
+                        <button
+                          key={d.date}
+                          onClick={() => setSelectedDay(isSelected ? null : d.date)}
+                          className={`relative flex flex-col items-center justify-center p-1 rounded-lg text-[11px] transition-colors min-h-[36px] ${
+                            isSelected ? 'bg-[var(--primary)]/20 ring-1 ring-[var(--primary)]' :
+                            isToday ? 'bg-white/10 font-bold' :
+                            'hover:bg-white/5'
+                          }`}
+                        >
+                          <span className={isToday ? 'text-[var(--primary-light)]' : ''}>{d.day}</span>
+                          {d.total > 0 && (
+                            <span className={`w-1.5 h-1.5 rounded-full ${dotColor} mt-0.5`} />
+                          )}
+                        </button>
+                      );
+                    });
+
+                    return (
+                      <div className="grid grid-cols-7 gap-1">
+                        {cells}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Legend */}
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[var(--border)]">
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-[9px] text-[var(--muted)]">≥75%</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span className="text-[9px] text-[var(--muted)]">50-74%</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      <span className="text-[9px] text-[var(--muted)]">&lt;50%</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-white/20" />
+                      <span className="text-[9px] text-[var(--muted)]">No data</span>
+                    </div>
+                  </div>
+
+                  {/* Selected day detail */}
+                  {selectedDay && (
+                    <div className="mt-3 pt-3 border-t border-[var(--border)] fade-in">
+                      <h4 className="text-xs font-semibold mb-2">
+                        📋 {new Date(selectedDay + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}
+                      </h4>
+                      {(() => {
+                        const dayLogs = calendarLogs.filter(l => l.date === selectedDay);
+                        if (dayLogs.length === 0) {
+                          return <p className="text-[10px] text-[var(--muted)]">No attendance recorded this day</p>;
+                        }
+                        return (
+                          <div className="space-y-1">
+                            {dayLogs.map(l => (
+                              <div key={l.id} className="flex items-center justify-between text-[11px] py-1 px-2 rounded bg-white/5">
+                                <span className="font-medium">{l.subject}</span>
+                                <span className={l.status === 'present' ? 'text-green-400' : 'text-red-400'}>
+                                  {l.status === 'present' ? '✓ Present' : '✗ Absent'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -321,14 +541,14 @@ export default function AttendancePage() {
                   {!isEditing ? (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
-                        onClick={() => handleUpsert(a, a.attendedClasses + 1, a.totalClasses + 1)}
+                        onClick={() => handleUpsert(a, a.attendedClasses + 1, a.totalClasses + 1, 'present')}
                         className="text-xs px-3 py-1.5 rounded-lg bg-green-500/15 text-green-400 hover:bg-green-500/25 transition-colors font-medium"
                         title="Mark as present"
                       >
                         ✓ Present
                       </button>
                       <button
-                        onClick={() => handleUpsert(a, a.attendedClasses, a.totalClasses + 1)}
+                        onClick={() => handleUpsert(a, a.attendedClasses, a.totalClasses + 1, 'absent')}
                         className="text-xs px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition-colors font-medium"
                         title="Mark as absent"
                       >

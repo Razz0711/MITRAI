@@ -4,16 +4,19 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { StudentProfile, Day, BirthdayInfo, UserStatus, Notification as NotifType } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import BirthdayBanner, { UpcomingBirthdays } from '@/components/BirthdayBanner';
 import { StatusDot } from '@/components/StatusIndicator';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { play: playSound } = useNotificationSound();
+  const prevUnreadRef = useRef<number>(0);
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [myProfiles, setMyProfiles] = useState<StudentProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,9 +71,18 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/notifications?userId=${user.id}`);
       const data = await res.json();
-      if (data.success) setNotifications(data.data || []);
+      if (data.success) {
+        const notifs: NotifType[] = data.data || [];
+        const newUnread = notifs.filter(n => !n.read).length;
+        // 🔊 Play sound when new unread notifications arrive
+        if (newUnread > prevUnreadRef.current && prevUnreadRef.current >= 0) {
+          playSound('important');
+        }
+        prevUnreadRef.current = newUnread;
+        setNotifications(notifs);
+      }
     } catch (err) { console.error('loadNotifications:', err); }
-  }, [user]);
+  }, [user, playSound]);
 
   const loadStatus = useCallback(async () => {
     if (!user) return;

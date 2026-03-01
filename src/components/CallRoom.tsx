@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { playNotificationSound } from '@/hooks/useNotificationSound';
 
 interface CallRoomProps {
   roomName: string;
@@ -154,6 +155,8 @@ export default function CallRoom({ roomName, displayName, onLeave, audioOnly = f
         if ((s === 'connected' || s === 'completed') && !connectedRef.current) {
           connectedRef.current = true;
           setStatus('connected');
+          // 🔊 Play call-connected sound
+          playNotificationSound('call');
           if (announceRef.current) { clearInterval(announceRef.current); announceRef.current = null; }
           if (!timerRef.current) {
             timerRef.current = setInterval(() => setDuration(prev => prev + 1), 1000);

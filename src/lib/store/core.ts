@@ -68,3 +68,7 @@ export const ATTENDANCE_DEFAULTS: Record<string, unknown> = {
   userId: '', subject: '', totalClasses: 0, attendedClasses: 0,
   lastUpdated: '', createdAt: '',
 };
+
+export const ATTENDANCE_LOG_DEFAULTS: Record<string, unknown> = {
+  userId: '', subject: '', date: '', status: 'present', createdAt: '',
+};
