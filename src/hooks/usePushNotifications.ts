@@ -11,8 +11,29 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 type PermissionState = 'default' | 'granted' | 'denied' | 'unsupported';
 
-// VAPID public key from env (available at build time via NEXT_PUBLIC_ prefix)
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
+// Try build-time env first; if empty, fetched from server at runtime
+let _vapidPublicKey = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '').replace(/=+$/, '').trim();
+let _vapidFetched = false;
+
+async function getVapidPublicKey(): Promise<string> {
+  if (_vapidPublicKey) return _vapidPublicKey;
+  if (_vapidFetched) return _vapidPublicKey; // already tried
+  _vapidFetched = true;
+  try {
+    console.log('[Push] VAPID key empty at build time, fetching from server...');
+    const res = await fetch('/api/push');
+    const data = await res.json();
+    if (data.vapidPublicKey) {
+      _vapidPublicKey = data.vapidPublicKey;
+      console.log('[Push] Got VAPID key from server, length:', _vapidPublicKey.length);
+    } else {
+      console.error('[Push] Server returned no VAPID key');
+    }
+  } catch (err) {
+    console.error('[Push] Failed to fetch VAPID key:', err);
+  }
+  return _vapidPublicKey;
+}
 
 /** Convert URL-safe base64 VAPID key → Uint8Array for PushManager */
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -32,22 +53,29 @@ export function usePushNotifications() {
 
   /** Subscribe to Web Push via PushManager and send subscription to our server */
   const subscribeToPush = useCallback(async (reg: ServiceWorkerRegistration) => {
-    if (subscribed.current) return;
-    if (!VAPID_PUBLIC_KEY) {
-      console.error('[Push] VAPID_PUBLIC_KEY is empty — env var NEXT_PUBLIC_VAPID_PUBLIC_KEY not set at build time');
-      setSubscriptionStatus('error');
+    if (subscribed.current) {
+      setSubscriptionStatus('subscribed');
       return;
     }
     setSubscriptionStatus('subscribing');
     try {
+      // Get VAPID key (build-time or server fallback)
+      const vapidKey = await getVapidPublicKey();
+      if (!vapidKey) {
+        console.error('[Push] No VAPID public key available (build-time or server)');
+        setSubscriptionStatus('error');
+        return;
+      }
+      console.log('[Push] Using VAPID key, length:', vapidKey.length);
+
       let sub = await reg.pushManager.getSubscription();
-      console.log('[Push] Existing subscription:', sub ? 'yes' : 'no');
+      console.log('[Push] Existing PushManager subscription:', sub ? 'yes' : 'no');
 
       if (!sub) {
         console.log('[Push] Creating new PushManager subscription...');
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey).buffer as ArrayBuffer,
         });
         console.log('[Push] PushManager subscription created:', sub.endpoint.slice(0, 60) + '...');
       }
@@ -69,6 +97,7 @@ export function usePushNotifications() {
         }),
       });
       const data = await res.json();
+      console.log('[Push] Server response:', JSON.stringify(data));
       if (data.success) {
         console.log('[Push] Subscription saved to server successfully!');
         subscribed.current = true;
@@ -92,7 +121,7 @@ export function usePushNotifications() {
       return;
     }
     setPermission(Notification.permission as PermissionState);
-    console.log('[Push] Current permission:', Notification.permission, '| VAPID key length:', VAPID_PUBLIC_KEY.length);
+    console.log('[Push] Current permission:', Notification.permission, '| build-time VAPID key length:', _vapidPublicKey.length);
 
     navigator.serviceWorker
       .register('/sw.js')
@@ -157,10 +186,23 @@ export function usePushNotifications() {
     [permission],
   );
 
+  /** Force re-subscribe (for retry / debug) */
+  const resubscribe = useCallback(async () => {
+    subscribed.current = false;
+    _vapidFetched = false; // re-fetch VAPID key in case it was empty before
+    if (swReg.current) {
+      await subscribeToPush(swReg.current);
+    } else {
+      console.error('[Push] No service worker registration available');
+      setSubscriptionStatus('error');
+    }
+  }, [subscribeToPush]);
+
   return {
     permission,
     subscriptionStatus,
     requestPermission,
+    resubscribe,
     showNotification,
     isSupported: permission !== 'unsupported',
   };

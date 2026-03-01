@@ -10,6 +10,12 @@ import { savePushSubscription, removePushSubscription } from '@/lib/store/push-s
 
 export const dynamic = 'force-dynamic';
 
+// GET /api/push — return the VAPID public key (so client can subscribe even if build-time env was empty)
+export async function GET() {
+  const vapidKey = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '').replace(/=+$/, '').trim();
+  return NextResponse.json({ vapidPublicKey: vapidKey });
+}
+
 // POST /api/push — save a push subscription
 export async function POST(request: NextRequest) {
   const authUser = await getAuthUser();
