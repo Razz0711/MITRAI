@@ -481,7 +481,7 @@ export async function getUserActiveRoom(userId: string): Promise<string | null> 
 // ═══════════════════════════════════════════
 
 /** Get live stats: users in queue and active rooms */
-export async function getAnonStats(): Promise<{ queueCount: number; activeRooms: number; queueByType: Record<string, number> }> {
+export async function getAnonLiveStats(): Promise<{ queueCount: number; activeRooms: number; queueByType: Record<string, number> }> {
   // Count users in queue
   const { data: queueData, error: qErr } = await supabase
     .from('anon_queue')

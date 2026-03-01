@@ -18,7 +18,7 @@ import {
   isProSubscriber,
   hasUsedFreeTrial,
   grantFreeTrial,
-  getAnonStats,
+  getAnonLiveStats,
 } from '@/lib/store/anon';
 
 export const dynamic = 'force-dynamic';
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
 
     if (check === 'stats') {
       if (!rateLimit(`anon-stats:${userId}`, 20, 60_000)) return rateLimitExceeded();
-      const stats = await getAnonStats();
+      const stats = await getAnonLiveStats();
       return NextResponse.json({ success: true, data: stats });
     }
 
