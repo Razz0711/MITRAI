@@ -116,6 +116,11 @@ export interface EmailValidation {
 export function validateSVNITEmail(email: string): EmailValidation {
   const trimmed = email.trim().toLowerCase();
 
+  // Allow demo reviewer account
+  if (trimmed === 'demo@mitrai.study') {
+    return { valid: true, parsed: { admissionNumber: 'DEMO001', department: 'Computer Science & Engineering', yearLevel: '3rd Year', matchKey: 'demo-reviewer', programType: 'B.Tech', batchYear: '2024', deptCode: 'cs', rollNo: '001', deptKnown: true } as ParsedEmail };
+  }
+
   // Check domain
   if (!/@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(trimmed)) {
     return { valid: false, error: 'Only SVNIT email addresses are allowed' };

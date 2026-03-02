@@ -31,9 +31,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Name, email, password, and date of birth are required' }, { status: 400 });
       }
 
-      // Validate SVNIT email
+      // Validate SVNIT email (allow demo reviewer account)
+      const DEMO_EMAIL = 'demo@mitrai.study';
       const svnitRegex = /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+\.)?svnit\.ac\.in$/;
-      if (!svnitRegex.test(email)) {
+      if (email.trim().toLowerCase() !== DEMO_EMAIL && !svnitRegex.test(email)) {
         return NextResponse.json({ success: false, error: 'Only SVNIT emails allowed' }, { status: 400 });
       }
 

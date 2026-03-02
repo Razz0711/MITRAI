@@ -68,6 +68,22 @@ export async function POST(request: NextRequest) {
       // Clean expired OTPs
       await supabase.from('otp_codes').delete().lt('expires_at', new Date().toISOString());
 
+      // Demo reviewer account — use fixed OTP, skip real email
+      const DEMO_EMAIL = 'demo@mitrai.study';
+      if (normalizedEmail === DEMO_EMAIL) {
+        const fixedCode = '123456';
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 min for demo
+        await supabase.from('otp_codes').upsert({
+          email: normalizedEmail,
+          code: fixedCode,
+          expires_at: expiresAt,
+          attempts: 0,
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'email' });
+        console.log(`[OTP] Demo account — fixed code stored for ${normalizedEmail}`);
+        return NextResponse.json({ success: true, message: 'Verification code sent to your email' });
+      }
+
       // Rate limit: don't allow re-send within 30 seconds
       const { data: existing } = await supabase
         .from('otp_codes')

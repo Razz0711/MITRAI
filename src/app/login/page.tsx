@@ -59,7 +59,7 @@ function LoginPageInner() {
   useEffect(() => {
     if (!isSignup) { setParsedEmail(null); setEmailParseError(''); return; }
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !/^[^@]+@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(trimmed)) {
+    if (!trimmed || (!/^[^@]+@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(trimmed) && trimmed !== 'demo@mitrai.study')) {
       setParsedEmail(null);
       setEmailParseError('');
       return;
@@ -85,7 +85,8 @@ function LoginPageInner() {
     return null;
   }
 
-  const isSvnitEmail = (e: string) => /^[^@]+@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(e);
+  const DEMO_EMAIL = 'demo@mitrai.study';
+  const isSvnitEmail = (e: string) => e === DEMO_EMAIL || /^[^@]+@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(e);
 
   const sendOtp = async () => {
     const trimmedEmail = email.trim().toLowerCase();
