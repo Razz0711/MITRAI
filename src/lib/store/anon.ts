@@ -206,14 +206,42 @@ export async function redeemCoupon(userId: string, code: string): Promise<{ succ
   if (coupon.used_count >= coupon.max_uses) return { success: false, error: 'Coupon has been fully used' };
   if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) return { success: false, error: 'Coupon has expired' };
 
-  // 2. Check if user already has active pass
-  const active = await hasActivePass(userId);
-  if (active) return { success: false, error: 'You already have an active pass!' };
+  // 2. Check if user already has active pass — if so, extend it instead of blocking
+  const activePass = await getActivePass(userId);
 
-  // 3. Create pass
+  // 3. Calculate duration
   const plan = coupon.plan as string;
   const durationDays = plan === 'weekly' ? 7 : plan === 'monthly' ? 30 : 180;
   const now = new Date();
+
+  // If user has an active pass (not a pro subscription), extend from current expiry
+  if (activePass && activePass.plan !== 'pro') {
+    const currentExpiry = new Date(activePass.expiresAt);
+    const baseDate = currentExpiry > now ? currentExpiry : now;
+    const newExpiry = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+    // Update existing pass expiry
+    const { error: updateErr } = await supabase
+      .from('anon_passes')
+      .update({ expires_at: newExpiry.toISOString() })
+      .eq('id', activePass.id);
+    if (updateErr) return { success: false, error: 'Failed to extend pass' };
+
+    // Increment coupon used_count
+    await supabase
+      .from('anon_coupons')
+      .update({ used_count: coupon.used_count + 1 })
+      .eq('code', trimmed);
+
+    return { success: true, pass: { ...activePass, expiresAt: newExpiry.toISOString() } };
+  }
+
+  // Pro subscribers — don't need a coupon
+  if (activePass && activePass.plan === 'pro') {
+    return { success: false, error: 'Pro subscribers already have unlimited access!' };
+  }
+
+  // 4. No active pass — create new one
   const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
   const { data: pass, error: pErr } = await supabase
