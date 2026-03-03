@@ -7,7 +7,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Friendship, FriendRequest, BuddyRating, UserStatus } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
@@ -24,61 +23,6 @@ export default function FriendsPage() {
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'ratings'>('friends');
   const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Direct call: generate room code, send realtime invite + push + chat, navigate
-  const startCallWithFriend = (fId: string, fName: string, mode: 'voice' | 'video') => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-
-    if (user) {
-      const userName = user.name || user.email?.split('@')[0] || 'Study Buddy';
-      const callPayload = { callerId: user.id, callerName: userName, mode, roomCode: code };
-
-      // Fire ALL notifications in parallel — don't block navigation
-
-      // 1) Broadcast Realtime call-invite (triggers IncomingCallBanner)
-      //    Send multiple times over 6s to handle timing issues with receiver's channel
-      try {
-        const channel = supabaseBrowser.channel(`call-invite:${fId}`);
-        channel.subscribe((status: string) => {
-          if (status === 'SUBSCRIBED') {
-            const sendBroadcast = () => channel.send({ type: 'broadcast', event: 'incoming-call', payload: callPayload }).catch(() => {});
-            // Send immediately + retry 3 times over 6 seconds for reliability
-            sendBroadcast();
-            setTimeout(sendBroadcast, 2000);
-            setTimeout(sendBroadcast, 4000);
-            setTimeout(() => {
-              sendBroadcast();
-              setTimeout(() => supabaseBrowser.removeChannel(channel), 2000);
-            }, 6000);
-          }
-        });
-      } catch (e) { console.error('Realtime call-invite broadcast error:', e); }
-
-      // 2) Push notification + chat message in parallel (fire-and-forget)
-      fetch('/api/call-invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ receiverId: fId, callerName: userName, mode, roomCode: code }),
-      }).catch(() => {});
-
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderId: user.id,
-          senderName: userName,
-          receiverId: fId,
-          receiverName: fName,
-          text: `📞 I'm calling you! Join my ${mode} call with code: ${code}\n\nJoin here: ${window.location.origin}/call?mode=${mode}&room=${code}`,
-        }),
-      }).catch(() => {});
-    }
-
-    // Navigate immediately — don't wait for network calls
-    window.location.href = `/call?mode=${mode}&room=${code}&buddy=${encodeURIComponent(fName)}&friendId=${encodeURIComponent(fId)}`;
-  };
 
   const loadData = useCallback(async () => {
     if (!user) return;
