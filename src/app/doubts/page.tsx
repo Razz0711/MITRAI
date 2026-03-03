@@ -181,15 +181,15 @@ export default function DoubtsPage() {
       </div>
 
       {/* Post Type Filter */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4 pb-0">
         {POST_TYPES.map(pt => (
           <button
             key={pt.id}
             onClick={() => setActiveFilter(pt.id)}
             className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
               activeFilter === pt.id
-                ? 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30'
-                : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'
+                ? 'bg-[var(--primary)]/20 text-[var(--primary-light)]'
+                : 'bg-[var(--surface)] text-[var(--muted)]'
             }`}
           >
             {pt.emoji} {pt.label}
