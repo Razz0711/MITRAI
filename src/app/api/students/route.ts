@@ -106,21 +106,17 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Check for duplicate: same email + same targetExam = already exists
-    // Skip this check for auto-created profiles (they have no targetExam yet)
+    // Check for duplicate: one profile per email
+    // If same email exists, return existing profile (update via PUT instead)
     if (!body._autoCreated) {
       const allStudents = await getAllStudents();
       const duplicate = allStudents.find(
         s => s.email && body.email &&
-          s.email.toLowerCase() === body.email.toLowerCase() &&
-          s.targetExam && body.targetExam &&
-          s.targetExam.toLowerCase() === body.targetExam.toLowerCase()
+          s.email.toLowerCase() === body.email.toLowerCase()
       );
       if (duplicate) {
-        return NextResponse.json({
-          success: false,
-          error: `You already have a profile for "${body.targetExam}". Each exam can only have one profile.`,
-        }, { status: 409 });
+        // Return existing profile instead of creating a new one
+        return NextResponse.json({ success: true, data: duplicate }, { status: 200 });
       }
     }
 

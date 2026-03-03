@@ -5,21 +5,16 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { StudentProfile, BirthdayInfo } from '@/lib/types';
-import BirthdayBanner from '@/components/BirthdayBanner';
+import { StudentProfile } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 export default function HomePage() {
   const { user } = useAuth();
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Birthdays
-  const [birthdays, setBirthdays] = useState<BirthdayInfo[]>([]);
-  const [wishedMap, setWishedMap] = useState<Record<string, boolean>>({});
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -31,7 +26,6 @@ export default function HomePage() {
   useEffect(() => {
     if (!user) return;
     loadData();
-    loadBirthdays();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -50,29 +44,6 @@ export default function HomePage() {
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
-  };
-
-  const loadBirthdays = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await fetch(`/api/birthday?days=7&userId=${user.id}`);
-      const data = await res.json();
-      if (data.success) {
-        setBirthdays(data.data.birthdays || []);
-        setWishedMap(data.data.wishedMap || {});
-      }
-    } catch { /* ignore */ }
-  }, [user]);
-
-  const handleWish = async (toUserId: string, toUserName: string) => {
-    if (!user) return;
-    try {
-      await fetch('/api/birthday', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fromUserId: user.id, fromUserName: user.name, toUserId, toUserName }),
-      });
-    } catch { /* ignore */ }
   };
 
   if (loading) {
@@ -96,17 +67,6 @@ export default function HomePage() {
       </div>
 
 
-      {user && birthdays.length > 0 && (
-        <div className="mb-6">
-          <BirthdayBanner
-            birthdays={birthdays}
-            currentUserId={user.id}
-            wishedMap={wishedMap}
-            onWish={handleWish}
-          />
-        </div>
-      )}
-
       {/* Hero CTA — Find Your Study Buddy */}
       <Link href="/matches" className="card p-5 mb-4 block border-[var(--primary)]/30 hover:border-[var(--primary)]/60 transition-all group">
         <div className="flex items-center justify-between">
@@ -116,13 +76,6 @@ export default function HomePage() {
           </div>
           <span className="text-xs text-[var(--primary-light)] font-medium group-hover:translate-x-0.5 transition-transform">Match Now →</span>
         </div>
-      </Link>
-
-      {/* Friends & Ratings */}
-      <Link href="/friends" className="card px-4 py-3.5 mb-6 flex items-center gap-3 hover:bg-white/[0.03] transition-colors">
-        <span className="text-base w-5 text-center">🤝</span>
-        <span className="text-[13px] font-medium flex-1">Friends & Ratings</span>
-        <span className="text-[var(--muted)] text-xs">›</span>
       </Link>
 
       {/* Primary Actions */}
