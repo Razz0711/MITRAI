@@ -4,7 +4,6 @@
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
@@ -74,11 +73,10 @@ export async function POST(req: NextRequest) {
     await supabase.from('radar_pings').delete().eq('user_id', userId);
 
     // Create new ping (expires in 2 hours)
+    // Let the database generate the UUID primary key (id column is UUID type)
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
-    const id = `radar_${uuidv4().slice(0, 8)}`;
 
-    const { error } = await supabase.from('radar_pings').insert({
-      id,
+    const { data: inserted, error } = await supabase.from('radar_pings').insert({
       user_id: userId,
       user_name: userName || 'Student',
       activity_id: activityId,
@@ -87,14 +85,14 @@ export async function POST(req: NextRequest) {
       is_anonymous: isAnonymous || false,
       created_at: new Date().toISOString(),
       expires_at: expiresAt,
-    });
+    }).select('id').single();
 
     if (error) {
       console.error('radar POST error:', error);
       return NextResponse.json({ success: false, error: 'Could not broadcast' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data: { id } });
+    return NextResponse.json({ success: true, data: { id: inserted?.id } });
   } catch {
     return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 });
   }

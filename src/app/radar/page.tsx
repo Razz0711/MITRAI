@@ -122,9 +122,13 @@ export default function RadarPage() {
         setNote('');
         setSelectedActivity('');
         await loadPings();
+      } else {
+        console.error('broadcast failed:', data.error);
+        alert(data.error || 'Failed to broadcast. Please try again.');
       }
     } catch (err) {
       console.error('broadcast:', err);
+      alert('Network error — please check your connection.');
     } finally {
       setBroadcasting(false);
     }
