@@ -1,6 +1,6 @@
 // ============================================
 // MitrAI - ME Tab Page
-// Profile, Stats, Academic links, Account settings
+// Clean profile, progress, settings
 // ============================================
 
 'use client';
@@ -65,6 +65,9 @@ export default function MePage() {
     } catch { setStudyStreak(0); }
   };
 
+  const xpProgress = xp ? ((xp.totalXp || 0) % 500) : 0;
+  const xpPercent = Math.min(100, xpProgress / 5);
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
@@ -74,86 +77,62 @@ export default function MePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-4 space-y-6">
-      {/* Profile Header */}
-      <div className="card p-5">
+    <div className="max-w-2xl mx-auto px-4 py-4">
+
+      {/* ── Profile Card ── */}
+      <div className="card p-5 mb-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white font-bold text-xl shrink-0">
+          <div className="w-[52px] h-[52px] rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-lg shadow-[var(--primary)]/20">
             {(student?.name || user?.name || 'S').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold truncate">{student?.name || user?.name || 'Student'}</h1>
-            <p className="text-xs text-[var(--muted)]">{student?.department || 'SVNIT Surat'}</p>
-            {student?.admissionNumber && (
-              <p className="text-[10px] text-[var(--muted)]">#{student.admissionNumber}</p>
-            )}
+            <h1 className="text-base font-bold truncate">{student?.name || user?.name || 'Student'}</h1>
+            <p className="text-xs text-[var(--muted)] mt-0.5">
+              {student?.department || 'SVNIT Surat'}
+              {student?.yearLevel ? ` · ${student.yearLevel}` : ''}
+            </p>
           </div>
-          <Link href="/onboarding" className="btn-ghost text-xs px-3 py-1.5 shrink-0">
+          <Link href="/onboarding" className="text-xs text-[var(--primary-light)] font-medium px-3 py-1.5 rounded-lg border border-[var(--primary)]/20 hover:bg-[var(--primary)]/10 transition-colors shrink-0">
             Edit
           </Link>
         </div>
-        {/* Quick Profile Info */}
-        {student && (
-          <div className="mt-4 pt-3 border-t border-[var(--border)] grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-xs font-bold">{student.yearLevel}</p>
-              <p className="text-[10px] text-[var(--muted)]">Year</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold">{student.targetExam || '—'}</p>
-              <p className="text-[10px] text-[var(--muted)]">Target</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold">{student.studyHoursTarget}h</p>
-              <p className="text-[10px] text-[var(--muted)]">Daily Goal</p>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Stats Section */}
-      <div>
-        <h2 className="text-sm font-semibold mb-3">📊 My Stats</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="card p-3">
-            <p className="text-[10px] text-[var(--muted)] uppercase tracking-wide">Streak</p>
-            <p className="text-lg font-bold">🔥 {studyStreak} days</p>
-          </div>
-          <div className="card p-3">
-            <p className="text-[10px] text-[var(--muted)] uppercase tracking-wide">XP</p>
-            <p className="text-lg font-bold">⚡ {xp?.totalXp || 0}</p>
-          </div>
-          <div className="card p-3">
-            <p className="text-[10px] text-[var(--muted)] uppercase tracking-wide">Level</p>
-            <p className="text-lg font-bold">🎯 {xp?.level || 'Beginner'}</p>
-          </div>
-          <div className="card p-3">
-            <p className="text-[10px] text-[var(--muted)] uppercase tracking-wide">Best Streak</p>
-            <p className="text-lg font-bold">🏆 {xp?.longestStreak || studyStreak} days</p>
-          </div>
-        </div>
-
-        {/* XP Progress */}
-        {xp && (
-          <div className="mt-3">
-            <div className="w-full h-2 rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
-                style={{ width: `${Math.min(100, ((xp.totalXp || 0) % 500) / 5)}%` }}
-              />
+      {/* ── Progress Strip ── */}
+      <div className="card p-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">🔥</span>
+              <span className="text-sm font-bold">{studyStreak}</span>
+              <span className="text-[10px] text-[var(--muted)]">day streak</span>
             </div>
-            <p className="text-[10px] text-[var(--muted)] mt-1">{(xp.totalXp || 0) % 500}/500 XP to next level</p>
+            <div className="w-px h-4 bg-[var(--border)]" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm">⚡</span>
+              <span className="text-sm font-bold">{xp?.totalXp || 0}</span>
+              <span className="text-[10px] text-[var(--muted)]">XP</span>
+            </div>
           </div>
-        )}
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary-light)]">
+            {xp?.level || 'Beginner'}
+          </span>
+        </div>
+        <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] transition-all duration-700"
+            style={{ width: `${xpPercent}%` }}
+          />
+        </div>
+        <p className="text-[10px] text-[var(--muted)] mt-1.5">{xpProgress}/500 XP to next level</p>
 
-        {/* Badges */}
         {badges.length > 0 && (
-          <div className="flex gap-2 flex-wrap mt-3">
+          <div className="flex gap-1.5 flex-wrap mt-3 pt-3 border-t border-[var(--border)]">
             {badges.map(b => (
               <span
                 key={b.badgeId}
                 title={b.badgeName}
-                className="inline-flex items-center gap-1 text-xs bg-white/5 border border-[var(--border)] rounded-full px-2.5 py-1"
+                className="text-[10px] bg-white/5 border border-[var(--border)] rounded-full px-2 py-0.5"
               >
                 {b.badgeEmoji} {b.badgeName}
               </span>
@@ -162,96 +141,64 @@ export default function MePage() {
         )}
       </div>
 
-      {/* Social Section */}
-      <div>
-        <h2 className="text-sm font-semibold mb-3">👥 Social</h2>
-        <div className="space-y-1">
-          <MenuLink href="/friends" icon="🤝" label="Friends & Ratings" desc="Your buddy network & calls" />
-          <MenuLink href="/matches" icon="🎯" label="Find Study Buddy" desc="AI-powered matching" />
-          <MenuLink href="/analytics" icon="📈" label="Analytics" desc="Study insights & trends" />
-        </div>
+      {/* ── Menu Items ── */}
+      <div className="card overflow-hidden mb-4">
+        <MenuItem href="/friends" icon="🤝" label="Friends & Ratings" />
+        <MenuItem href="/matches" icon="🎯" label="Find Study Buddy" />
       </div>
 
-      {/* Account Section */}
-      <div>
-        <h2 className="text-sm font-semibold mb-3">⚙️ Account</h2>
-        <div className="space-y-1">
-          <MenuLink href="/subscription" icon="✨" label="Pro Subscription" desc="Unlock all features" highlight />
-          <MenuLink href="/dashboard" icon="🏠" label="Full Dashboard" desc="Detailed profile & stats" />
-          <MenuLink href="/feedback" icon="📝" label="Feedback" desc="Help us improve MitrAI" />
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--surface-light)] transition-colors text-left"
-          >
-            <span className="text-lg">{theme === 'dark' ? '☀️' : '🌙'}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</p>
-              <p className="text-[10px] text-[var(--muted)]">Switch appearance</p>
-            </div>
-            <span className="text-[10px] text-[var(--muted)]">{theme === 'dark' ? 'Dark' : 'Light'}</span>
-          </button>
-          {user && (
-            <>
-              <button
-                onClick={() => {
-                  if (window.confirm('Export your data? This will open a new tab.')) {
-                    window.open(`/api/export?userId=${user.id}`, '_blank');
-                  }
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--surface-light)] transition-colors text-left"
-              >
-                <span className="text-lg">📦</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium">Export Data</p>
-                  <p className="text-[10px] text-[var(--muted)]">Download your data (GDPR)</p>
-                </div>
-              </button>
-              <button
-                onClick={logout}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 transition-colors text-left"
-              >
-                <span className="text-lg">🚪</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-red-400">Sign Out</p>
-                  <p className="text-[10px] text-[var(--muted)]">{user.email}</p>
-                </div>
-              </button>
-            </>
-          )}
-        </div>
+      <div className="card overflow-hidden mb-4">
+        <MenuItem href="/subscription" icon="✨" label="Pro Subscription" accent />
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-white/[0.03] transition-colors text-left border-t border-[var(--border)]"
+        >
+          <span className="text-base w-5 text-center">{theme === 'dark' ? '☀️' : '🌙'}</span>
+          <span className="text-[13px] font-medium flex-1">Appearance</span>
+          <span className="text-[11px] text-[var(--muted)] mr-1">{theme === 'dark' ? 'Dark' : 'Light'}</span>
+          <span className="text-[var(--muted)] text-xs">›</span>
+        </button>
+        <MenuItem href="/feedback" icon="💬" label="Feedback" border />
       </div>
+
+      {/* Sign Out */}
+      {user && (
+        <button
+          onClick={logout}
+          className="w-full card py-3 text-center text-sm font-medium text-red-400 hover:bg-red-500/5 transition-colors mb-4"
+        >
+          Sign Out
+        </button>
+      )}
 
       {/* Footer */}
-      <div className="flex items-center justify-center gap-4 text-[10px] text-[var(--muted)] pb-4">
+      <div className="flex items-center justify-center gap-3 text-[10px] text-[var(--muted)] pb-6">
         <Link href="/terms" className="hover:text-[var(--foreground)] transition-colors">Terms</Link>
         <span>·</span>
         <Link href="/privacy" className="hover:text-[var(--foreground)] transition-colors">Privacy</Link>
         <span>·</span>
-        <span>© {new Date().getFullYear()} MitrAI</span>
+        <span>MitrAI v1.0</span>
       </div>
     </div>
   );
 }
 
-function MenuLink({ href, icon, label, desc, highlight }: {
+function MenuItem({ href, icon, label, accent, border = true }: {
   href: string;
   icon: string;
   label: string;
-  desc: string;
-  highlight?: boolean;
+  accent?: boolean;
+  border?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[var(--surface-light)] transition-colors ${
-        highlight ? 'border border-amber-500/20' : ''
+      className={`flex items-center gap-3 px-4 py-3.5 hover:bg-white/[0.03] transition-colors ${
+        border ? 'border-t border-[var(--border)] first:border-t-0' : ''
       }`}
     >
-      <span className="text-lg">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <p className={`text-xs font-medium ${highlight ? 'text-amber-400' : ''}`}>{label}</p>
-        <p className="text-[10px] text-[var(--muted)]">{desc}</p>
-      </div>
+      <span className="text-base w-5 text-center">{icon}</span>
+      <span className={`text-[13px] font-medium flex-1 ${accent ? 'text-amber-400' : ''}`}>{label}</span>
       <span className="text-[var(--muted)] text-xs">›</span>
     </Link>
   );

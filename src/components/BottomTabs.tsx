@@ -8,7 +8,7 @@ export const TAB_ROUTES: Record<string, string[]> = {
   radar: ['/radar', '/skills'],
   chat: ['/chat', '/anon', '/circles', '/rooms', '/call'],
   feed: ['/doubts'],
-  me: ['/me', '/friends', '/subscription', '/analytics', '/feedback', '/onboarding'],
+  me: ['/me', '/friends', '/subscription', '/feedback', '/onboarding'],
 };
 
 export function getActiveTab(pathname: string): string {
