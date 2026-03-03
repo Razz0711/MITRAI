@@ -242,6 +242,49 @@ function LoginPageInner() {
       if (!trimmedEmail || !password) { setError('Please enter email and password'); return; }
     }
 
+    // Demo account — skip OTP entirely (both login and signup)
+    if (trimmedEmail === DEMO_EMAIL) {
+      setOtpSending(true);
+      setError('');
+      try {
+        if (isSignup) {
+          const result = await signup({
+            name: name.trim(),
+            email: trimmedEmail,
+            password,
+            admissionNumber: admissionNumber.trim().toUpperCase(),
+            department,
+            yearLevel,
+            dob,
+            matchKey: parsedEmail?.matchKey,
+            programType: parsedEmail?.programType,
+            batchYear: parsedEmail?.batchYear,
+            deptCode: parsedEmail?.deptCode,
+            rollNo: parsedEmail?.rollNo,
+            deptKnown: parsedEmail?.deptKnown,
+            profileAutoFilled: !!parsedEmail,
+          });
+          if (result.success) {
+            router.push('/onboarding');
+          } else {
+            setError(result.error || 'Signup failed — please try again.');
+          }
+        } else {
+          const result = await login(trimmedEmail, password);
+          if (result.success) {
+            router.push('/home');
+          } else {
+            setError(result.error || 'Invalid credentials');
+          }
+        }
+      } catch {
+        setError('Network error — please try again.');
+      } finally {
+        setOtpSending(false);
+      }
+      return;
+    }
+
     // All validations passed → send OTP
     sendOtp();
   };
