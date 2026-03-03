@@ -11,6 +11,11 @@ import { useAuth } from '@/lib/auth';
 import { StudentProfile, BirthdayInfo } from '@/lib/types';
 import BirthdayBanner from '@/components/BirthdayBanner';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import {
+  Radar, Flame, MessageCircleMore, CircleDot,
+  GraduationCap, ArrowLeftRight, DoorOpen, Users,
+  Handshake, ChevronRight,
+} from 'lucide-react';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -84,17 +89,16 @@ export default function HomePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-4">
+    <div className="max-w-2xl mx-auto px-4 py-5">
       {/* Greeting */}
-      <div className="mb-6">
-        <h1 className="text-xl font-bold">
-          {getGreeting()}, <span className="gradient-text">{student?.name || user?.name || 'Student'}</span> 👋
+      <div className="mb-7">
+        <h1 className="text-2xl font-bold tracking-tight">
+          {getGreeting()}, <span className="gradient-text">{student?.name || user?.name || 'Student'}</span>
         </h1>
-        <p className="text-xs text-[var(--muted)] mt-0.5">
-          {student?.department || 'SVNIT Surat'} • {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}
+        <p className="text-sm text-[var(--muted)] mt-1">
+          {student?.department || 'SVNIT Surat'} &middot; {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}
         </p>
       </div>
-
 
       {user && birthdays.length > 0 && (
         <div className="mb-6">
@@ -108,64 +112,71 @@ export default function HomePage() {
       )}
 
       {/* Hero CTA — Find Your Study Buddy */}
-      <Link href="/matches" className="card p-5 mb-4 block border-[var(--primary)]/30 hover:border-[var(--primary)]/60 transition-all group">
+      <Link href="/matches" className="block mb-7 rounded-xl bg-gradient-to-r from-[var(--primary)]/10 to-[var(--secondary)]/10 border border-[var(--primary)]/20 p-5 hover:border-[var(--primary)]/40 transition-all group">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-bold">🤝 Find Your <span className="gradient-text">Study Buddy</span></p>
-            <p className="text-xs text-[var(--muted)] mt-1">AI-powered matching across 5 dimensions</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[var(--primary)]/15 flex items-center justify-center text-[var(--primary-light)]">
+              <Handshake size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[var(--foreground)]">Find Your <span className="gradient-text">Study Buddy</span></p>
+              <p className="text-xs text-[var(--muted)] mt-0.5">AI-powered matching across 5 dimensions</p>
+            </div>
           </div>
-          <span className="text-xs text-[var(--primary-light)] font-medium group-hover:translate-x-0.5 transition-transform">Match Now →</span>
+          <ChevronRight size={18} className="text-[var(--primary-light)] group-hover:translate-x-0.5 transition-transform" />
         </div>
       </Link>
 
       {/* Primary Actions */}
-      <h2 className="text-sm font-semibold mb-3">Quick Actions</h2>
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        <Link href="/radar" className="card-hover p-4 text-center block border-green-500/20 relative overflow-hidden">
-          <span className="absolute top-1.5 right-1.5 text-[8px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">NEW</span>
-          <span className="text-2xl mb-1 block">📡</span>
-          <p className="text-xs font-semibold">Campus Radar</p>
-          <p className="text-[10px] text-[var(--muted)]">See who&apos;s around you</p>
-        </Link>
-        <Link href="/doubts" className="card-hover p-4 text-center block border-orange-500/20">
-          <span className="text-2xl mb-1 block">🔥</span>
-          <p className="text-xs font-semibold">Campus Feed</p>
-          <p className="text-[10px] text-[var(--muted)]">Confessions & hot takes</p>
-        </Link>
-        <Link href="/anon" className="card-hover p-4 text-center block border-purple-500/20">
-          <span className="text-2xl mb-1 block">🎭</span>
-          <p className="text-xs font-semibold">Anonymous Chat</p>
-          <p className="text-[10px] text-[var(--muted)]">Talk freely, no names</p>
-        </Link>
-        <Link href="/circles" className="card-hover p-4 text-center block">
-          <span className="text-2xl mb-1 block">⭕</span>
-          <p className="text-xs font-semibold">Circles</p>
-          <p className="text-[10px] text-[var(--muted)]">Interest communities</p>
-        </Link>
+      <h2 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-3">Explore</h2>
+      <div className="grid grid-cols-2 gap-3 mb-7">
+        {([
+          { href: '/radar',   icon: Radar,             label: 'Campus Radar',   desc: 'Discover peers nearby', color: 'text-emerald-400', bg: 'bg-emerald-500/10', badge: 'NEW' },
+          { href: '/doubts',  icon: Flame,             label: 'Campus Feed',    desc: 'Discussions & confessions', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+          { href: '/anon',    icon: MessageCircleMore, label: 'Anonymous Chat', desc: 'Private conversations', color: 'text-violet-400', bg: 'bg-violet-500/10' },
+          { href: '/circles', icon: CircleDot,         label: 'Circles',        desc: 'Interest communities', color: 'text-rose-400', bg: 'bg-rose-500/10' },
+        ] as const).map(item => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="card-hover p-4 flex flex-col items-center text-center relative group"
+          >
+            {'badge' in item && item.badge && (
+              <span className="absolute top-2 right-2 text-[9px] font-bold bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded-full tracking-wide">{item.badge}</span>
+            )}
+            <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center ${item.color} mb-2.5 group-hover:scale-105 transition-transform`}>
+              <item.icon size={20} strokeWidth={1.8} />
+            </div>
+            <p className="text-xs font-semibold text-[var(--foreground)]">{item.label}</p>
+            <p className="text-[10px] text-[var(--muted)] mt-0.5 leading-tight">{item.desc}</p>
+          </Link>
+        ))}
       </div>
 
-      {/* More Actions */}
+      {/* Secondary Actions */}
+      <h2 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-3">Quick Access</h2>
       <div className="grid grid-cols-4 gap-2 mb-6">
-        <Link href="/ratings" className="card-hover p-3 text-center block relative">
-          <span className="absolute top-0.5 right-0.5 text-[7px] font-bold text-green-400">NEW</span>
-          <span className="text-lg block mb-0.5">🎓</span>
-          <p className="text-[10px] font-medium">Rate Prof</p>
-        </Link>
-        <Link href="/skills" className="card-hover p-3 text-center block">
-          <span className="text-lg block mb-0.5">🔄</span>
-          <p className="text-[10px] font-medium">Skill Swap</p>
-        </Link>
-        <Link href="/rooms" className="card-hover p-3 text-center block">
-          <span className="text-lg block mb-0.5">📚</span>
-          <p className="text-[10px] font-medium">Rooms</p>
-        </Link>
-        <Link href="/friends" className="card-hover p-3 text-center block">
-          <span className="text-lg block mb-0.5">👥</span>
-          <p className="text-[10px] font-medium">Friends</p>
-        </Link>
+        {([
+          { href: '/ratings', icon: GraduationCap,  label: 'Rate Prof',  color: 'text-amber-400', bg: 'bg-amber-500/10', badge: 'NEW' },
+          { href: '/skills',  icon: ArrowLeftRight,  label: 'Skill Swap', color: 'text-cyan-400',  bg: 'bg-cyan-500/10' },
+          { href: '/rooms',   icon: DoorOpen,        label: 'Rooms',      color: 'text-green-400', bg: 'bg-green-500/10' },
+          { href: '/friends', icon: Users,           label: 'Friends',    color: 'text-blue-400',  bg: 'bg-blue-500/10' },
+        ] as const).map(item => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="card-hover p-3 flex flex-col items-center text-center relative group"
+          >
+            {'badge' in item && item.badge && (
+              <span className="absolute top-1 right-1 text-[7px] font-bold text-emerald-400 tracking-wide">{item.badge}</span>
+            )}
+            <div className={`w-8 h-8 rounded-md ${item.bg} flex items-center justify-center ${item.color} mb-1.5 group-hover:scale-105 transition-transform`}>
+              <item.icon size={16} strokeWidth={1.8} />
+            </div>
+            <p className="text-[10px] font-medium text-[var(--foreground)]">{item.label}</p>
+          </Link>
+        ))}
       </div>
-
-
     </div>
   );
 }
