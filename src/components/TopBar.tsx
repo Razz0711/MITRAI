@@ -9,14 +9,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/components/ThemeProvider';
-import { Home, MessageCircle, BookOpen, Compass, User, Sun, Moon } from 'lucide-react';
+import { Home, Ghost, MessageCircle, HelpCircle, User, Sun, Moon } from 'lucide-react';
 import { getActiveTab } from './BottomTabs';
 
 const tabs = [
   { id: 'home', label: 'Home', icon: Home, href: '/home' },
-  { id: 'connect', label: 'Connect', icon: MessageCircle, href: '/chat' },
-  { id: 'learn', label: 'Learn', icon: BookOpen, href: '/doubts' },
-  { id: 'discover', label: 'Discover', icon: Compass, href: '/matches' },
+  { id: 'anon', label: 'Anon', icon: Ghost, href: '/anon' },
+  { id: 'chat', label: 'Chat', icon: MessageCircle, href: '/chat' },
+  { id: 'doubts', label: 'Doubts', icon: HelpCircle, href: '/doubts' },
   { id: 'me', label: 'Me', icon: User, href: '/me' },
 ];
 

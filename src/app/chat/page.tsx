@@ -333,7 +333,7 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen">
-      <SubTabBar group="connect" />
+      <SubTabBar group="chat" />
       <div className="h-[calc(100vh-9rem)] flex">
         {/* ======= Sidebar / Thread List ======= */}
         <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-[var(--border)] bg-[var(--background)]`}>

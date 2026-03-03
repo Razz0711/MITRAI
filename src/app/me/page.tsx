@@ -162,10 +162,12 @@ export default function MePage() {
         )}
       </div>
 
-      {/* Academic Section */}
+      {/* Social Section */}
       <div>
-        <h2 className="text-sm font-semibold mb-3">🎓 Academic</h2>
+        <h2 className="text-sm font-semibold mb-3">👥 Social</h2>
         <div className="space-y-1">
+          <MenuLink href="/friends" icon="🤝" label="Friends & Ratings" desc="Your buddy network & calls" />
+          <MenuLink href="/matches" icon="🎯" label="Find Study Buddy" desc="AI-powered matching" />
           <MenuLink href="/analytics" icon="📈" label="Analytics" desc="Study insights & trends" />
         </div>
       </div>

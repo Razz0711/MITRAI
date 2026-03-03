@@ -10,7 +10,6 @@ import { useAuth } from '@/lib/auth';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Friendship, FriendRequest, BuddyRating, UserStatus } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import SubTabBar from '@/components/SubTabBar';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 export default function FriendsPage() {
@@ -156,7 +155,6 @@ export default function FriendsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
-      <SubTabBar group="discover" />
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

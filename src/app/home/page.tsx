@@ -195,28 +195,44 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Quick Actions */}
+      {/* Hero CTA — Find Your Study Buddy */}
+      <Link href="/matches" className="card p-5 mb-6 block border-[var(--primary)]/30 hover:border-[var(--primary)]/60 transition-all group">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-bold">🤝 Find Your <span className="gradient-text">Study Buddy</span></p>
+            <p className="text-xs text-[var(--muted)] mt-1">AI-powered matching across 5 dimensions</p>
+          </div>
+          <span className="text-xs text-[var(--primary-light)] font-medium group-hover:translate-x-0.5 transition-transform">Match Now →</span>
+        </div>
+      </Link>
+
+      {/* Primary Actions */}
       <h2 className="text-sm font-semibold mb-3">Quick Actions</h2>
       <div className="grid grid-cols-2 gap-3 mb-6">
+        <Link href="/anon" className="card-hover p-4 text-center block border-purple-500/20">
+          <span className="text-2xl mb-1 block">🎭</span>
+          <p className="text-xs font-semibold">Anonymous Chat</p>
+          <p className="text-[10px] text-[var(--muted)]">Talk freely, no names</p>
+        </Link>
         <Link href="/chat" className="card-hover p-4 text-center block">
           <span className="text-2xl mb-1 block">💬</span>
           <p className="text-xs font-semibold">Chat</p>
           <p className="text-[10px] text-[var(--muted)]">Message friends</p>
-        </Link>
-        <Link href="/matches" className="card-hover p-4 text-center block">
-          <span className="text-2xl mb-1 block">🤝</span>
-          <p className="text-xs font-semibold">Find Buddies</p>
-          <p className="text-[10px] text-[var(--muted)]">Study matches</p>
         </Link>
         <Link href="/doubts" className="card-hover p-4 text-center block">
           <span className="text-2xl mb-1 block">❓</span>
           <p className="text-xs font-semibold">Doubts</p>
           <p className="text-[10px] text-[var(--muted)]">Ask & answer</p>
         </Link>
+        <Link href="/friends" className="card-hover p-4 text-center block">
+          <span className="text-2xl mb-1 block">👥</span>
+          <p className="text-xs font-semibold">Friends</p>
+          <p className="text-[10px] text-[var(--muted)]">Your buddy network</p>
+        </Link>
       </div>
 
       {/* More Actions */}
-      <div className="grid grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-3 gap-2 mb-6">
         <Link href="/rooms" className="card-hover p-3 text-center block">
           <span className="text-lg block mb-0.5">📚</span>
           <p className="text-[10px] font-medium">Rooms</p>
@@ -225,9 +241,9 @@ export default function HomePage() {
           <span className="text-lg block mb-0.5">⭕</span>
           <p className="text-[10px] font-medium">Circles</p>
         </Link>
-        <Link href="/anon" className="card-hover p-3 text-center block">
-          <span className="text-lg block mb-0.5">🎭</span>
-          <p className="text-[10px] font-medium">Anon</p>
+        <Link href="/analytics" className="card-hover p-3 text-center block">
+          <span className="text-lg block mb-0.5">📊</span>
+          <p className="text-[10px] font-medium">Analytics</p>
         </Link>
       </div>
 

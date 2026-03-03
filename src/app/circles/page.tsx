@@ -84,7 +84,7 @@ export default function CirclesPage() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <SubTabBar group="connect" />
+      <SubTabBar group="chat" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

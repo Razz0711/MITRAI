@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MessageCircle, CircleDot, Users2, HelpCircle, Handshake, UserCheck, Ghost } from 'lucide-react';
+import { MessageCircle, CircleDot, Users2 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 export interface SubTab {
@@ -18,22 +18,14 @@ export interface SubTab {
 }
 
 const SUB_TABS: Record<string, SubTab[]> = {
-  connect: [
+  chat: [
     { label: 'Direct', href: '/chat', icon: MessageCircle },
     { label: 'Circles', href: '/circles', icon: CircleDot },
     { label: 'Rooms', href: '/rooms', icon: Users2 },
   ],
-  learn: [
-    { label: 'Doubts', href: '/doubts', icon: HelpCircle },
-  ],
-  discover: [
-    { label: 'Matches', href: '/matches', icon: Handshake },
-    { label: 'Friends', href: '/friends', icon: UserCheck },
-    { label: 'Anonymous', href: '/anon', icon: Ghost },
-  ],
 };
 
-export default function SubTabBar({ group }: { group: 'connect' | 'learn' | 'discover' }) {
+export default function SubTabBar({ group }: { group: 'chat' }) {
   const pathname = usePathname();
   const tabs = SUB_TABS[group] || [];
 
