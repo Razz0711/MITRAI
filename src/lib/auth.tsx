@@ -119,41 +119,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const maxRetries = 1;
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const { error } = await supabaseBrowser.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        });
+    const trimmedEmail = email.trim().toLowerCase();
 
-        if (error) {
-          // Network-level failures — retry once
-          if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('fetch')) {
-            if (attempt < maxRetries) {
-              console.warn(`[Auth] signIn attempt ${attempt + 1} failed (network), retrying...`);
-              await new Promise(r => setTimeout(r, 500));
-              continue;
-            }
-            return { success: false, error: 'Unable to reach our servers. Please check your internet connection and try again.' };
-          }
-          if (error.message.includes('Invalid login credentials')) {
-            return { success: false, error: 'Invalid email or password' };
-          }
-          return { success: false, error: error.message };
-        }
+    // Strategy 1: Server-side proxy (browser→Vercel→Supabase — reliable on mobile)
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email: trimmedEmail, password }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      const data = await res.json();
 
-        return { success: true };
-      } catch (err) {
-        console.error(`[Auth] login attempt ${attempt + 1} error:`, err);
-        if (attempt < maxRetries) {
-          await new Promise(r => setTimeout(r, 500));
-          continue;
+      if (!data.success) {
+        if (res.status === 401 || data.error?.includes('Invalid')) {
+          return { success: false, error: 'Invalid email or password' };
         }
-        return { success: false, error: 'Login failed — please check your connection and try again.' };
+        // Server returned an error but was reachable — don't fallback
+        return { success: false, error: data.error || 'Login failed' };
       }
+
+      // Set session from server-returned tokens
+      const { error: sessionError } = await supabaseBrowser.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+
+      if (!sessionError) {
+        return { success: true };
+      }
+      console.warn('[Auth] setSession failed, trying direct login:', sessionError.message);
+    } catch (err) {
+      console.warn('[Auth] Server proxy login failed, trying direct:', (err as Error).message);
     }
-    return { success: false, error: 'Login failed after multiple attempts. Please try again later.' };
+
+    // Strategy 2: Fallback — direct client→Supabase (in case our API route has issues)
+    try {
+      const { error } = await supabaseBrowser.auth.signInWithPassword({
+        email: trimmedEmail,
+        password,
+      });
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          return { success: false, error: 'Invalid email or password' };
+        }
+        return { success: false, error: error.message };
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('[Auth] Both login strategies failed:', err);
+      return { success: false, error: 'Unable to reach our servers. Please check your internet connection and try again.' };
+    }
   };
 
   const signup = async (data: SignupData): Promise<{ success: boolean; error?: string }> => {
@@ -183,27 +202,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: result.error || 'Failed to create account' };
       }
 
-      // Step 2: Sign in to establish the session (retry once)
-      let signInError = null;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        const { error } = await supabaseBrowser.auth.signInWithPassword({
-          email: data.email.trim().toLowerCase(),
-          password: data.password,
-        });
-        if (!error) {
-          signInError = null;
-          break;
-        }
-        signInError = error;
-        console.warn(`[Auth] post-signup signIn attempt ${attempt + 1} failed:`, error.message);
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-          await new Promise(r => setTimeout(r, 800));
-          continue;
-        }
-        break; // Non-network error — don't retry
-      }
-
-      if (signInError) {
+      // Step 2: Sign in via server proxy (more reliable on mobile)
+      const loginResult = await login(data.email.trim().toLowerCase(), data.password);
+      if (!loginResult.success) {
         return { success: false, error: 'Account created! But auto-login failed — please go back and sign in with your email & password.' };
       }
 

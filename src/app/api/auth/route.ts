@@ -126,6 +126,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, userId });
     }
 
+    if (action === 'login') {
+      const { email, password } = body;
+      if (!email || !password) {
+        return NextResponse.json({ success: false, error: 'Email and password are required' }, { status: 400 });
+      }
+
+      const trimmedEmail = email.trim().toLowerCase();
+
+      // Rate limit login attempts (15 per 10 minutes per email)
+      if (!rateLimit(`login:${trimmedEmail}`, 15, 600_000)) return rateLimitExceeded();
+
+      try {
+        // Server-side proxy: Vercel→Supabase (fast, reliable server-to-server)
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+            body: JSON.stringify({ email: trimmedEmail, password }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          const msg = data.error_description || data.msg || 'Invalid credentials';
+          const status = response.status === 400 ? 401 : response.status;
+          return NextResponse.json({ success: false, error: msg }, { status });
+        }
+
+        return NextResponse.json({
+          success: true,
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+      } catch (err) {
+        console.error('[Auth] Server-side login error:', err);
+        return NextResponse.json({ success: false, error: 'Login failed — please try again.' }, { status: 500 });
+      }
+    }
+
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('[Auth] Error:', error);
