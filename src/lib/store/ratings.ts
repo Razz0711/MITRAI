@@ -111,10 +111,45 @@ export async function getUserRatingForProfessor(userId: string, professorId: str
   return mapRating(data);
 }
 
+// ── Auto-seed data ──
+
+const SEED_PROFESSORS: Record<string, { name: string; designation: string }[]> = {
+  Mathematics: [
+    { name: 'Dr. Jayesh M. Dhodiya', designation: 'HOD & Associate Professor' },
+    { name: 'Dr. A. K. Shukla', designation: 'Professor' },
+    { name: 'Dr. V. H. Pradhan', designation: 'Professor' },
+    { name: 'Dr. Neeru Adlakha', designation: 'Professor' },
+    { name: 'Dr. Sushil Kumar', designation: 'Professor' },
+    { name: 'Dr. Ranjan Kumar Jana', designation: 'Associate Professor' },
+    { name: 'Dr. Twinkle R. Singh', designation: 'Associate Professor' },
+    { name: 'Dr. Ramakanta Meher', designation: 'Associate Professor' },
+    { name: 'Indira P. Tripathi', designation: 'Assistant Professor' },
+    { name: 'Dr. Shailesh Kumar Srivastava', designation: 'Assistant Professor' },
+    { name: 'Dr. Raj Kamal Maurya', designation: 'Assistant Professor' },
+    { name: 'Dr. Amit Sharma', designation: 'Assistant Professor' },
+    { name: 'Dr. Sudeep Singh Sanga', designation: 'Assistant Professor' },
+    { name: 'Dr. Saroj R. Yadav', designation: 'Assistant Professor' },
+    { name: 'Dr. Sourav Gupta', designation: 'Assistant Professor' },
+    { name: 'Dr. Shivam Bajpeyi', designation: 'Assistant Professor' },
+  ],
+};
+
+async function seedDepartmentIfEmpty(department: string): Promise<void> {
+  const seedList = SEED_PROFESSORS[department];
+  if (!seedList) return;
+  const rows = seedList.map(p => ({ name: p.name, department, designation: p.designation }));
+  const { error } = await supabase.from('professors').upsert(rows, { onConflict: 'name,department' });
+  if (error) console.error('seedDepartment:', error);
+}
+
 // ── Stats ──
 
 export async function getProfessorsWithStats(department: string): Promise<ProfessorWithStats[]> {
-  const profs = await getProfessorsByDepartment(department);
+  let profs = await getProfessorsByDepartment(department);
+  if (profs.length === 0 && SEED_PROFESSORS[department]) {
+    await seedDepartmentIfEmpty(department);
+    profs = await getProfessorsByDepartment(department);
+  }
   if (profs.length === 0) return [];
   return attachStats(profs);
 }
