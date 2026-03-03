@@ -1,6 +1,6 @@
 // ============================================
-// MitrAI - Circles Page
-// Browse & join interest circles
+// MitrAI - Circles Page (Redesigned)
+// Clean interest groups with CSS variables
 // ============================================
 
 'use client';
@@ -31,6 +31,7 @@ export default function CirclesPage() {
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const loadCircles = useCallback(async () => {
     if (!user) return;
@@ -77,66 +78,84 @@ export default function CirclesPage() {
     }
   };
 
-  if (loading) return <LoadingSkeleton />;
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <LoadingSkeleton type="cards" count={4} label="Loading circles..." />
+      </div>
+    );
+  }
 
   const joined = circles.filter((c) => isJoined(c.id));
   const available = circles.filter((c) => !isJoined(c.id));
+  const filtered = (arr: Circle[]) =>
+    search ? arr.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.description.toLowerCase().includes(search.toLowerCase())) : arr;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 py-4 space-y-5">
       <SubTabBar group="chat" />
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold dark:text-white">Circles</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Join interest groups to find like-minded study buddies
-          </p>
-        </div>
 
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-xl font-bold mb-1">
+          <span className="gradient-text">Circles</span> ⭕
+        </h1>
+        <p className="text-xs text-[var(--muted)]">
+          Join interest groups • {circles.length} circles • {Object.values(memberCounts).reduce((a, b) => a + b, 0)} total members
+        </p>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)] text-xs">🔍</span>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search circles..."
+          className="input-field pl-8 text-xs py-2.5"
+        />
       </div>
 
       {/* My Circles */}
-      {joined.length > 0 && (
+      {filtered(joined).length > 0 && (
         <section>
-          <h2 className="text-xl font-semibold mb-4 dark:text-white">
-            My Circles ({joined.length})
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {joined.map((circle) => (
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold">✨ My Circles</h2>
+            <span className="text-[10px] text-[var(--muted)]">{joined.length} joined</span>
+          </div>
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+            {filtered(joined).map((circle) => (
               <div
                 key={circle.id}
-                className="rounded-xl border-2 p-5 transition-all dark:bg-gray-800 flex flex-col"
-                style={{ borderColor: circle.color }}
+                className="card p-4 transition-all hover:border-[var(--primary)]/40"
+                style={{ borderLeftWidth: '3px', borderLeftColor: circle.color }}
               >
-                <Link href={`/circles/${circle.id}`} className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-3xl">{circle.emoji}</span>
-                    <div>
-                      <h3 className="font-bold text-lg dark:text-white">{circle.name}</h3>
+                <Link href={`/circles/${circle.id}`} className="block">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: circle.color + '20' }}>
+                      {circle.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-bold truncate">{circle.name}</h3>
                       <div className="flex items-center gap-2">
-                        <span
-                          className="text-xs font-medium px-2 py-0.5 rounded-full text-white"
-                          style={{ backgroundColor: circle.color }}
-                        >
-                          Joined ✓
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {memberCounts[circle.id] || 0} member{(memberCounts[circle.id] || 0) !== 1 ? 's' : ''}
+                        <span className="text-[10px] text-[var(--success)] font-medium">● Joined</span>
+                        <span className="text-[10px] text-[var(--muted)]">
+                          {memberCounts[circle.id] || 0} members
                         </span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                  <p className="text-xs text-[var(--muted)] line-clamp-2 mb-3">
                     {circle.description}
                   </p>
                 </Link>
                 <button
                   onClick={(e) => { e.preventDefault(); handleToggle(circle.id); }}
                   disabled={actionLoading === circle.id}
-                  className="w-full py-2 rounded-lg text-sm font-medium border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/20 disabled:opacity-50"
+                  className="w-full py-1.5 rounded-lg text-[10px] font-medium text-[var(--muted)] hover:text-[var(--error)] hover:bg-[var(--error)]/10 border border-[var(--border)] transition-all disabled:opacity-50"
                 >
-                  {actionLoading === circle.id ? 'Leaving...' : 'Leave Circle'}
+                  {actionLoading === circle.id ? 'Leaving...' : 'Leave'}
                 </button>
               </div>
             ))}
@@ -146,45 +165,53 @@ export default function CirclesPage() {
 
       {/* Available Circles */}
       <section>
-        <h2 className="text-xl font-semibold mb-4 dark:text-white">
-          {joined.length > 0 ? 'Explore More' : 'Available Circles'}
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {available.map((circle) => (
-            <div
-              key={circle.id}
-              className="rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-lg transition-all dark:bg-gray-800 flex flex-col"
-            >
-              <Link href={`/circles/${circle.id}`} className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-3xl">{circle.emoji}</span>
-                  <div>
-                    <h3 className="font-bold text-lg dark:text-white">{circle.name}</h3>
-                    <span className="text-xs text-gray-400">
-                      {memberCounts[circle.id] || 0} member{(memberCounts[circle.id] || 0) !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                  {circle.description}
-                </p>
-              </Link>
-              <button
-                onClick={(e) => { e.preventDefault(); handleToggle(circle.id); }}
-                disabled={actionLoading === circle.id}
-                className="w-full py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
-                style={{ backgroundColor: circle.color }}
-              >
-                {actionLoading === circle.id ? 'Joining...' : 'Join Circle'}
-              </button>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold">
+            {joined.length > 0 ? '🔍 Explore More' : '🌟 Available Circles'}
+          </h2>
+          <span className="text-[10px] text-[var(--muted)]">{available.length} available</span>
         </div>
-
-        {available.length === 0 && joined.length > 0 && (
-          <p className="text-center text-gray-400 py-8">
-            🎉 You&apos;ve joined all available circles!
-          </p>
+        {filtered(available).length === 0 ? (
+          <div className="card p-8 text-center">
+            <span className="text-3xl mb-2 block">{search ? '🔍' : '🎉'}</span>
+            <p className="text-xs text-[var(--muted)]">
+              {search ? `No circles match "${search}"` : "You've joined all available circles!"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+            {filtered(available).map((circle) => (
+              <div
+                key={circle.id}
+                className="card p-4 hover:border-[var(--primary)]/40 transition-all flex flex-col"
+              >
+                <Link href={`/circles/${circle.id}`} className="flex-1 block">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ backgroundColor: circle.color + '20' }}>
+                      {circle.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-bold truncate">{circle.name}</h3>
+                      <span className="text-[10px] text-[var(--muted)]">
+                        {memberCounts[circle.id] || 0} member{(memberCounts[circle.id] || 0) !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-[var(--muted)] line-clamp-2 mb-3">
+                    {circle.description}
+                  </p>
+                </Link>
+                <button
+                  onClick={(e) => { e.preventDefault(); handleToggle(circle.id); }}
+                  disabled={actionLoading === circle.id}
+                  className="w-full py-2 rounded-lg text-xs font-medium text-white disabled:opacity-50 transition-all hover:opacity-90"
+                  style={{ backgroundColor: circle.color }}
+                >
+                  {actionLoading === circle.id ? 'Joining...' : '+ Join Circle'}
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </section>
     </div>

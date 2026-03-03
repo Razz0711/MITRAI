@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { ROOM_TYPES, ANON_PRICING, UPI_CONFIG } from '@/lib/anon-aliases';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import SubTabBar from '@/components/SubTabBar';
 
 type Status = 'loading' | 'no-pass' | 'pending-payment' | 'banned' | 'idle' | 'queuing' | 'matched';
 
@@ -282,6 +283,7 @@ export default function AnonLobbyPage() {
 
   return (
     <div className="min-h-screen px-4">
+      <SubTabBar group="chat" />
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-4">

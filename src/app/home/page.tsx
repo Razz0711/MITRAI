@@ -209,6 +209,17 @@ export default function HomePage() {
       {/* Primary Actions */}
       <h2 className="text-sm font-semibold mb-3">Quick Actions</h2>
       <div className="grid grid-cols-2 gap-3 mb-6">
+        <Link href="/radar" className="card-hover p-4 text-center block border-green-500/20 relative overflow-hidden">
+          <span className="absolute top-1.5 right-1.5 text-[8px] font-bold bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">NEW</span>
+          <span className="text-2xl mb-1 block">📡</span>
+          <p className="text-xs font-semibold">Campus Radar</p>
+          <p className="text-[10px] text-[var(--muted)]">See who&apos;s around you</p>
+        </Link>
+        <Link href="/doubts" className="card-hover p-4 text-center block border-orange-500/20">
+          <span className="text-2xl mb-1 block">🔥</span>
+          <p className="text-xs font-semibold">Campus Feed</p>
+          <p className="text-[10px] text-[var(--muted)]">Confessions & hot takes</p>
+        </Link>
         <Link href="/anon" className="card-hover p-4 text-center block border-purple-500/20">
           <span className="text-2xl mb-1 block">🎭</span>
           <p className="text-xs font-semibold">Anonymous Chat</p>
@@ -219,20 +230,15 @@ export default function HomePage() {
           <p className="text-xs font-semibold">Chat</p>
           <p className="text-[10px] text-[var(--muted)]">Message friends</p>
         </Link>
-        <Link href="/doubts" className="card-hover p-4 text-center block">
-          <span className="text-2xl mb-1 block">❓</span>
-          <p className="text-xs font-semibold">Doubts</p>
-          <p className="text-[10px] text-[var(--muted)]">Ask & answer</p>
-        </Link>
-        <Link href="/friends" className="card-hover p-4 text-center block">
-          <span className="text-2xl mb-1 block">👥</span>
-          <p className="text-xs font-semibold">Friends</p>
-          <p className="text-[10px] text-[var(--muted)]">Your buddy network</p>
-        </Link>
       </div>
 
       {/* More Actions */}
-      <div className="grid grid-cols-3 gap-2 mb-6">
+      <div className="grid grid-cols-4 gap-2 mb-6">
+        <Link href="/skills" className="card-hover p-3 text-center block relative">
+          <span className="absolute top-0.5 right-0.5 text-[7px] font-bold text-green-400">NEW</span>
+          <span className="text-lg block mb-0.5">🔄</span>
+          <p className="text-[10px] font-medium">Skill Swap</p>
+        </Link>
         <Link href="/rooms" className="card-hover p-3 text-center block">
           <span className="text-lg block mb-0.5">📚</span>
           <p className="text-[10px] font-medium">Rooms</p>
@@ -241,9 +247,9 @@ export default function HomePage() {
           <span className="text-lg block mb-0.5">⭕</span>
           <p className="text-[10px] font-medium">Circles</p>
         </Link>
-        <Link href="/analytics" className="card-hover p-3 text-center block">
-          <span className="text-lg block mb-0.5">📊</span>
-          <p className="text-[10px] font-medium">Analytics</p>
+        <Link href="/friends" className="card-hover p-3 text-center block">
+          <span className="text-lg block mb-0.5">👥</span>
+          <p className="text-[10px] font-medium">Friends</p>
         </Link>
       </div>
 

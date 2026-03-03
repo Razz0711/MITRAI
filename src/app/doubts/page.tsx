@@ -1,6 +1,6 @@
 // ============================================
-// MitrAI - Anonymous Doubts Page
-// Open anonymous Q&A visible to everyone
+// MitrAI - Campus Feed (Anonymous Doubts + Confessions)
+// Open anonymous feed visible to everyone
 // ============================================
 
 'use client';
@@ -8,6 +8,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+
+const POST_TYPES = [
+  { id: 'all', emoji: '🔥', label: 'All' },
+  { id: 'doubt', emoji: '❓', label: 'Doubts' },
+  { id: 'confession', emoji: '🤫', label: 'Confessions' },
+  { id: 'spotted', emoji: '👀', label: 'Spotted' },
+  { id: 'hot-take', emoji: '🌶️', label: 'Hot Takes' },
+  { id: 'advice', emoji: '💡', label: 'Advice' },
+];
 
 interface Doubt {
   id: string;
@@ -19,6 +28,7 @@ interface Doubt {
   upvotes: number;
   status: string;
   createdAt: string;
+  postType?: string;
 }
 
 interface DoubtReply {
@@ -42,10 +52,12 @@ export default function DoubtsPage() {
   const [replies, setReplies] = useState<Record<string, DoubtReply[]>>({});
   const [replyText, setReplyText] = useState('');
   const [replyAnon, setReplyAnon] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('all');
 
   // Ask form
   const [askQuestion, setAskQuestion] = useState('');
   const [askAnon, setAskAnon] = useState(true);
+  const [askPostType, setAskPostType] = useState('doubt');
   const [asking, setAsking] = useState(false);
 
   const loadDoubts = useCallback(async () => {
@@ -76,6 +88,7 @@ export default function DoubtsPage() {
           userId: user.id,
           question: askQuestion,
           isAnonymous: askAnon,
+          postType: askPostType,
         }),
       });
       const data = await res.json();
@@ -163,11 +176,28 @@ export default function DoubtsPage() {
       {/* Header */}
       <div className="text-center mb-6">
         <h1 className="text-2xl font-bold mb-1">
-          <span className="gradient-text">Ask Anything</span> 💭
+          <span className="gradient-text">Campus Feed</span> 🔥
         </h1>
         <p className="text-xs text-[var(--muted)]">
-          Anonymous Q&A for SVNITians — everyone can see, no one knows who asked
+          Doubts, confessions, hot takes — anonymous & open to all
         </p>
+      </div>
+
+      {/* Post Type Filter */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4">
+        {POST_TYPES.map(pt => (
+          <button
+            key={pt.id}
+            onClick={() => setActiveFilter(pt.id)}
+            className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              activeFilter === pt.id
+                ? 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30'
+                : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'
+            }`}
+          >
+            {pt.emoji} {pt.label}
+          </button>
+        ))}
       </div>
 
       {/* Ask CTA */}
@@ -189,12 +219,28 @@ export default function DoubtsPage() {
         <div className="card p-5 mb-6 border-[var(--primary)]/30 space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg">🕵️</span>
-            <span className="text-sm font-semibold">New Question</span>
+            <span className="text-sm font-semibold">New Post</span>
+          </div>
+          {/* Post type selector */}
+          <div className="flex gap-2 flex-wrap">
+            {POST_TYPES.filter(pt => pt.id !== 'all').map(pt => (
+              <button
+                key={pt.id}
+                onClick={() => setAskPostType(pt.id)}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-medium transition-all ${
+                  askPostType === pt.id
+                    ? 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30'
+                    : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'
+                }`}
+              >
+                {pt.emoji} {pt.label}
+              </button>
+            ))}
           </div>
           <textarea
             value={askQuestion}
             onChange={(e) => setAskQuestion(e.target.value)}
-            placeholder="Type your question... (exams, college life, academics, anything)"
+            placeholder="What's on your mind? (doubts, confessions, hot takes, anything...)"
             rows={3}
             autoFocus
             className="w-full px-4 py-3 border border-[var(--border)] rounded-xl bg-[var(--surface-light)] text-[var(--foreground)] placeholder:text-[var(--muted)] text-sm resize-none focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)]/50 outline-none transition-all"
@@ -231,34 +277,39 @@ export default function DoubtsPage() {
       {/* Stats bar */}
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs text-[var(--muted)]">
-          {doubts.length} {doubts.length === 1 ? 'question' : 'questions'}
+          {(activeFilter === 'all' ? doubts : doubts.filter(d => (d.postType || 'doubt') === activeFilter)).length} posts
         </span>
         <span className="text-[10px] text-[var(--muted)]">
-          🔓 Visible to all SVNITians
+          🔓 Open campus feed
         </span>
       </div>
 
       {/* Empty state */}
       {doubts.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-5xl mb-4">💬</p>
-          <p className="text-sm font-semibold text-[var(--foreground)] mb-1">No questions yet</p>
-          <p className="text-xs text-[var(--muted)] mb-4">Be the first to break the ice — ask anything anonymously</p>
+          <p className="text-5xl mb-4">�</p>
+          <p className="text-sm font-semibold text-[var(--foreground)] mb-1">Feed is empty</p>
+          <p className="text-xs text-[var(--muted)] mb-4">Be the first to post — doubts, confessions, hot takes, anything</p>
           <button
             onClick={() => setShowAsk(true)}
             className="px-5 py-2 bg-[var(--primary)] text-white text-xs font-medium rounded-lg hover:bg-[#6d28d9] transition-all"
           >
-            Ask the First Question
+            Start the Feed
           </button>
         </div>
       ) : (
         <div className="space-y-3">
-          {doubts.map((doubt) => (
+          {doubts.filter(d => activeFilter === 'all' || (d.postType || 'doubt') === activeFilter).map((doubt) => (
             <div
               key={doubt.id}
               className="card p-4 hover:border-[var(--border-light)] transition-all"
             >
-              {/* Question */}
+              {/* Post type badge + Question */}
+              {doubt.postType && doubt.postType !== 'doubt' && (
+                <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary-light)] border border-[var(--primary)]/20 mb-2">
+                  {POST_TYPES.find(pt => pt.id === doubt.postType)?.emoji} {POST_TYPES.find(pt => pt.id === doubt.postType)?.label}
+                </span>
+              )}
               <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">{doubt.question}</p>
 
               {/* Meta + Actions row */}
