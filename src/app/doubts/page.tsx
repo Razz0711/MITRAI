@@ -1,6 +1,6 @@
 // ============================================
 // MitrAI - Anonymous Doubts Page
-// Post & answer anonymous academic doubts
+// Open anonymous Q&A visible to everyone
 // ============================================
 
 'use client';
@@ -33,35 +33,25 @@ interface DoubtReply {
   createdAt: string;
 }
 
-const DEPARTMENTS = [
-  'All', 'Computer Science', 'Electronics', 'Electrical', 'Mechanical',
-  'Civil', 'Chemical', 'Mathematics', 'Physics', 'Chemistry',
-];
-
 export default function DoubtsPage() {
   const { user } = useAuth();
   const [doubts, setDoubts] = useState<Doubt[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAsk, setShowAsk] = useState(false);
-  const [filter, setFilter] = useState('All');
   const [expandedDoubt, setExpandedDoubt] = useState<string | null>(null);
   const [replies, setReplies] = useState<Record<string, DoubtReply[]>>({});
   const [replyText, setReplyText] = useState('');
-  const [replyAnon, setReplyAnon] = useState(false);
+  const [replyAnon, setReplyAnon] = useState(true);
 
   // Ask form
   const [askQuestion, setAskQuestion] = useState('');
-  const [askDept, setAskDept] = useState('');
-  const [askSubject, setAskSubject] = useState('');
   const [askAnon, setAskAnon] = useState(true);
   const [asking, setAsking] = useState(false);
 
   const loadDoubts = useCallback(async () => {
     if (!user) return;
     try {
-      const params = new URLSearchParams();
-      if (filter !== 'All') params.set('department', filter);
-      const res = await fetch(`/api/doubts?${params.toString()}`);
+      const res = await fetch('/api/doubts');
       const data = await res.json();
       if (data.success) setDoubts(data.data.doubts || []);
     } catch (err) {
@@ -69,7 +59,7 @@ export default function DoubtsPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, filter]);
+  }, [user]);
 
   useEffect(() => {
     loadDoubts();
@@ -84,8 +74,6 @@ export default function DoubtsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
-          department: askDept,
-          subject: askSubject,
           question: askQuestion,
           isAnonymous: askAnon,
         }),
@@ -94,8 +82,6 @@ export default function DoubtsPage() {
       if (data.success) {
         setShowAsk(false);
         setAskQuestion('');
-        setAskDept('');
-        setAskSubject('');
         await loadDoubts();
       }
     } catch (err) {
@@ -158,74 +144,63 @@ export default function DoubtsPage() {
     }
   };
 
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  };
+
   if (loading) return <LoadingSkeleton />;
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--foreground)]">Anonymous Doubts</h1>
-          <p className="text-xs text-[var(--muted)] mt-1">
-            Ask questions anonymously. Get help from peers.
-          </p>
-        </div>
+      <div className="text-center mb-6">
+        <h1 className="text-2xl font-bold mb-1">
+          <span className="gradient-text">Ask Anything</span> 💭
+        </h1>
+        <p className="text-xs text-[var(--muted)]">
+          Anonymous Q&A for SVNITians — everyone can see, no one knows who asked
+        </p>
+      </div>
+
+      {/* Ask CTA */}
+      {!showAsk ? (
         <button
           onClick={() => setShowAsk(true)}
-          className="px-4 py-2 bg-[var(--primary)] text-white text-sm rounded-lg hover:bg-[#6d28d9]"
+          className="w-full card p-4 mb-6 text-left hover:border-[var(--primary)]/40 transition-all group"
         >
-          Ask a Doubt
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {DEPARTMENTS.map((d) => (
-          <button
-            key={d}
-            onClick={() => setFilter(d)}
-            className={`px-3 py-1.5 text-xs rounded-full whitespace-nowrap border ${
-              filter === d
-                ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                : 'border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-light)]'
-            }`}
-          >
-            {d}
-          </button>
-        ))}
-      </div>
-
-      {/* Ask Modal */}
-      {showAsk && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--surface)] text-[var(--foreground)] rounded-xl p-6 w-full max-w-md space-y-4 border border-[var(--border)]">
-            <h2 className="text-xl font-bold">Ask a Doubt</h2>
-            <textarea
-              value={askQuestion}
-              onChange={(e) => setAskQuestion(e.target.value)}
-              placeholder="Type your question..."
-              rows={3}
-              className="w-full px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--surface-light)] text-[var(--foreground)] placeholder:text-[var(--muted)]"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <select
-                value={askDept}
-                onChange={(e) => setAskDept(e.target.value)}
-                className="px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--surface-light)] text-[var(--foreground)] text-sm"
-              >
-                <option value="">Department (optional)</option>
-                {DEPARTMENTS.filter((d) => d !== 'All').map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-              <input
-                value={askSubject}
-                onChange={(e) => setAskSubject(e.target.value)}
-                placeholder="Subject (optional)"
-                className="px-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--surface-light)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
-              />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[var(--primary)]/15 flex items-center justify-center text-lg">
+              🕵️
             </div>
-            <label className="flex items-center gap-2 text-sm text-[var(--muted)]">
+            <span className="text-sm text-[var(--muted)] group-hover:text-[var(--foreground)] transition-colors">
+              What&apos;s on your mind? Ask anonymously...
+            </span>
+          </div>
+        </button>
+      ) : (
+        <div className="card p-5 mb-6 border-[var(--primary)]/30 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">🕵️</span>
+            <span className="text-sm font-semibold">New Question</span>
+          </div>
+          <textarea
+            value={askQuestion}
+            onChange={(e) => setAskQuestion(e.target.value)}
+            placeholder="Type your question... (exams, college life, academics, anything)"
+            rows={3}
+            autoFocus
+            className="w-full px-4 py-3 border border-[var(--border)] rounded-xl bg-[var(--surface-light)] text-[var(--foreground)] placeholder:text-[var(--muted)] text-sm resize-none focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)]/50 outline-none transition-all"
+          />
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-xs text-[var(--muted)] cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={askAnon}
@@ -234,91 +209,92 @@ export default function DoubtsPage() {
               />
               Post anonymously
             </label>
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowAsk(false); setAskQuestion(''); }}
+                className="px-4 py-2 text-xs rounded-lg border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-light)] transition-colors"
+              >
+                Cancel
+              </button>
               <button
                 onClick={handleAsk}
                 disabled={asking || !askQuestion.trim()}
-                className="flex-1 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[#6d28d9] disabled:opacity-50 font-medium"
+                className="px-5 py-2 bg-[var(--primary)] text-white text-xs font-medium rounded-lg hover:bg-[#6d28d9] disabled:opacity-40 transition-all"
               >
-                {asking ? 'Posting...' : 'Post Doubt'}
-              </button>
-              <button
-                onClick={() => setShowAsk(false)}
-                className="flex-1 py-2 border border-[var(--border)] rounded-lg text-[var(--foreground)] hover:bg-[var(--surface-light)] font-medium"
-              >
-                Cancel
+                {asking ? 'Posting...' : 'Post'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Doubts List */}
+      {/* Stats bar */}
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-xs text-[var(--muted)]">
+          {doubts.length} {doubts.length === 1 ? 'question' : 'questions'}
+        </span>
+        <span className="text-[10px] text-[var(--muted)]">
+          🔓 Visible to all SVNITians
+        </span>
+      </div>
+
+      {/* Empty state */}
       {doubts.length === 0 ? (
-        <div className="text-center py-12 text-[var(--muted)]">
-          <p className="text-4xl mb-3">🤔</p>
-          <p>No doubts yet. Be the first to ask!</p>
+        <div className="text-center py-16">
+          <p className="text-5xl mb-4">💬</p>
+          <p className="text-sm font-semibold text-[var(--foreground)] mb-1">No questions yet</p>
+          <p className="text-xs text-[var(--muted)] mb-4">Be the first to break the ice — ask anything anonymously</p>
+          <button
+            onClick={() => setShowAsk(true)}
+            className="px-5 py-2 bg-[var(--primary)] text-white text-xs font-medium rounded-lg hover:bg-[#6d28d9] transition-all"
+          >
+            Ask the First Question
+          </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {doubts.map((doubt) => (
             <div
               key={doubt.id}
-              className="rounded-xl border border-[var(--border)] p-5 bg-[var(--surface)]"
+              className="card p-4 hover:border-[var(--border-light)] transition-all"
             >
-              {/* Doubt Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <p className="text-[var(--foreground)] text-base">{doubt.question}</p>
-                  <div className="flex gap-2 mt-2 text-xs text-[var(--muted)]">
-                    {doubt.department && (
-                      <span className="px-2 py-0.5 bg-[var(--primary)]/10 text-[var(--primary-light)] rounded-full">
-                        {doubt.department}
-                      </span>
-                    )}
-                    {doubt.subject && (
-                      <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded-full">
-                        {doubt.subject}
-                      </span>
-                    )}
-                    <span>
-                      {doubt.isAnonymous ? '🕵️ Anonymous' : '👤 Named'} •{' '}
-                      {new Date(doubt.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
+              {/* Question */}
+              <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">{doubt.question}</p>
+
+              {/* Meta + Actions row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 text-xs text-[var(--muted)]">
+                  <span>{doubt.isAnonymous ? '🕵️ Anonymous' : '👤 Named'}</span>
+                  <span className="opacity-40">•</span>
+                  <span>{timeAgo(doubt.createdAt)}</span>
+                  {doubt.status === 'resolved' && (
+                    <>
+                      <span className="opacity-40">•</span>
+                      <span className="text-[var(--success)]">✓ Resolved</span>
+                    </>
+                  )}
                 </div>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    doubt.status === 'open'
-                      ? 'bg-amber-500/15 text-amber-400'
-                      : 'bg-[var(--success)]/15 text-[var(--success)]'
-                  }`}
-                >
-                  {doubt.status}
-                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleUpvote(doubt.id)}
+                    className="flex items-center gap-1 text-xs text-[var(--muted)] hover:text-[var(--primary-light)] transition-colors"
+                  >
+                    <span className="text-sm">▲</span> {doubt.upvotes}
+                  </button>
+                  <button
+                    onClick={() => loadReplies(doubt.id)}
+                    className="flex items-center gap-1 text-xs text-[var(--muted)] hover:text-[var(--primary-light)] transition-colors"
+                  >
+                    💬 {expandedDoubt === doubt.id ? 'Hide' : 'Reply'}
+                  </button>
+                </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-4 text-sm">
-                <button
-                  onClick={() => handleUpvote(doubt.id)}
-                  className="flex items-center gap-1 text-[var(--muted)] hover:text-[var(--primary-light)]"
-                >
-                  ▲ {doubt.upvotes}
-                </button>
-                <button
-                  onClick={() => loadReplies(doubt.id)}
-                  className="flex items-center gap-1 text-[var(--muted)] hover:text-[var(--primary-light)]"
-                >
-                  💬 {expandedDoubt === doubt.id ? 'Hide' : 'Replies'}
-                </button>
-              </div>
-
-              {/* Replies Section */}
+              {/* Replies */}
               {expandedDoubt === doubt.id && (
-                <div className="mt-4 pt-4 border-t border-[var(--border)] space-y-3">
+                <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-3">
                   {(replies[doubt.id] || []).length === 0 ? (
-                    <p className="text-sm text-[var(--muted)]">No replies yet.</p>
+                    <p className="text-xs text-[var(--muted)] italic">No replies yet — be the first to help!</p>
                   ) : (
                     (replies[doubt.id] || []).map((r) => (
                       <div
@@ -329,15 +305,13 @@ export default function DoubtsPage() {
                             : 'bg-[var(--surface-light)]'
                         }`}
                       >
-                        <p className="text-[var(--foreground)]">{r.reply}</p>
-                        <div className="flex items-center gap-2 mt-2 text-xs text-[var(--muted)]">
-                          <span>
-                            {r.isAnonymous ? '🕵️ Anonymous' : `👤 ${r.userName}`}
-                          </span>
-                          <span>•</span>
-                          <span>{new Date(r.createdAt).toLocaleDateString()}</span>
+                        <p className="text-[var(--foreground)] text-xs leading-relaxed">{r.reply}</p>
+                        <div className="flex items-center gap-2 mt-2 text-[10px] text-[var(--muted)]">
+                          <span>{r.isAnonymous ? '🕵️ Anonymous' : `👤 ${r.userName}`}</span>
+                          <span className="opacity-40">•</span>
+                          <span>{timeAgo(r.createdAt)}</span>
                           {r.isAccepted && (
-                            <span className="text-[var(--success)] font-medium">✓ Accepted</span>
+                            <span className="text-[var(--success)] font-medium ml-1">✓ Accepted</span>
                           )}
                         </div>
                       </div>
@@ -345,15 +319,15 @@ export default function DoubtsPage() {
                   )}
 
                   {/* Reply Input */}
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex gap-2 pt-1">
                     <input
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleReply(doubt.id)}
                       placeholder="Write a reply..."
-                      className="flex-1 px-3 py-2 text-sm border border-[var(--border)] rounded-lg bg-[var(--surface-light)] text-[var(--foreground)] placeholder:text-[var(--muted)]"
+                      className="flex-1 px-3 py-2 text-xs border border-[var(--border)] rounded-lg bg-[var(--surface-light)] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none focus:ring-1 focus:ring-[var(--primary)]/30"
                     />
-                    <label className="flex items-center gap-1 text-xs text-[var(--muted)]">
+                    <label className="flex items-center gap-1 text-[10px] text-[var(--muted)] cursor-pointer select-none">
                       <input
                         type="checkbox"
                         checked={replyAnon}
@@ -365,7 +339,7 @@ export default function DoubtsPage() {
                     <button
                       onClick={() => handleReply(doubt.id)}
                       disabled={!replyText.trim()}
-                      className="px-4 py-2 bg-[var(--primary)] text-white text-sm rounded-lg hover:bg-[#6d28d9] disabled:opacity-50"
+                      className="px-3 py-2 bg-[var(--primary)] text-white text-xs rounded-lg hover:bg-[#6d28d9] disabled:opacity-40 transition-all"
                     >
                       Reply
                     </button>
