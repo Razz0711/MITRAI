@@ -397,7 +397,7 @@ export default function AnonChatRoomPage() {
 
       {/* Input bar */}
       {!closed && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--background)] border-t border-[var(--border)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--background)] border-t border-[var(--border)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <div className="max-w-2xl mx-auto px-4 py-3 flex gap-2">
             <input
               ref={inputRef}
@@ -407,6 +407,8 @@ export default function AnonChatRoomPage() {
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
               placeholder="Type a message..."
               maxLength={1000}
+              enterKeyHint="send"
+              autoComplete="off"
               className="flex-1 px-3 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
             />
             <button

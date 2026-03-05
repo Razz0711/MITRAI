@@ -27,6 +27,12 @@ export default function TopBar() {
   const pathname = usePathname();
   const activeTab = getActiveTab(pathname);
 
+  // Hide mobile bottom tabs on pages with their own fixed-bottom input bar
+  const hideBottomTabs =
+    /^\/anon\/[^/]+/.test(pathname) ||   // anon chat room
+    /^\/chat\/[^/]+/.test(pathname) ||    // direct chat thread
+    /^\/call(\/|$)/.test(pathname);       // call page
+
   return (
     <>
       {/* ─── Top Header Bar (glass) ─── */}
@@ -90,6 +96,7 @@ export default function TopBar() {
       </header>
 
       {/* ─── Mobile Bottom Tab Bar ─── */}
+      {!hideBottomTabs && (
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]" style={{
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(24px) saturate(1.6)',
@@ -126,6 +133,7 @@ export default function TopBar() {
           })}
         </div>
       </nav>
+      )}
     </>
   );
 }
