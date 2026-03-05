@@ -7,7 +7,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
@@ -60,6 +60,8 @@ export default function RadarPage() {
   const [broadcasting, setBroadcasting] = useState(false);
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter();
+  const [connectingTo, setConnectingTo] = useState<string | null>(null);
 
   const loadPings = useCallback(async () => {
     if (!user) return;
@@ -146,6 +148,38 @@ export default function RadarPage() {
       await loadPings();
     } catch (err) {
       console.error('stopBroadcast:', err);
+    }
+  };
+
+  const handleConnect = async (ping: RadarPing) => {
+    if (!user) return;
+    setConnectingTo(ping.id);
+    try {
+      const res = await fetch('/api/radar/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pingId: ping.id,
+          connectorName: user.name || user.email?.split('@')[0] || 'Student',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.data.type === 'anonymous') {
+          // Redirect to anonymous chat room
+          router.push(`/anon/${data.data.roomId}`);
+        } else {
+          // Redirect to direct chat with the broadcaster
+          router.push(`/chat?friendId=${encodeURIComponent(data.data.broadcasterId)}&friendName=${encodeURIComponent(data.data.broadcasterName)}`);
+        }
+      } else {
+        alert(data.error || 'Could not connect. Please try again.');
+      }
+    } catch (err) {
+      console.error('handleConnect:', err);
+      alert('Network error — please check your connection.');
+    } finally {
+      setConnectingTo(null);
     }
   };
 
@@ -436,16 +470,24 @@ export default function RadarPage() {
                     </div>
                   </div>
                   {!isMe && !ping.isAnonymous && (
-                    <Link
-                      href={`/chat?friendId=${encodeURIComponent(ping.userId)}&friendName=${encodeURIComponent(ping.userName)}`}
-                      className="shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold text-white transition-all duration-300 hover:shadow-lg active:scale-[0.97]"
+                    <button
+                      onClick={() => handleConnect(ping)}
+                      disabled={connectingTo === ping.id}
+                      className="shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold text-white transition-all duration-300 hover:shadow-lg active:scale-[0.97] disabled:opacity-50"
                       style={{ background: 'linear-gradient(135deg, var(--primary), #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.3)' }}
                     >
-                      💬 Connect
-                    </Link>
+                      {connectingTo === ping.id ? '...' : '💬 Connect'}
+                    </button>
                   )}
                   {!isMe && ping.isAnonymous && (
-                    <span className="shrink-0 text-[10px] text-[var(--muted)] px-2 py-1">🕵️</span>
+                    <button
+                      onClick={() => handleConnect(ping)}
+                      disabled={connectingTo === ping.id}
+                      className="shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold text-white transition-all duration-300 hover:shadow-lg active:scale-[0.97] disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 2px 12px rgba(99,102,241,0.3)' }}
+                    >
+                      {connectingTo === ping.id ? '...' : '🕵️ Connect'}
+                    </button>
                   )}
                 </div>
               </div>

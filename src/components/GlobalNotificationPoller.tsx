@@ -95,6 +95,11 @@ function getUrlForNotif(n: NotifType): string {
   if (t === 'doubt_posted') return '/doubts';
   if (t === 'material_uploaded') return '/materials';
   if (t === 'birthday_wish') return '/home';
+  if (t === 'radar_connect') {
+    // If the notification mentions anonymous chats, go to anon; otherwise go to radar
+    if (n.message?.includes('anonymous')) return '/anon';
+    return '/chat';
+  }
   if (t === 'session_request' || t === 'session_accepted' || t === 'session_declined') return '/session';
   return '/home';
 }

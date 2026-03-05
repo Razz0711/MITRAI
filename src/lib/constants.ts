@@ -24,6 +24,7 @@ export const NOTIFICATION_TYPES = {
   ANON_WAITING: 'anon_waiting',
   DOUBT_POSTED: 'doubt_posted',
   MATERIAL_UPLOADED: 'material_uploaded',
+  RADAR_CONNECT: 'radar_connect',
 } as const;
 
 /** Union type derived from the constants object */
