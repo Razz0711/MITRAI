@@ -63,10 +63,6 @@ export default function HomePage() {
     return 'Good evening';
   };
 
-  const getGreetingEmoji = () => {
-    return '';
-  };
-
   useEffect(() => {
     if (!user) return;
     loadData();
