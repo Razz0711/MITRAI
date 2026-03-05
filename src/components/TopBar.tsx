@@ -7,7 +7,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/components/ThemeProvider';
 import {
   Home, MessageCircle, Flame, Sun, Moon,
@@ -24,7 +23,6 @@ const tabs = [
 ];
 
 export default function TopBar() {
-  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const activeTab = getActiveTab(pathname);
@@ -87,15 +85,6 @@ export default function TopBar() {
             >
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            {user && (
-              <Link href="/me" className="hidden md:flex ml-1">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[var(--primary)] via-[var(--accent)] to-[var(--secondary)] p-[1.5px]">
-                  <div className="w-full h-full rounded-xl bg-[var(--background)] flex items-center justify-center text-xs font-bold text-[var(--foreground)]">
-                    {user.name?.[0]?.toUpperCase() || '?'}
-                  </div>
-                </div>
-              </Link>
-            )}
           </div>
         </div>
       </header>

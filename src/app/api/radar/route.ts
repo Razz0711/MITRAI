@@ -63,17 +63,20 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { userId, userName, activityId, zone, note, isAnonymous } = body;
+    const { userName, activityId, zone, note, isAnonymous } = body;
 
-    if (!userId || !activityId) {
-      return NextResponse.json({ success: false, error: 'userId and activityId required' }, { status: 400 });
+    // Always use the authenticated user's ID (prevents FK mismatches)
+    const userId = authUser.id;
+
+    if (!activityId) {
+      return NextResponse.json({ success: false, error: 'activityId is required' }, { status: 400 });
     }
 
     // Remove any existing ping from this user
-    await supabase.from('radar_pings').delete().eq('user_id', userId);
+    const { error: delErr } = await supabase.from('radar_pings').delete().eq('user_id', userId);
+    if (delErr) console.warn('radar DELETE existing:', delErr.message);
 
     // Create new ping (expires in 2 hours)
-    // Let the database generate the UUID primary key (id column is UUID type)
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
 
     const { data: inserted, error } = await supabase.from('radar_pings').insert({
@@ -88,12 +91,13 @@ export async function POST(req: NextRequest) {
     }).select('id').single();
 
     if (error) {
-      console.error('radar POST error:', error);
-      return NextResponse.json({ success: false, error: 'Could not broadcast' }, { status: 500 });
+      console.error('radar POST insert error:', error.message, error.details, error.hint);
+      return NextResponse.json({ success: false, error: `Could not broadcast: ${error.message}` }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data: { id: inserted?.id } });
-  } catch {
+  } catch (err) {
+    console.error('radar POST catch:', err);
     return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 });
   }
 }
@@ -104,16 +108,11 @@ export async function DELETE(req: NextRequest) {
   if (!authUser) return unauthorized();
 
   try {
-    const body = await req.json();
-    const { userId } = body;
-
-    if (!userId) {
-      return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
-    }
-
-    await supabase.from('radar_pings').delete().eq('user_id', userId);
+    // Always use the authenticated user's ID
+    await supabase.from('radar_pings').delete().eq('user_id', authUser.id);
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 });
+  } catch (err) {
+    console.error('radar DELETE catch:', err);
+    return NextResponse.json({ success: false, error: 'Failed to stop broadcast' }, { status: 500 });
   }
 }
