@@ -59,7 +59,7 @@ export default function FriendsPage() {
       }
     } catch (err) { console.error('loadFriendsData:', err); }
     setLoading(false);
-  }, [user]);
+  }, [playSound, user]);
 
   useEffect(() => {
     loadData();

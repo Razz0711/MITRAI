@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { ROOM_TYPES, ANON_PRICING, UPI_CONFIG } from '@/lib/anon-aliases';
@@ -166,7 +167,7 @@ export default function AnonLobbyPage() {
         }
       } catch { /* keep polling */ }
     }, 3000);
-  }, [router]);
+  }, [playSound, router]);
 
   const handleLeaveQueue = async () => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -481,12 +482,13 @@ export default function AnonLobbyPage() {
                   {/* QR Code */}
                   <div className="flex justify-center mb-4">
                     <div className="p-3 bg-white rounded-2xl shadow-lg">
-                      <img
+                      <Image
                         src={getQrImageUrl(selectedPlan.price)}
                         alt="UPI QR Code"
                         width={200}
                         height={200}
                         className="rounded-xl"
+                        unoptimized
                         style={{ imageRendering: 'pixelated' }}
                       />
                     </div>

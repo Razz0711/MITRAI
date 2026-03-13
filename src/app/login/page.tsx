@@ -5,6 +5,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { validateSVNITEmail, ParsedEmail } from '@/lib/email-parser';
@@ -294,7 +295,7 @@ function LoginPageInner() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/logo.jpg" alt="MitrAI" className="h-14 w-auto mx-auto mb-3" />
+          <Image src="/logo.jpg" alt="MitrAI" width={56} height={56} className="h-14 w-auto mx-auto mb-3" priority />
           <h1 className="text-xl font-bold text-[var(--foreground)]">
             {isSignup ? 'Join MitrAI' : 'Welcome back'}
           </h1>

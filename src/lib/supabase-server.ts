@@ -3,7 +3,7 @@
 // Used in API routes and Server Components for auth verification
 // ============================================
 
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr/dist/module/createServerClient';
 import { cookies } from 'next/headers';
 
 export function createSupabaseServerClient() {

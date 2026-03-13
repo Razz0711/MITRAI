@@ -6,6 +6,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -52,7 +53,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <img src="/logo.jpg" alt="MitrAI" className="h-14 w-auto mx-auto mb-4" />
+          <Image src="/logo.jpg" alt="MitrAI" width={56} height={56} className="h-14 w-auto mx-auto mb-4" priority />
           <h1 className="text-xl font-bold text-[var(--foreground)]">Admin Login</h1>
           <p className="text-xs text-[var(--muted)] mt-1">MitrAI Administration Panel</p>
         </div>

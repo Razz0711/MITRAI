@@ -4,7 +4,7 @@
 // Refreshes session tokens on every request
 // ============================================
 
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr/dist/module/createServerClient';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 

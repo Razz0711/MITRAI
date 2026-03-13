@@ -140,7 +140,7 @@ export default function AnonChatRoomPage() {
       .subscribe();
 
     return () => { supabaseBrowser.removeChannel(channel); };
-  }, [roomId]);
+  }, [playSound, roomId, user?.id]);
 
   // Auto-scroll
   useEffect(() => {

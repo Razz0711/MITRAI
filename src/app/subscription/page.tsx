@@ -5,6 +5,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import { SubscriptionPlan } from '@/lib/types';
 
@@ -374,12 +375,13 @@ export default function SubscriptionPage() {
                 {/* QR Code */}
                 <div className="flex justify-center mb-4">
                   <div className="p-3 bg-white rounded-2xl shadow-lg">
-                    <img
+                    <Image
                       src={getQrImageUrl(paymentPlan)}
                       alt="UPI QR Code"
                       width={220}
                       height={220}
                       className="rounded-xl"
+                      unoptimized
                       style={{ imageRendering: 'pixelated' }}
                     />
                   </div>

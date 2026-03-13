@@ -3,7 +3,7 @@
 // Uses @supabase/ssr for cookie-based auth sessions
 // ============================================
 
-import { createBrowserClient } from '@supabase/ssr';
+import { createBrowserClient } from '@supabase/ssr/dist/module/createBrowserClient';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';

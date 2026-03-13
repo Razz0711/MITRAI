@@ -182,7 +182,7 @@ export default function ChatPage() {
       supabaseBrowser.removeChannel(threadChannel);
       clearInterval(poll);
     };
-  }, [studentId, selectedChatId, loadThreads, loadMessages, markRead]);
+  }, [studentId, selectedChatId, loadThreads, loadMessages, markRead, playSound]);
 
   // Send message — optimistic UI for instant feel
   const sendMessage = async () => {
