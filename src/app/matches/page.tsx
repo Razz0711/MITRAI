@@ -29,12 +29,13 @@ export default function MatchesPage() {
   const [pendingSentIds, setPendingSentIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (!user) return;
     loadStudents();
     loadStatuses();
     loadBirthdays();
     loadFriends();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);
 
   const loadStatuses = async () => {
     try {
@@ -115,8 +116,10 @@ export default function MatchesPage() {
       if (data.success) {
         setAllStudents(data.data);
         const savedId = localStorage.getItem('mitrai_student_id');
-        if (savedId) {
-          setSelectedStudentId(savedId);
+        const preferredId = savedId || user?.id || '';
+        const currentStudent = data.data.find((student: StudentProfile) => student.id === preferredId);
+        if (currentStudent) {
+          setSelectedStudentId(currentStudent.id);
         } else if (data.data.length > 0) {
           setSelectedStudentId(data.data[0].id);
         }

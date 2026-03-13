@@ -8,6 +8,7 @@ import { generateAlias } from '../anon-aliases';
 import type { AnonRoomType } from '../anon-aliases';
 import { v4 as uuidv4 } from 'uuid';
 import { getUserSubscription } from './subscriptions';
+import { normalizeOptionalPaymentReference } from '../payment-validation';
 
 // ═══════════════════════════════════════════
 // Types (local to avoid bloating types.ts)
@@ -605,6 +606,7 @@ export interface AnonPayment {
   upiRef: string;
   status: 'pending' | 'approved' | 'rejected';
   reviewedBy: string | null;
+  reviewedByLabel: string | null;
   reviewedAt: string | null;
   rejectionReason: string | null;
   createdAt: string;
@@ -618,6 +620,9 @@ export async function submitPayment(userId: string, plan: string, amount: number
   const active = await hasActivePass(userId);
   if (active) return { success: false, error: 'You already have an active pass!' };
 
+  const normalizedTransactionId = transactionId.trim().toUpperCase();
+  const normalizedUpiRef = normalizeOptionalPaymentReference(upiRef);
+
   // Check for duplicate pending payment
   const { data: existing } = await supabase
     .from('anon_payments')
@@ -627,14 +632,24 @@ export async function submitPayment(userId: string, plan: string, amount: number
     .limit(1);
   if (existing && existing.length > 0) return { success: false, error: 'You already have a pending payment. Please wait for admin approval.' };
 
+  const { data: duplicateTxn } = await supabase
+    .from('anon_payments')
+    .select('id')
+    .eq('transaction_id', normalizedTransactionId)
+    .in('status', ['pending', 'approved'])
+    .limit(1);
+  if (duplicateTxn && duplicateTxn.length > 0) {
+    return { success: false, error: 'This transaction ID has already been used for another payment.' };
+  }
+
   const { error } = await supabase
     .from('anon_payments')
     .insert({
       user_id: userId,
       plan,
       amount,
-      transaction_id: transactionId.trim(),
-      upi_ref: upiRef?.trim() || null,
+      transaction_id: normalizedTransactionId,
+      upi_ref: normalizedUpiRef || null,
       status: 'pending',
     });
   if (error) { console.error('submitPayment error:', error); return { success: false, error: 'Failed to submit payment' }; }
@@ -679,7 +694,11 @@ export async function listPendingPayments(): Promise<AnonPayment[]> {
 }
 
 /** Approve a payment → create pass (admin) */
-export async function approvePayment(paymentId: string, adminId: string): Promise<{ success: boolean; error?: string }> {
+export async function approvePayment(
+  paymentId: string,
+  adminId: string | null,
+  reviewerLabel?: string,
+): Promise<{ success: boolean; error?: string }> {
   // Get payment
   const { data: payment, error: pErr } = await supabase
     .from('anon_payments')
@@ -709,24 +728,40 @@ export async function approvePayment(paymentId: string, adminId: string): Promis
   if (passErr) return { success: false, error: 'Failed to create pass' };
 
   // Update payment status
-  await supabase
+  const reviewUpdate: Record<string, string> = {
+    status: 'approved',
+    reviewed_at: now.toISOString(),
+  };
+  if (adminId) reviewUpdate.reviewed_by = adminId;
+  if (reviewerLabel) reviewUpdate.reviewed_by_label = reviewerLabel;
+
+  const { error: updateErr } = await supabase
     .from('anon_payments')
-    .update({ status: 'approved', reviewed_by: adminId, reviewed_at: now.toISOString() })
+    .update(reviewUpdate)
     .eq('id', paymentId);
+  if (updateErr) return { success: false, error: 'Failed to update payment status' };
 
   return { success: true };
 }
 
 /** Reject a payment (admin) */
-export async function rejectPayment(paymentId: string, adminId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+export async function rejectPayment(
+  paymentId: string,
+  adminId: string | null,
+  reviewerLabel?: string,
+  reason?: string,
+): Promise<{ success: boolean; error?: string }> {
+  const reviewUpdate: Record<string, string> = {
+    status: 'rejected',
+    reviewed_at: new Date().toISOString(),
+    rejection_reason: reason || 'Payment could not be verified',
+  };
+  if (adminId) reviewUpdate.reviewed_by = adminId;
+  if (reviewerLabel) reviewUpdate.reviewed_by_label = reviewerLabel;
+
   const { error } = await supabase
     .from('anon_payments')
-    .update({
-      status: 'rejected',
-      reviewed_by: adminId,
-      reviewed_at: new Date().toISOString(),
-      rejection_reason: reason || 'Payment could not be verified',
-    })
+    .update(reviewUpdate)
     .eq('id', paymentId);
   if (error) return { success: false, error: 'Failed to reject payment' };
   return { success: true };
@@ -743,6 +778,7 @@ function snakeToPayment(row: any): AnonPayment {
     upiRef: row.upi_ref || '',
     status: row.status,
     reviewedBy: row.reviewed_by,
+    reviewedByLabel: row.reviewed_by_label || null,
     reviewedAt: row.reviewed_at,
     rejectionReason: row.rejection_reason,
     createdAt: row.created_at,

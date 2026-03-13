@@ -10,6 +10,8 @@
 #   002_user_blocks_reports.sql  — User blocking & reporting tables
 #   003_sessions_analytics.sql   — Sessions table for analytics
 #
+#   012_anon_payment_review_metadata.sql â€” Payment reviewer labels + transaction lookup index
+#
 # How to run:
 #   1. Open Supabase Dashboard → SQL Editor
 #   2. Copy each migration SQL file

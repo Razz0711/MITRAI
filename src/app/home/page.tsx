@@ -74,17 +74,12 @@ export default function HomePage() {
   }, [user]);
 
   const loadData = async () => {
+    if (!user) return;
     try {
-      const res = await fetch('/api/students');
+      const res = await fetch(`/api/students?id=${encodeURIComponent(user.id)}`);
       const data = await res.json();
       if (data.success) {
-        const userEmail = user?.email?.toLowerCase() || '';
-        const mine = (data.data as StudentProfile[]).filter(
-          (s: StudentProfile) => s.email?.toLowerCase() === userEmail
-        );
-        const savedId = localStorage.getItem('mitrai_student_id');
-        const found = savedId ? mine.find((s: StudentProfile) => s.id === savedId) : mine[0];
-        if (found) setStudent(found);
+        setStudent(data.data as StudentProfile);
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }

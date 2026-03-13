@@ -4,9 +4,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { getUserSubscription, setUserSubscription } from '@/lib/store';
+import { approveSubscription, getUserSubscription, rejectSubscription, setUserSubscription } from '@/lib/store';
 import { Subscription } from '@/lib/types';
 import { getAuthUser, unauthorized, forbidden } from '@/lib/api-auth';
+import { validatePaymentReference } from '@/lib/payment-validation';
 
 // GET /api/subscription?userId=xxx
 export async function GET(req: NextRequest) {
@@ -57,11 +58,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'targetUserId required' }, { status: 400 });
       }
       if (action === 'approve') {
-        const { approveSubscription } = await import('@/lib/store');
         const ok = await approveSubscription(targetUserId);
         return NextResponse.json({ success: ok, message: ok ? 'Subscription approved' : 'Failed to approve' });
       } else {
-        const { rejectSubscription } = await import('@/lib/store');
         const ok = await rejectSubscription(targetUserId);
         return NextResponse.json({ success: ok, message: ok ? 'Subscription rejected' : 'Failed to reject' });
       }
@@ -102,8 +101,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Paid plans — require transaction ID, set to PENDING
-    if (!transactionId || transactionId.trim().length < 4) {
-      return NextResponse.json({ success: false, error: 'Please enter a valid UPI Transaction / UTR ID (at least 4 characters)' }, { status: 400 });
+    if (!transactionId || typeof transactionId !== 'string') {
+      return NextResponse.json({ success: false, error: 'Please enter a valid UPI Transaction / UTR ID' }, { status: 400 });
+    }
+
+    const validatedTxn = validatePaymentReference(transactionId);
+    if (!validatedTxn.valid) {
+      return NextResponse.json({ success: false, error: validatedTxn.error }, { status: 400 });
     }
 
     const subscription = await setUserSubscription({
@@ -112,7 +116,7 @@ export async function POST(req: NextRequest) {
       startDate: now.toISOString(),
       endDate: '',  // will be set on approval
       status: 'pending',
-      transactionId: transactionId.trim(),
+      transactionId: validatedTxn.normalized,
       createdAt: now.toISOString(),
     });
 

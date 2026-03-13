@@ -68,14 +68,8 @@ export default function RatingsPage() {
 
   useEffect(() => {
     if (!user) return;
-    fetch('/api/students').then(r => r.json()).then(data => {
-      if (data.success) {
-        const mine = (data.data as { email?: string; batchYear?: string; department?: string }[]).find(
-          s => s.email?.toLowerCase() === user.email?.toLowerCase()
-        );
-        if (mine) { setStudentBatchYear(mine.batchYear || ''); setStudentDept(mine.department || ''); }
-      }
-    }).catch(() => {});
+    setStudentBatchYear(user.batchYear || '');
+    setStudentDept(user.department || '');
   }, [user]);
 
   const loadProfessors = useCallback(async (dept: string) => {

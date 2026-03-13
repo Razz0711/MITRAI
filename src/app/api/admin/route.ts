@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { generateCoupons, listCoupons, getAnonStats, listPendingPayments, approvePayment, rejectPayment } from '@/lib/store/anon';
+import { approveSubscription, rejectSubscription } from '@/lib/store';
 import { verifyAdminAccess, isAdminAuthenticated } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
@@ -75,11 +76,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   // Admin can access via cookie (no Supabase auth needed) or via Supabase auth + admin key
   const adminCookie = isAdminAuthenticated();
-  let adminUserId = 'admin';
+  let adminUserId: string | null = null;
+  let adminReviewerLabel = 'admin';
   if (!adminCookie) {
     const authUser = await getAuthUser();
     if (!authUser) return unauthorized();
     adminUserId = authUser.id;
+    adminReviewerLabel = authUser.email || authUser.id;
   }
 
   try {
@@ -92,27 +95,19 @@ export async function POST(req: NextRequest) {
 
     // ── Approve subscription ──
     if (action === 'approve-subscription') {
-      const now = new Date();
-      const endDate = new Date(now);
-      endDate.setMonth(endDate.getMonth() + 1); // 1 month for all paid plans
-
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({ status: 'active', start_date: now.toISOString(), end_date: endDate.toISOString() })
-        .eq('user_id', targetId);
-
-      if (error) throw error;
+      const ok = await approveSubscription(targetId);
+      if (!ok) {
+        return NextResponse.json({ success: false, error: 'Failed to approve subscription' }, { status: 400 });
+      }
       return NextResponse.json({ success: true, message: 'Subscription approved' });
     }
 
     // ── Reject subscription ──
     if (action === 'reject-subscription') {
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({ status: 'cancelled' })
-        .eq('user_id', targetId);
-
-      if (error) throw error;
+      const ok = await rejectSubscription(targetId);
+      if (!ok) {
+        return NextResponse.json({ success: false, error: 'Failed to reject subscription' }, { status: 400 });
+      }
       return NextResponse.json({ success: true, message: 'Subscription rejected' });
     }
 
@@ -145,13 +140,13 @@ export async function POST(req: NextRequest) {
       if (!plan || !count) {
         return NextResponse.json({ success: false, error: 'plan and count required' }, { status: 400 });
       }
-      const codes = await generateCoupons(plan, Math.min(count, 100), maxUses || 1, adminUserId, expiresAt);
+      const codes = await generateCoupons(plan, Math.min(count, 100), maxUses || 1, adminUserId || adminReviewerLabel, expiresAt);
       return NextResponse.json({ success: true, data: { codes } });
     }
 
     // ── Approve anon payment ──
     if (action === 'approve-payment') {
-      const result = await approvePayment(targetId, adminUserId);
+      const result = await approvePayment(targetId, adminUserId, adminReviewerLabel);
       if (!result.success) return NextResponse.json({ success: false, error: result.error }, { status: 400 });
       return NextResponse.json({ success: true, message: 'Payment approved, pass activated!' });
     }
@@ -159,7 +154,7 @@ export async function POST(req: NextRequest) {
     // ── Reject anon payment ──
     if (action === 'reject-payment') {
       const { reason } = body;
-      const result = await rejectPayment(targetId, adminUserId, reason);
+      const result = await rejectPayment(targetId, adminUserId, adminReviewerLabel, reason);
       if (!result.success) return NextResponse.json({ success: false, error: result.error }, { status: 400 });
       return NextResponse.json({ success: true, message: 'Payment rejected' });
     }

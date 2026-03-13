@@ -9,6 +9,7 @@ import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 import { submitPayment, getUserPaymentStatus } from '@/lib/store/anon';
 import { ANON_PRICING } from '@/lib/anon-aliases';
+import { normalizeOptionalPaymentReference, validatePaymentReference } from '@/lib/payment-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,11 +41,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate transaction ID
-    if (!transactionId || typeof transactionId !== 'string' || transactionId.trim().length < 4) {
-      return NextResponse.json({ success: false, error: 'Valid transaction/reference ID required (min 4 characters)' }, { status: 400 });
+    if (!transactionId || typeof transactionId !== 'string') {
+      return NextResponse.json({ success: false, error: 'Valid transaction/reference ID required' }, { status: 400 });
     }
 
-    const result = await submitPayment(userId, plan, tier.price, transactionId, upiRef);
+    const validatedTxn = validatePaymentReference(transactionId);
+    if (!validatedTxn.valid) {
+      return NextResponse.json({ success: false, error: validatedTxn.error }, { status: 400 });
+    }
+
+    const result = await submitPayment(
+      userId,
+      plan,
+      tier.price,
+      validatedTxn.normalized,
+      normalizeOptionalPaymentReference(upiRef) || undefined,
+    );
     if (!result.success) {
       return NextResponse.json({ success: false, error: result.error }, { status: 400 });
     }
