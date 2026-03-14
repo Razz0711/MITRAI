@@ -38,8 +38,14 @@ export default function ChatPage() {
   const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
   const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
   const [matchScores, setMatchScores] = useState<Record<string, number>>({});
+  const [comingSoon, setComingSoon] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const showComingSoon = () => {
+    setComingSoon(true);
+    setTimeout(() => setComingSoon(false), 2500);
+  };
 
   const studentId = typeof window !== 'undefined'
     ? localStorage.getItem('mitrai_student_id') || user?.id
@@ -466,10 +472,10 @@ export default function ChatPage() {
               ))}
             </div>
             <div className="flex gap-2">
-              <Link href="/doubts" className="flex-1 py-2 rounded-xl text-xs font-semibold text-white text-center" style={{ background: 'linear-gradient(135deg, var(--primary), #6d28d9)' }}>
+              <button onClick={showComingSoon} className="flex-1 py-2 rounded-xl text-xs font-semibold text-white text-center" style={{ background: 'linear-gradient(135deg, var(--primary), #6d28d9)' }}>
                 Chat with Arya
-              </Link>
-              <button className="w-10 h-10 rounded-xl bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-violet-400">
+              </button>
+              <button onClick={showComingSoon} className="w-10 h-10 rounded-xl bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-violet-400 hover:bg-violet-500/25 transition-colors">
                 <Phone size={16} />
               </button>
             </div>
@@ -729,10 +735,10 @@ export default function ChatPage() {
                   onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
                   className="flex items-center gap-2"
                 >
-                  <button type="button" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1">
+                  <button type="button" onClick={showComingSoon} className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1" title="Attach file">
                     <Paperclip size={18} />
                   </button>
-                  <button type="button" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1">
+                  <button type="button" onClick={showComingSoon} className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1" title="Emoji">
                     <Smile size={18} />
                   </button>
                   <input
@@ -775,8 +781,23 @@ export default function ChatPage() {
         </div>
       </div>
 
+      {/* Coming Soon Toast */}
+      {comingSoon && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce-in">
+          <div className="px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-2xl" style={{ background: 'linear-gradient(135deg, var(--primary), #6d28d9)', boxShadow: '0 8px 32px rgba(124,58,237,0.4)' }}>
+            🚀 Coming Soon!
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .chat-polish { z-index: 1; }
+        @keyframes bounce-in {
+          0% { opacity: 0; transform: translate(-50%, 20px) scale(0.9); }
+          50% { transform: translate(-50%, -5px) scale(1.02); }
+          100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        }
+        .animate-bounce-in { animation: bounce-in 0.35s ease-out; }
         .chat-aura {
           position: absolute; pointer-events: none; border-radius: 999px;
           filter: blur(52px); opacity: 0.12; z-index: 0;
