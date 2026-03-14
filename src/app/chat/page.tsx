@@ -92,7 +92,11 @@ export default function ChatPage() {
 
   // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    messagesEndRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
   }, [messages]);
 
   // Supabase Realtime: insert messages directly from payload (no refetch)
@@ -310,6 +314,13 @@ export default function ChatPage() {
     return thread.unreadCount2;
   };
 
+  const totalUnread = threads.reduce((sum, thread) => sum + getUnreadCount(thread), 0);
+  const onlineThreads = threads.filter((thread) => {
+    const otherId = thread.user1Id === studentId ? thread.user2Id : thread.user1Id;
+    const st = statuses[otherId];
+    return st?.status === 'online' || st?.status === 'in-session';
+  }).length;
+
   const formatTime = (iso: string) => {
     const d = new Date(iso);
     const now = new Date();
@@ -332,35 +343,49 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen chat-polish relative">
+      <div className="chat-aura chat-aura-1" />
+      <div className="chat-aura chat-aura-2" />
       <SubTabBar group="chat" />
       <div className="h-[calc(100vh-9rem)] flex">
         {/* ======= Sidebar / Thread List ======= */}
-        <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-[var(--border)] bg-[var(--background)]`}>
+        <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)]`}>
           {/* Header */}
           <div className="p-4 border-b border-[var(--border)]">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-semibold text-[var(--foreground)]">Chats</h1>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] font-bold">Direct messages</p>
+                <h1 className="text-lg font-semibold text-[var(--foreground)] leading-tight">Chats</h1>
+              </div>
               <Link href="/friends" className="text-xs text-[var(--primary-light)] hover:underline">
                 Friends
               </Link>
             </div>
             <p className="text-xs text-[var(--muted)] mt-1">Message your study buddies</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="chat-chip">{threads.length} chats</span>
+              <span className="chat-chip">{onlineThreads} online</span>
+              <span className="chat-chip chat-chip-accent">{totalUnread} unread</span>
+            </div>
           </div>
 
           {/* Thread List */}
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <div className="flex items-center justify-center h-32">
+              <div className="flex flex-col items-center justify-center h-32 gap-2" aria-live="polite">
                 <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+                <p className="text-[11px] text-[var(--muted)]">Loading your conversations...</p>
               </div>
             ) : threads.length === 0 ? (
               <div className="p-6 text-center">
-                <div className="text-sm font-bold text-[var(--muted)] mb-3">No chats</div>
-                <p className="text-sm text-[var(--muted)]">No chats yet</p>
+                <div className="text-sm font-bold text-[var(--muted)] mb-3">No chats yet</div>
+                <p className="text-sm text-[var(--muted)]">Start one from your friends list in one tap.</p>
                 <p className="text-xs text-[var(--muted)] mt-1">
                   Add friends from the <Link href="/friends" className="text-[var(--primary-light)] hover:underline">Friends</Link> page to start chatting!
                 </p>
+                <Link href="/friends" className="btn-secondary text-xs mt-3 inline-block">
+                  Open friends
+                </Link>
               </div>
             ) : (
               threads.map(thread => {
@@ -378,15 +403,15 @@ export default function ChatPage() {
                       setShowSidebar(false);
                       markRead();
                     }}
-                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b border-[var(--border)]/50 ${
+                    className={`w-full text-left mx-2 my-1.5 px-3.5 py-3 rounded-xl flex items-center gap-3 transition-colors border ${
                       isActive
-                        ? 'bg-[var(--surface-light)]'
-                        : 'hover:bg-[var(--surface)]/50'
+                        ? 'bg-[var(--surface-light)] border-[var(--primary)]/35'
+                        : 'bg-[var(--surface)]/50 border-transparent hover:bg-[var(--surface)] hover:border-[var(--border)]'
                     }`}
                   >
                     {/* Avatar with status dot */}
                     <div className="relative flex-shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white font-semibold text-sm">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center text-white font-semibold text-sm">
                         {otherName.charAt(0).toUpperCase()}
                       </div>
                       <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--background)] ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
@@ -406,7 +431,7 @@ export default function ChatPage() {
                           {thread.lastMessage || 'No messages yet'}
                         </span>
                         {unread > 0 && (
-                          <span className="ml-2 bg-[var(--primary)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 min-w-[18px] text-center">
+                          <span className="ml-2 bg-[var(--primary)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 min-w-[18px] text-center">
                             {unread}
                           </span>
                         )}
@@ -424,11 +449,12 @@ export default function ChatPage() {
           {selectedChatId ? (
             <>
               {/* Chat Header */}
-              <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--background)] flex items-center gap-3">
+              <div className="px-4 py-3 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_95%,transparent)] flex items-center gap-3">
                 {/* Back button (mobile) */}
                 <button
                   onClick={() => setShowSidebar(true)}
                   className="md:hidden text-[var(--muted)] hover:text-[var(--foreground)] p-1"
+                  aria-label="Back to conversations"
                 >
                   ← 
                 </button>
@@ -442,7 +468,7 @@ export default function ChatPage() {
                   return (
                     <>
                       <div className="relative">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center text-white font-semibold text-xs">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center text-white font-semibold text-xs">
                           {name.charAt(0).toUpperCase()}
                         </div>
                         <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[var(--background)] ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
@@ -457,7 +483,7 @@ export default function ChatPage() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 chat-message-pane">
                 {messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
@@ -476,8 +502,9 @@ export default function ChatPage() {
                         {isMine && (
                           <button
                             onClick={() => handleDeleteMessage(msg.id)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity self-center mr-1 text-red-400 hover:text-red-500 text-xs px-1.5 py-0.5 rounded hover:bg-red-500/10"
+                            className="opacity-40 md:opacity-0 md:group-hover:opacity-100 transition-opacity self-center mr-1 text-red-400 hover:text-red-500 active:opacity-100 text-xs px-1.5 py-0.5 rounded hover:bg-red-500/10"
                             title="Delete message"
+                            aria-label="Delete message"
                           >
                             ✕
                           </button>
@@ -486,7 +513,7 @@ export default function ChatPage() {
                           className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
                             isMine
                               ? 'bg-[var(--primary)] text-white rounded-br-md'
-                              : 'bg-[var(--surface-light)] text-[var(--foreground)] rounded-bl-md'
+                              : 'bg-[var(--surface-light)] text-[var(--foreground)] rounded-bl-md border border-[var(--glass-border)]'
                           }`}
                         >
                           <p className="break-words whitespace-pre-wrap">{msg.text}</p>
@@ -509,7 +536,7 @@ export default function ChatPage() {
               </div>
 
               {/* Input Area */}
-              <div className="p-3 border-t border-[var(--border)] bg-[var(--background)]">
+              <div className="p-3 border-t border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)]">
                 <form
                   onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
                   className="flex items-center gap-2"
@@ -528,11 +555,12 @@ export default function ChatPage() {
                     type="submit"
                     disabled={!newMsg.trim() || sending}
                     className="btn-primary py-2.5 px-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label={sending ? 'Sending message' : 'Send message'}
                   >
                     {sending ? (
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
                     ) : (
-                      '➤'
+                      'Send'
                     )}
                   </button>
                 </form>
@@ -552,6 +580,72 @@ export default function ChatPage() {
           )}
         </div>
       </div>
+
+      <style jsx>{`
+        .chat-polish {
+          z-index: 1;
+        }
+
+        .chat-aura {
+          position: absolute;
+          pointer-events: none;
+          border-radius: 999px;
+          filter: blur(52px);
+          opacity: 0.12;
+          z-index: 0;
+        }
+
+        .chat-aura-1 {
+          width: 260px;
+          height: 180px;
+          top: 70px;
+          left: -90px;
+          background: rgba(99, 102, 241, 0.35);
+        }
+
+        .chat-aura-2 {
+          width: 240px;
+          height: 170px;
+          top: 260px;
+          right: -70px;
+          background: rgba(236, 72, 153, 0.2);
+        }
+
+        .chat-chip {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          border: 1px solid var(--glass-border);
+          background: color-mix(in srgb, var(--surface) 92%, transparent);
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 700;
+          padding: 4px 9px;
+          letter-spacing: 0.03em;
+        }
+
+        .chat-chip-accent {
+          border-color: rgba(124, 58, 237, 0.25);
+          background: rgba(124, 58, 237, 0.12);
+          color: #c4b5fd;
+        }
+
+        .chat-message-pane {
+          background-image: radial-gradient(circle at 20% 0%, rgba(124, 58, 237, 0.07), transparent 45%);
+        }
+
+        @media (max-width: 768px) {
+          .chat-aura {
+            opacity: 0.08;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .chat-aura {
+            display: none;
+          }
+        }
+      `}</style>
     </div>
   );
 }

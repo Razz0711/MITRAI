@@ -220,7 +220,9 @@ export default function RadarPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-4 space-y-5">
+    <div className="max-w-2xl mx-auto px-4 py-4 space-y-5 radar-polish relative">
+      <div className="radar-aura radar-aura-1" />
+      <div className="radar-aura radar-aura-2" />
       <SubTabBar group="radar" />
 
       {/* Ambient */}
@@ -228,12 +230,19 @@ export default function RadarPage() {
 
       {/* Header — Premium */}
       <div className="text-center slide-up">
+        <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] font-bold mb-1">Live intent network</p>
         <h1 className="text-xl font-extrabold mb-1">
           <span className="gradient-text">Campus Radar</span>
         </h1>
         <p className="text-xs text-[var(--muted)]">
           Find people nearby, right now · <span className="font-semibold text-[var(--success)]">{pings.length} active</span>
         </p>
+
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          <span className="radar-chip radar-chip-success">{pings.length} live pings</span>
+          <span className="radar-chip">{Object.keys(activityCounts).length} activities</span>
+          <span className="radar-chip radar-chip-accent">{myPing ? 'you are live' : 'you are offline'}</span>
+        </div>
       </div>
 
       {/* My Status — Glass */}
@@ -364,7 +373,7 @@ export default function RadarPage() {
               boxShadow: '0 4px 24px rgba(124, 58, 237, 0.4)',
             }}
           >
-            {broadcasting ? 'Broadcasting...' : 'Broadcast — I\'m Available!'}
+            {broadcasting ? 'Broadcasting your intent...' : 'Broadcast — I\'m Available!'}
           </button>
           <p className="text-[10px] text-[var(--muted)] text-center">Expires in 2 hours automatically</p>
         </div>
@@ -372,13 +381,15 @@ export default function RadarPage() {
 
       {/* Activity Filter Pills */}
       {pings.length > 0 && (
+        <>
+        <SectionLabel>Filter by activity</SectionLabel>
         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
           <button
             onClick={() => setFilterActivity('')}
             className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-medium transition-all ${
               !filterActivity
                 ? 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30'
-                : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'
+                : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--glass-border)]'
             }`}
           >
             All ({pings.length})
@@ -395,7 +406,7 @@ export default function RadarPage() {
                   className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-medium transition-all ${
                     filterActivity === actId
                       ? 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30'
-                      : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'
+                      : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--glass-border)]'
                   }`}
                 >
                   {act.label} ({count})
@@ -403,6 +414,7 @@ export default function RadarPage() {
               );
             })}
         </div>
+        </>
       )}
 
       {/* Live Pings Feed */}
@@ -411,8 +423,10 @@ export default function RadarPage() {
           <div className="w-16 h-16 mx-auto rounded-3xl bg-[var(--primary)]/10 flex items-center justify-center text-sm font-bold text-[var(--primary-light)] mb-4" style={{ animation: 'float 3s ease-in-out infinite' }}>
             Radar
           </div>
-          <p className="text-sm font-bold mb-1">Campus is quiet right now</p>
-          <p className="text-xs text-[var(--muted)] mb-5">Be the first to broadcast — others will discover you!</p>
+          <p className="text-sm font-bold mb-1">{filterActivity ? 'No one in this activity right now' : 'Campus is quiet right now'}</p>
+          <p className="text-xs text-[var(--muted)] mb-5">
+            {filterActivity ? 'Try switching filters or post your own intent.' : 'Be the first to broadcast — others will discover you!'}
+          </p>
           {!myPing && (
             <button onClick={() => setShowBroadcast(true)} className="btn-primary text-xs">
               Start Broadcasting
@@ -421,13 +435,13 @@ export default function RadarPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          <h2 className="text-sm font-bold flex items-center gap-2">
-            <div className="relative">
-              <span className="w-2.5 h-2.5 bg-[var(--success)] rounded-full inline-block" />
-              <span className="w-2.5 h-2.5 bg-[var(--success)] rounded-full inline-block absolute inset-0 animate-ping opacity-50" />
+          <div className="flex items-center gap-2">
+            <SectionLabel>Live on campus</SectionLabel>
+            <div className="relative mb-0.5">
+              <span className="w-2 h-2 bg-[var(--success)] rounded-full inline-block" />
+              <span className="w-2 h-2 bg-[var(--success)] rounded-full inline-block absolute inset-0 animate-ping opacity-50" />
             </div>
-            Live on Campus
-          </h2>
+          </div>
           {filteredPings.map(ping => {
             const act = getActivity(ping.activityId);
             const isMe = ping.userId === user?.id;
@@ -476,7 +490,7 @@ export default function RadarPage() {
                       className="shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold text-white transition-all duration-300 hover:shadow-lg active:scale-[0.97] disabled:opacity-50"
                       style={{ background: 'linear-gradient(135deg, var(--primary), #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.3)' }}
                     >
-                      {connectingTo === ping.id ? '...' : 'Connect'}
+                      {connectingTo === ping.id ? 'Connecting...' : 'Connect'}
                     </button>
                   )}
                   {!isMe && ping.isAnonymous && (
@@ -486,7 +500,7 @@ export default function RadarPage() {
                       className="shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold text-white transition-all duration-300 hover:shadow-lg active:scale-[0.97] disabled:opacity-50"
                       style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 2px 12px rgba(99,102,241,0.3)' }}
                     >
-                      {connectingTo === ping.id ? '...' : 'Connect'}
+                      {connectingTo === ping.id ? 'Connecting...' : 'Connect'}
                     </button>
                   )}
                 </div>
@@ -502,6 +516,83 @@ export default function RadarPage() {
           Broadcasts expire automatically after 2 hours • Only your campus can see this
         </p>
       </div>
+
+      <style jsx>{`
+        .radar-polish {
+          z-index: 1;
+        }
+
+        .radar-aura {
+          position: absolute;
+          pointer-events: none;
+          border-radius: 999px;
+          filter: blur(52px);
+          opacity: 0.12;
+          z-index: 0;
+        }
+
+        .radar-aura-1 {
+          width: 260px;
+          height: 190px;
+          right: -90px;
+          top: 110px;
+          background: rgba(99, 102, 241, 0.34);
+        }
+
+        .radar-aura-2 {
+          width: 220px;
+          height: 170px;
+          left: -70px;
+          top: 300px;
+          background: rgba(34, 197, 94, 0.2);
+        }
+
+        .radar-chip {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          border: 1px solid var(--glass-border);
+          background: color-mix(in srgb, var(--surface) 93%, transparent);
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+          padding: 5px 10px;
+        }
+
+        .radar-chip-success {
+          border-color: rgba(34, 197, 94, 0.26);
+          background: rgba(34, 197, 94, 0.12);
+          color: #86efac;
+        }
+
+        .radar-chip-accent {
+          border-color: rgba(124, 58, 237, 0.26);
+          background: rgba(124, 58, 237, 0.12);
+          color: #c4b5fd;
+        }
+
+        @media (max-width: 640px) {
+          .radar-aura {
+            opacity: 0.08;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .radar-aura {
+            display: none;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-[var(--muted)] px-1">
+      {children}
     </div>
   );
 }

@@ -39,6 +39,10 @@
   --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.08) inset;
   --glass-bg: rgba(24, 24, 27, 0.65);
   --glass-border: rgba(255, 255, 255, 0.06);
+  --motion-fast: 160ms;
+  --motion-normal: 240ms;
+  --motion-slow: 360ms;
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Light mode overrides */
@@ -132,11 +136,13 @@ h1, h2, h3, h4, h5, h6 {
 
   .btn-primary {
     @apply px-5 py-2.5 text-sm font-semibold text-white
-    transition-all duration-300 ease-out active:scale-[0.97]
+    transition-all active:scale-[0.97]
     disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100;
     background: linear-gradient(135deg, var(--primary), #6d28d9);
     border-radius: var(--radius-lg);
     box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3), 0 0 0 1px rgba(124, 58, 237, 0.15) inset;
+    transition-duration: var(--motion-normal);
+    transition-timing-function: var(--motion-ease);
   }
   .btn-primary:hover:not(:disabled) {
     box-shadow: 0 4px 20px rgba(124, 58, 237, 0.5), 0 0 0 1px rgba(124, 58, 237, 0.3) inset;
@@ -145,11 +151,13 @@ h1, h2, h3, h4, h5, h6 {
 
   .btn-secondary {
     @apply px-5 py-2.5 text-sm font-medium text-[var(--foreground)]
-    transition-all duration-200 active:scale-[0.97];
+    transition-all active:scale-[0.97];
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     backdrop-filter: blur(8px);
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease);
   }
   .btn-secondary:hover {
     background: var(--surface-light);
@@ -159,16 +167,20 @@ h1, h2, h3, h4, h5, h6 {
 
   .btn-ghost {
     @apply px-4 py-2 rounded-lg text-[var(--muted)] text-sm font-medium
-    transition-all duration-200 hover:text-[var(--foreground)] hover:bg-[var(--surface-light)];
+    transition-all hover:text-[var(--foreground)] hover:bg-[var(--surface-light)];
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease);
   }
 
   .input-field {
     @apply w-full px-4 py-2.5 text-sm text-[var(--foreground)]
     placeholder:text-[var(--muted)] focus:outline-none
-    transition-all duration-200;
+    transition-all;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease);
   }
   .input-field:focus {
     border-color: var(--primary);
@@ -217,24 +229,26 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .fade-in {
-    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: fadeIn var(--motion-slow) var(--motion-ease);
   }
 
   .slide-up {
-    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: slideUp var(--motion-slow) var(--motion-ease);
   }
 
-  .slide-up-stagger-1 { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
-  .slide-up-stagger-2 { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
-  .slide-up-stagger-3 { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both; }
-  .slide-up-stagger-4 { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
+  .slide-up-stagger-1 { animation: slideUp var(--motion-slow) var(--motion-ease) 0.05s both; }
+  .slide-up-stagger-2 { animation: slideUp var(--motion-slow) var(--motion-ease) 0.1s both; }
+  .slide-up-stagger-3 { animation: slideUp var(--motion-slow) var(--motion-ease) 0.15s both; }
+  .slide-up-stagger-4 { animation: slideUp var(--motion-slow) var(--motion-ease) 0.2s both; }
 
   .scale-in {
-    animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: scaleIn var(--motion-slow) var(--motion-ease);
   }
 
   .glow-hover {
-    transition: all 0.3s ease;
+    transition-property: all;
+    transition-duration: var(--motion-normal);
+    transition-timing-function: var(--motion-ease);
   }
   .glow-hover:hover {
     box-shadow: var(--shadow-glow);
@@ -250,7 +264,9 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shadow-card);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-property: all;
+  transition-duration: var(--motion-normal);
+  transition-timing-function: var(--motion-ease);
 }
 .card-hover:hover {
   background: var(--surface-light);
@@ -321,7 +337,9 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: var(--shadow-card);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-property: all;
+  transition-duration: var(--motion-normal);
+  transition-timing-function: var(--motion-ease);
 }
 .glass-card-hover:hover {
   background: var(--surface-light);
@@ -347,7 +365,7 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--motion-normal) var(--motion-ease);
 }
 .gradient-border:hover::before {
   opacity: 1;
@@ -388,7 +406,9 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-property: all;
+  transition-duration: var(--motion-normal);
+  transition-timing-function: var(--motion-ease);
   cursor: pointer;
 }
 .fab:hover {
@@ -427,7 +447,9 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-property: all;
+  transition-duration: var(--motion-normal);
+  transition-timing-function: var(--motion-ease);
   white-space: nowrap;
   cursor: pointer;
   background: transparent;
@@ -490,5 +512,19 @@ h1, h2, h3, h4, h5, h6 {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .ambient-glow,
+  .ambient-glow-2 {
+    display: none;
+  }
 }
 

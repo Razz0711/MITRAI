@@ -285,9 +285,12 @@ export default function AnonLobbyPage() {
   }
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const queueEstimate = stats ? Math.max(1, Math.ceil((stats.queueCount + 1) / 2)) : null;
 
   return (
-    <div className="min-h-screen px-4">
+    <div className="min-h-screen px-4 anon-polish relative">
+      <div className="anon-aura anon-aura-1" />
+      <div className="anon-aura anon-aura-2" />
       <SubTabBar group="chat" />
       <div className="max-w-2xl mx-auto">
         {/* Ambient glow */}
@@ -295,6 +298,7 @@ export default function AnonLobbyPage() {
 
         {/* Header — Premium */}
         <div className="text-center mb-6 slide-up">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] font-bold mb-1">Safe anonymous space</p>
           <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-gradient-to-br from-violet-500/20 via-pink-500/20 to-purple-500/20 flex items-center justify-center" style={{ animation: 'float 3s ease-in-out infinite' }}>
             <span className="text-lg font-bold gradient-text">Anon</span>
           </div>
@@ -308,7 +312,7 @@ export default function AnonLobbyPage() {
 
         {/* Live Stats Bar — Glass */}
         {stats && (
-          <div className="flex items-center justify-center gap-3 mb-6 slide-up-stagger-1">
+          <div className="flex items-center justify-center gap-3 mb-6 slide-up-stagger-1 flex-wrap">
             <div className="flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
@@ -323,6 +327,11 @@ export default function AnonLobbyPage() {
                 {stats.queueCount} waiting
               </span>
             </div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
+              <span className="text-xs font-semibold text-violet-300">
+                {Object.keys(stats.queueByType || {}).length} room types active
+              </span>
+            </div>
           </div>
         )}
 
@@ -330,7 +339,7 @@ export default function AnonLobbyPage() {
         {status === 'loading' && (
           <div className="text-center py-20">
             <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-[var(--muted)] text-sm">Checking your access...</p>
+            <p className="text-[var(--muted)] text-sm">Checking access and pass status...</p>
           </div>
         )}
 
@@ -640,6 +649,7 @@ export default function AnonLobbyPage() {
 
             {/* Room Types — Cards */}
             <div>
+              <SectionLabel>Choose room type</SectionLabel>
               <h2 className="text-base font-bold text-[var(--foreground)] mb-3 flex items-center gap-2">
                 <span className="w-1 h-5 rounded-full bg-gradient-to-b from-[var(--primary)] to-[var(--accent)]"></span>
                 Choose your vibe
@@ -710,6 +720,12 @@ export default function AnonLobbyPage() {
             >
               Find a Random Match
             </button>
+
+            {queueEstimate !== null && (
+              <p className="text-center text-[10px] text-[var(--muted)] -mt-3">
+                Estimated wait: around {queueEstimate} minute{queueEstimate > 1 ? 's' : ''}
+              </p>
+            )}
 
             {/* Safety notice */}
             <p className="text-center text-[10px] text-[var(--muted)]">
@@ -812,6 +828,9 @@ export default function AnonLobbyPage() {
             <p className="text-[var(--muted)] text-xs mb-6">
               {ROOM_TYPES.find(r => r.id === selectedType)?.emoji} {ROOM_TYPES.find(r => r.id === selectedType)?.label}
             </p>
+            {queueEstimate !== null && (
+              <p className="text-[11px] text-[var(--muted)] mb-2">Typical wait now: ~{queueEstimate} min</p>
+            )}
             <div className="text-4xl font-mono font-bold text-[var(--foreground)] mb-8 tracking-wider">{formatTime(queueSeconds)}</div>
             <button
               onClick={handleLeaveQueue}
@@ -840,6 +859,57 @@ export default function AnonLobbyPage() {
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        .anon-polish {
+          z-index: 1;
+        }
+
+        .anon-aura {
+          position: absolute;
+          pointer-events: none;
+          border-radius: 999px;
+          filter: blur(58px);
+          opacity: 0.13;
+          z-index: 0;
+        }
+
+        .anon-aura-1 {
+          width: 280px;
+          height: 210px;
+          top: 120px;
+          right: -100px;
+          background: rgba(168, 85, 247, 0.35);
+        }
+
+        .anon-aura-2 {
+          width: 230px;
+          height: 180px;
+          top: 360px;
+          left: -90px;
+          background: rgba(236, 72, 153, 0.24);
+        }
+
+        @media (max-width: 640px) {
+          .anon-aura {
+            opacity: 0.08;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .anon-aura {
+            display: none;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-[var(--muted)] px-1 mb-2">
+      {children}
     </div>
   );
 }
