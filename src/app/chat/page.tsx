@@ -305,7 +305,7 @@ export default function ChatPage() {
   const popupThread = profilePopup ? threads.find(t => getOtherUserId(t) === profilePopup) : null;
 
   return (
-    <div className="min-h-screen chat-polish relative">
+    <div className="min-h-screen chat-polish relative overflow-x-hidden max-w-[100vw]">
       <div className="chat-aura chat-aura-1" />
       <div className="chat-aura chat-aura-2" />
 
@@ -314,7 +314,7 @@ export default function ChatPage() {
       <div className="h-[calc(100vh-4.5rem)] md:h-[calc(100vh-3.5rem)] flex">
 
         {/* ═══════ SIDEBAR ═══════ */}
-        <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-72 lg:w-80 md:border-r md:border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)]`}>
+        <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-72 lg:w-80 md:border-r md:border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)] overflow-hidden`}>
 
           {/* Sidebar tabs — hidden on mobile (bottom nav handles it) */}
           <div className="flex items-center gap-1 px-3 pt-3 pb-2 overflow-x-auto no-scrollbar">
