@@ -22,10 +22,6 @@ const SUB_TABS: Record<string, SubTab[]> = {
     { label: 'Circles', href: '/circles', icon: CircleDot },
     { label: 'Rooms', href: '/rooms', icon: Users2 },
   ],
-  radar: [
-    { label: 'Nearby', href: '/radar', icon: Radio },
-    { label: 'Skill Swap', href: '/skills', icon: Repeat2 },
-  ],
 };
 
 export default function SubTabBar({ group }: { group: 'chat' | 'radar' }) {

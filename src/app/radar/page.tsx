@@ -1,7 +1,6 @@
 // ============================================
-// MitrAI - Campus Radar
-// Real-time interest-based discovery on campus
-// "Who's around me RIGHT NOW looking for the same thing?"
+// MitrAI - Campus Radar (Redesigned)
+// Real-time campus discovery with heatmap, SOS, live feed + Ping
 // ============================================
 
 'use client';
@@ -11,26 +10,31 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import SubTabBar from '@/components/SubTabBar';
 
+/* ─── Activities (4-col grid with emojis) ─── */
 const ACTIVITIES = [
-  { id: 'study-dsa', label: 'DSA Practice', color: '#7c3aed' },
-  { id: 'study-math', label: 'Math Study', color: '#06b6d4' },
-  { id: 'study-general', label: 'General Study', color: '#3b82f6' },
-  { id: 'music', label: 'Music Jam', color: '#ec4899' },
-  { id: 'cricket', label: 'Cricket', color: '#22c55e' },
-  { id: 'gym', label: 'Gym Buddy', color: '#f59e0b' },
-  { id: 'gaming', label: 'Gaming', color: '#8b5cf6' },
-  { id: 'chai', label: 'Chai & Chat', color: '#f97316' },
-  { id: 'walk', label: 'Evening Walk', color: '#14b8a6' },
-  { id: 'movie', label: 'Watch Movie', color: '#e11d48' },
-  { id: 'food', label: 'Food Run', color: '#ea580c' },
-  { id: 'hangout', label: 'Just Hangout', color: '#6366f1' },
+  { id: 'study-dsa', label: 'DSA', emoji: '💻', color: '#7c3aed' },
+  { id: 'study-math', label: 'Math', emoji: '📐', color: '#06b6d4' },
+  { id: 'study-general', label: 'Study', emoji: '📚', color: '#3b82f6' },
+  { id: 'chai', label: 'Chai', emoji: '☕', color: '#f97316' },
+  { id: 'gaming', label: 'Gaming', emoji: '🎮', color: '#8b5cf6' },
+  { id: 'food', label: 'Food Run', emoji: '🍔', color: '#ea580c' },
+  { id: 'cricket', label: 'Cricket', emoji: '🏏', color: '#22c55e' },
+  { id: 'other', label: 'Other...', emoji: '✏️', color: '#6366f1' },
 ];
 
-const ZONES = [
-  'Hostel', 'Library', 'Canteen', 'Ground', 'Department', 'Gate', 'Other',
-];
+const ZONES = ['Library', 'Canteen', 'Hostel', 'Dept', 'Ground', 'Gate'];
+
+const ZONE_EMOJIS: Record<string, string> = {
+  Library: '📚',
+  Canteen: '🍽️',
+  Hostel: '🏠',
+  Dept: '🏛️',
+  Ground: '⛳',
+  Gate: '🚪',
+  Department: '🏛️',
+  Other: '📍',
+};
 
 interface RadarPing {
   id: string;
@@ -40,29 +44,43 @@ interface RadarPing {
   zone: string;
   note: string;
   isAnonymous: boolean;
+  isSOS?: boolean;
   createdAt: string;
   expiresAt: string;
 }
 
+/* ─── Avatar color helper ─── */
+const AVATAR_COLORS = [
+  'bg-violet-600', 'bg-emerald-600', 'bg-blue-600', 'bg-pink-600',
+  'bg-amber-600', 'bg-cyan-600', 'bg-indigo-600', 'bg-rose-600',
+  'bg-orange-600', 'bg-teal-600',
+];
+const getAvatarColor = (name: string) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+};
+
 export default function RadarPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [pings, setPings] = useState<RadarPing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showBroadcast, setShowBroadcast] = useState(false);
   const [myPing, setMyPing] = useState<RadarPing | null>(null);
-  const [filterActivity, setFilterActivity] = useState<string>('');
 
   // Broadcast form
   const [selectedActivity, setSelectedActivity] = useState('');
-  const [selectedZone, setSelectedZone] = useState('Hostel');
+  const [customActivity, setCustomActivity] = useState('');
+  const [selectedZone, setSelectedZone] = useState('Library');
   const [note, setNote] = useState('');
   const [isAnon, setIsAnon] = useState(false);
+  const [isSOS, setIsSOS] = useState(false);
   const [broadcasting, setBroadcasting] = useState(false);
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
-  const router = useRouter();
   const [connectingTo, setConnectingTo] = useState<string | null>(null);
 
+  /* ─── Data loading ─── */
   const loadPings = useCallback(async () => {
     if (!user) return;
     try {
@@ -81,55 +99,48 @@ export default function RadarPage() {
 
   useEffect(() => {
     loadPings();
-    // Poll every 15s for fresh pings
     pollRef.current = setInterval(loadPings, 15000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [loadPings]);
 
-  // Realtime subscription for new pings
   useEffect(() => {
     if (!user) return;
     const channel = supabaseBrowser
       .channel('radar-live')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'radar_pings' },
-        () => { loadPings(); }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'radar_pings' }, () => { loadPings(); })
       .subscribe();
     return () => { supabaseBrowser.removeChannel(channel); };
   }, [user, loadPings]);
 
+  /* ─── Actions ─── */
   const handleBroadcast = async () => {
     if (!user || !selectedActivity) return;
     setBroadcasting(true);
     try {
+      const activityId = selectedActivity === 'other' ? `custom:${customActivity.trim() || 'Other'}` : selectedActivity;
       const res = await fetch('/api/radar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
           userName: user.name || user.email?.split('@')[0] || 'Student',
-          activityId: selectedActivity,
+          activityId,
           zone: selectedZone,
-          note: note.trim(),
+          note: note.trim() + (isSOS ? ' [SOS]' : ''),
           isAnonymous: isAnon,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        setShowBroadcast(false);
         setNote('');
         setSelectedActivity('');
+        setCustomActivity('');
+        setIsSOS(false);
         await loadPings();
       } else {
-        console.error('broadcast failed:', data.error);
-        alert(data.error || 'Failed to broadcast. Please try again.');
+        alert(data.error || 'Failed to broadcast.');
       }
-    } catch (err) {
-      console.error('broadcast:', err);
+    } catch {
       alert('Network error — please check your connection.');
     } finally {
       setBroadcasting(false);
@@ -151,7 +162,7 @@ export default function RadarPage() {
     }
   };
 
-  const handleConnect = async (ping: RadarPing) => {
+  const handlePing = async (ping: RadarPing) => {
     if (!user) return;
     setConnectingTo(ping.id);
     try {
@@ -166,28 +177,26 @@ export default function RadarPage() {
       const data = await res.json();
       if (data.success) {
         if (data.data.type === 'anonymous') {
-          // Redirect to anonymous chat room
           router.push(`/anon/${data.data.roomId}`);
         } else {
-          // Redirect to direct chat with the broadcaster
           router.push(`/chat?friendId=${encodeURIComponent(data.data.broadcasterId)}&friendName=${encodeURIComponent(data.data.broadcasterName)}`);
         }
       } else {
-        alert(data.error || 'Could not connect. Please try again.');
+        alert(data.error || 'Could not connect.');
       }
-    } catch (err) {
-      console.error('handleConnect:', err);
-      alert('Network error — please check your connection.');
+    } catch {
+      alert('Network error.');
     } finally {
       setConnectingTo(null);
     }
   };
 
+  /* ─── Helpers ─── */
   const timeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins} min ago`;
     return `${Math.floor(mins / 60)}h ago`;
   };
 
@@ -195,21 +204,32 @@ export default function RadarPage() {
     const diff = new Date(expiresAt).getTime() - Date.now();
     if (diff <= 0) return 'expired';
     const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m left`;
-    return `${Math.floor(mins / 60)}h left`;
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    const rm = mins % 60;
+    return `${hrs}h ${rm}m`;
   };
 
-  const getActivity = (id: string) => ACTIVITIES.find(a => a.id === id);
+  const getActivity = (id: string) => {
+    if (id.startsWith('custom:')) return { id, label: id.slice(7), emoji: '✏️', color: '#6366f1' };
+    return ACTIVITIES.find(a => a.id === id);
+  };
 
-  const filteredPings = filterActivity
-    ? pings.filter(p => p.activityId === filterActivity)
-    : pings;
-
-  // Group by activity for the summary
-  const activityCounts: Record<string, number> = {};
+  /* ─── Computed ─── */
+  // Zone counts for heatmap
+  const zoneCounts: Record<string, number> = {};
   pings.forEach(p => {
-    activityCounts[p.activityId] = (activityCounts[p.activityId] || 0) + 1;
+    const z = p.zone;
+    zoneCounts[z] = (zoneCounts[z] || 0) + 1;
   });
+  const totalActive = pings.length;
+  const maxZoneCount = Math.max(...Object.values(zoneCounts), 1);
+
+  // SOS pings
+  const sosPings = pings.filter(p => p.note?.includes('[SOS]') && p.userId !== user?.id);
+
+  // Non-SOS pings for the feed
+  const feedPings = pings.filter(p => p.userId !== user?.id);
 
   if (loading) {
     return (
@@ -223,145 +243,309 @@ export default function RadarPage() {
     <div className="max-w-2xl mx-auto px-4 py-4 space-y-5 radar-polish relative">
       <div className="radar-aura radar-aura-1" />
       <div className="radar-aura radar-aura-2" />
-      <SubTabBar group="radar" />
 
-      {/* Ambient */}
-      <div className="ambient-glow" />
-
-      {/* Header — Premium */}
+      {/* ─── Header ─── */}
       <div className="text-center slide-up">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] font-bold mb-1">Live intent network</p>
         <h1 className="text-xl font-extrabold mb-1">
           <span className="gradient-text">Campus Radar</span>
         </h1>
         <p className="text-xs text-[var(--muted)]">
-          Find people nearby, right now · <span className="font-semibold text-[var(--success)]">{pings.length} active</span>
+          Who&apos;s active right now · Only SVNIT can see this
         </p>
+      </div>
 
-        <div className="mt-3 flex flex-wrap justify-center gap-2">
-          <span className="radar-chip radar-chip-success">{pings.length} live pings</span>
-          <span className="radar-chip">{Object.keys(activityCounts).length} activities</span>
-          <span className="radar-chip radar-chip-accent">{myPing ? 'you are live' : 'you are offline'}</span>
+      {/* ─── Status Bar ─── */}
+      {myPing ? (
+        <div className="rounded-2xl p-4 flex items-center justify-between slide-up-stagger-1" style={{
+          background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(6,182,212,0.05))',
+          border: '1px solid rgba(34,197,94,0.25)',
+        }}>
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-[var(--foreground)]">You&apos;re live on Radar</p>
+              <p className="text-[11px] text-[var(--muted)]">
+                {getActivity(myPing.activityId)?.label} · {myPing.zone} · expires in {timeLeft(myPing.expiresAt)}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleStopBroadcast}
+            className="px-5 py-2 rounded-xl text-xs font-bold text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-all"
+          >
+            Stop
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-2xl p-4 flex items-center justify-between slide-up-stagger-1" style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--glass-border)',
+        }}>
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-gray-500" />
+            <div>
+              <p className="text-sm font-semibold text-[var(--muted)]">You&apos;re not broadcasting</p>
+              <p className="text-[11px] text-[var(--muted)]">Set your activity below and go live</p>
+            </div>
+          </div>
+          <a href="#broadcast-form" className="px-5 py-2 rounded-xl text-xs font-bold text-white transition-all" style={{
+            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+            boxShadow: '0 2px 12px rgba(34,197,94,0.3)',
+          }}>
+            Go Live →
+          </a>
+        </div>
+      )}
+
+      {/* ─── Campus Heatmap ─── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-gradient-to-b from-violet-500 to-purple-600" />
+            WHERE&apos;S THE ACTION
+          </h2>
+          <span className="text-[10px] text-[var(--muted)]">{totalActive} active on campus</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2.5">
+          {['Library', 'Canteen', 'Hostel', 'Department', 'Ground', 'Gate'].map(zone => {
+            const count = zoneCounts[zone] || 0;
+            const barWidth = maxZoneCount > 0 ? (count / maxZoneCount) * 100 : 0;
+            const zoneColor = zone === 'Library' ? '#22c55e' : zone === 'Canteen' ? '#7c3aed' : zone === 'Hostel' ? '#f59e0b' : zone === 'Department' ? '#3b82f6' : zone === 'Ground' ? '#ec4899' : '#f97316';
+            return (
+              <div key={zone} className="rounded-xl p-3 transition-all" style={{
+                background: count > 0 ? `linear-gradient(135deg, ${zoneColor}10, ${zoneColor}05)` : 'var(--surface)',
+                border: count > 0 ? `1px solid ${zoneColor}30` : '1px solid var(--glass-border)',
+              }}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-sm">{ZONE_EMOJIS[zone] || '📍'}</span>
+                  <span className="text-xs font-semibold text-[var(--foreground)]">{zone === 'Department' ? 'Dept' : zone}</span>
+                </div>
+                <p className="text-[10px] text-[var(--muted)] mb-1.5">{count} active</p>
+                <div className="h-1 rounded-full bg-[var(--surface-light)] overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-500" style={{
+                    width: `${barWidth}%`,
+                    background: `linear-gradient(90deg, ${zoneColor}, ${zoneColor}aa)`,
+                  }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* My Status — Glass */}
-      {myPing ? (
-        <div className="card p-4 slide-up-stagger-1" style={{ 
-          border: '2px solid rgba(34,197,94,0.3)',
-          background: 'linear-gradient(135deg, rgba(34,197,94,0.05), rgba(6,182,212,0.05))',
-        }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{ backgroundColor: (getActivity(myPing.activityId)?.color || '#7c3aed') + '18' }}>
-                  {getActivity(myPing.activityId)?.label?.charAt(0) || 'A'}
-                </div>
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[var(--success)] rounded-full border-2 border-[var(--background)] pulse-ring" />
-              </div>
-              <div>
-                <p className="text-sm font-bold">You&apos;re broadcasting</p>
-                <p className="text-[11px] text-[var(--muted)]">
-                  {getActivity(myPing.activityId)?.label} · {myPing.zone} · {timeLeft(myPing.expiresAt)}
-                </p>
-              </div>
+      {/* ─── Study SOS ─── */}
+      {sosPings.length > 0 && sosPings.map(sos => {
+        const act = getActivity(sos.activityId);
+        const displayName = sos.isAnonymous ? 'Anonymous' : sos.userName;
+        const noteText = sos.note?.replace(' [SOS]', '') || '';
+        return (
+          <div key={sos.id} className="rounded-2xl p-4 flex items-center gap-3 transition-all" style={{
+            background: 'linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.03))',
+            border: '1px solid rgba(239,68,68,0.25)',
+          }}>
+            <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-sm font-bold text-red-400 shrink-0">
+              SOS
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-red-400">Study SOS — Someone needs help!</p>
+              <p className="text-[11px] text-[var(--muted)] truncate">
+                {displayName} · {sos.zone}{noteText ? ` · "${noteText}"` : ''}
+              </p>
             </div>
             <button
-              onClick={handleStopBroadcast}
-              className="text-[11px] font-semibold text-[var(--error)] hover:bg-[var(--error)]/10 px-4 py-2 rounded-xl transition-all duration-200"
+              onClick={() => handlePing(sos)}
+              disabled={connectingTo === sos.id}
+              className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-all disabled:opacity-50"
             >
-              Stop
+              {connectingTo === sos.id ? '...' : 'Help →'}
             </button>
           </div>
-        </div>
-      ) : !showBroadcast ? (
-        <button
-          onClick={() => setShowBroadcast(true)}
-          className="w-full card p-6 text-center transition-all duration-300 group glow-hover slide-up-stagger-1"
-        >
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-br from-[var(--primary)]/15 to-[var(--accent)]/15 flex items-center justify-center text-sm font-bold text-[var(--primary-light)] mb-4 group-hover:scale-110 transition-transform duration-300" style={{ animation: 'float 3s ease-in-out infinite' }}>
-            Radar
-          </div>
-          <p className="text-sm font-bold">I&apos;m available for...</p>
-          <p className="text-xs text-[var(--muted)] mt-1">Broadcast what you&apos;re looking for. Others nearby will see it.</p>
-        </button>
-      ) : (
-        /* Broadcast Form — Premium Card */
-        <div className="card p-6 space-y-5 scale-in" style={{ border: '2px solid rgba(124,58,237,0.3)' }}>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-bold flex items-center gap-2">
-              <span className="w-1 h-5 rounded-full bg-gradient-to-b from-[var(--primary)] to-[var(--accent)]"></span>
-              What are you looking for?
-            </span>
-            <button onClick={() => setShowBroadcast(false)} className="text-xs text-[var(--muted)] p-1.5 rounded-lg hover:bg-[var(--surface-light)] transition-colors">✕</button>
-          </div>
+        );
+      })}
 
-          {/* Activity Grid — Animated */}
-          <div className="grid grid-cols-3 gap-2.5">
+      {/* ─── Live Feed ─── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-gradient-to-b from-green-500 to-emerald-600" />
+            LIVE RIGHT NOW
+          </h2>
+          <span className="text-[10px] text-[var(--muted)]">{feedPings.length} broadcasting</span>
+        </div>
+
+        {feedPings.length === 0 ? (
+          <div className="card p-8 text-center">
+            <div className="w-14 h-14 mx-auto rounded-3xl bg-[var(--primary)]/10 flex items-center justify-center text-2xl mb-4" style={{ animation: 'float 3s ease-in-out infinite' }}>
+              📡
+            </div>
+            <p className="text-sm font-bold mb-1">Campus is quiet right now</p>
+            <p className="text-xs text-[var(--muted)]">Be the first — others will join!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {feedPings.map(ping => {
+              const act = getActivity(ping.activityId);
+              const displayName = ping.isAnonymous ? 'Anonymous' : ping.userName;
+              const noteText = ping.note?.replace(' [SOS]', '') || '';
+              return (
+                <div key={ping.id} className="card p-4 glow-hover transition-all duration-300">
+                  <div className="flex items-start gap-3">
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                      <div className={`w-11 h-11 rounded-full ${getAvatarColor(displayName)} flex items-center justify-center text-white font-bold text-sm`}>
+                        {displayName.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="absolute -bottom-0.5 -left-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-[var(--background)]" />
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-sm font-bold text-[var(--foreground)]">{displayName}</span>
+                        {ping.isAnonymous && (
+                          <span className="text-[10px] text-[var(--muted)] italic">· will reveal on match</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                        {/* Activity badge */}
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold" style={{
+                          background: (act?.color || '#7c3aed') + '18',
+                          color: act?.color || '#7c3aed',
+                          border: `1px solid ${(act?.color || '#7c3aed')}30`,
+                        }}>
+                          {act?.emoji} {act?.label || 'Activity'}
+                        </span>
+                        {/* Location badge */}
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-[var(--surface-light)] text-[var(--muted)] border border-[var(--glass-border)]">
+                          {ZONE_EMOJIS[ping.zone] || '📍'} {ping.zone}
+                        </span>
+                        {/* Time */}
+                        <span className="text-[10px] font-semibold text-green-400">{timeAgo(ping.createdAt)}</span>
+                      </div>
+                      {noteText && (
+                        <p className="text-xs text-[var(--muted)] italic">&ldquo;{noteText}&rdquo;</p>
+                      )}
+                    </div>
+
+                    {/* Ping button */}
+                    <button
+                      onClick={() => handlePing(ping)}
+                      disabled={connectingTo === ping.id}
+                      className="shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold text-white transition-all duration-300 hover:shadow-lg active:scale-[0.97] disabled:opacity-50"
+                      style={{
+                        background: 'linear-gradient(135deg, var(--primary), #6d28d9)',
+                        boxShadow: '0 2px 12px rgba(124,58,237,0.3)',
+                      }}
+                    >
+                      {connectingTo === ping.id ? '...' : '👋 Ping'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ─── UPDATE YOUR BROADCAST / Go Live Form ─── */}
+      <div id="broadcast-form">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-gradient-to-b from-[var(--primary)] to-[var(--accent)]" />
+            {myPing ? 'UPDATE YOUR BROADCAST' : 'GO LIVE ON RADAR'}
+          </h2>
+        </div>
+
+        <div className="card p-5 space-y-4" style={{ border: '1px solid var(--glass-border)' }}>
+          {/* Activity Grid — 4 columns */}
+          <div className="grid grid-cols-4 gap-2">
             {ACTIVITIES.map(a => (
               <button
                 key={a.id}
                 onClick={() => setSelectedActivity(a.id)}
-                className={`p-3.5 rounded-2xl text-center transition-all duration-300 ${
-                  selectedActivity === a.id
-                    ? 'scale-105'
-                    : 'hover:bg-[var(--surface-light)]'
+                className={`p-3 rounded-xl text-center transition-all duration-300 ${
+                  selectedActivity === a.id ? 'scale-105' : 'hover:bg-[var(--surface-light)]'
                 }`}
                 style={selectedActivity === a.id
                   ? { background: `linear-gradient(135deg, ${a.color}20, ${a.color}10)`, border: `2px solid ${a.color}60`, boxShadow: `0 0 16px ${a.color}20` }
                   : { background: 'var(--surface)', border: '1px solid var(--glass-border)' }
                 }
               >
-                <span className="text-xl block mb-1">{a.label.charAt(0)}</span>
-                <span className="text-[10px] font-semibold block">{a.label}</span>
+                <span className="text-xl block mb-1">{a.emoji}</span>
+                <span className="text-[10px] font-semibold block text-[var(--foreground)]">{a.label}</span>
               </button>
             ))}
           </div>
 
-          {/* Zone selector — Glass pills */}
-          <div>
-            <label className="label">Where are you?</label>
-            <div className="flex flex-wrap gap-2">
-              {ZONES.map(z => (
-                <button
-                  key={z}
-                  onClick={() => setSelectedZone(z)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-semibold transition-all duration-300 ${
-                    selectedZone === z
-                      ? 'text-white'
-                      : 'text-[var(--muted)]'
-                  }`}
-                  style={selectedZone === z
-                    ? { background: 'linear-gradient(135deg, var(--primary), #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.3)' }
-                    : { background: 'var(--surface)', border: '1px solid var(--glass-border)' }
-                  }
-                >
-                  {z}
-                </button>
-              ))}
-            </div>
+          {/* Custom activity input (when "Other..." is selected) */}
+          {selectedActivity === 'other' && (
+            <input
+              value={customActivity}
+              onChange={e => setCustomActivity(e.target.value)}
+              placeholder="Type your activity..."
+              className="input-field text-xs"
+              maxLength={40}
+              autoFocus
+            />
+          )}
+
+          {/* Zone chips */}
+          <div className="flex flex-wrap gap-2">
+            {ZONES.map(z => (
+              <button
+                key={z}
+                onClick={() => setSelectedZone(z)}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-300 ${
+                  selectedZone === z ? 'text-white' : 'text-[var(--muted)]'
+                }`}
+                style={selectedZone === z
+                  ? { background: 'linear-gradient(135deg, var(--primary), #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.3)' }
+                  : { background: 'var(--surface)', border: '1px solid var(--glass-border)' }
+                }
+              >
+                {ZONE_EMOJIS[z] || '📍'} {z}
+              </button>
+            ))}
           </div>
 
-          {/* Optional note */}
+          {/* Quick note */}
           <input
             value={note}
             onChange={e => setNote(e.target.value)}
-            placeholder="Quick note (e.g., 'near hostel 7', 'beginner welcome')"
+            placeholder="Quick note (e.g., 'beginner friendly, working on graphs')"
             className="input-field text-xs"
             maxLength={100}
           />
 
-          {/* Anonymous toggle */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isAnon}
-              onChange={e => setIsAnon(e.target.checked)}
-              className="w-4 h-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
-            />
-            <span className="text-xs text-[var(--muted)]">Stay anonymous until I choose to reveal</span>
-          </label>
+          {/* Anonymous + SOS row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAnon}
+                  onChange={e => setIsAnon(e.target.checked)}
+                  className="w-4 h-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)] accent-[var(--primary)]"
+                />
+                <span className="text-xs text-[var(--muted)]">Stay anonymous</span>
+              </label>
+              <button
+                onClick={() => setIsSOS(!isSOS)}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                  isSOS
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    : 'bg-[var(--surface-light)] text-[var(--muted)] border border-[var(--glass-border)]'
+                }`}
+              >
+                🆘 SOS
+              </button>
+            </div>
+          </div>
 
+          {/* Go Live button */}
           <button
             onClick={handleBroadcast}
             disabled={!selectedActivity || broadcasting}
@@ -373,226 +557,30 @@ export default function RadarPage() {
               boxShadow: '0 4px 24px rgba(124, 58, 237, 0.4)',
             }}
           >
-            {broadcasting ? 'Broadcasting your intent...' : 'Broadcast — I\'m Available!'}
+            {broadcasting ? 'Going live...' : myPing ? 'Update Broadcast →' : 'Go Live →'}
           </button>
           <p className="text-[10px] text-[var(--muted)] text-center">Expires in 2 hours automatically</p>
         </div>
-      )}
+      </div>
 
-      {/* Activity Filter Pills */}
-      {pings.length > 0 && (
-        <>
-        <SectionLabel>Filter by activity</SectionLabel>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-          <button
-            onClick={() => setFilterActivity('')}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-medium transition-all ${
-              !filterActivity
-                ? 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30'
-                : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--glass-border)]'
-            }`}
-          >
-            All ({pings.length})
-          </button>
-          {Object.entries(activityCounts)
-            .sort((a, b) => b[1] - a[1])
-            .map(([actId, count]) => {
-              const act = getActivity(actId);
-              if (!act) return null;
-              return (
-                <button
-                  key={actId}
-                  onClick={() => setFilterActivity(filterActivity === actId ? '' : actId)}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-medium transition-all ${
-                    filterActivity === actId
-                      ? 'bg-[var(--primary)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30'
-                      : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--glass-border)]'
-                  }`}
-                >
-                  {act.label} ({count})
-                </button>
-              );
-            })}
-        </div>
-        </>
-      )}
-
-      {/* Live Pings Feed */}
-      {filteredPings.length === 0 ? (
-        <div className="card p-10 text-center">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-[var(--primary)]/10 flex items-center justify-center text-sm font-bold text-[var(--primary-light)] mb-4" style={{ animation: 'float 3s ease-in-out infinite' }}>
-            Radar
-          </div>
-          <p className="text-sm font-bold mb-1">{filterActivity ? 'No one in this activity right now' : 'Campus is quiet right now'}</p>
-          <p className="text-xs text-[var(--muted)] mb-5">
-            {filterActivity ? 'Try switching filters or post your own intent.' : 'Be the first to broadcast — others will discover you!'}
-          </p>
-          {!myPing && (
-            <button onClick={() => setShowBroadcast(true)} className="btn-primary text-xs">
-              Start Broadcasting
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <SectionLabel>Live on campus</SectionLabel>
-            <div className="relative mb-0.5">
-              <span className="w-2 h-2 bg-[var(--success)] rounded-full inline-block" />
-              <span className="w-2 h-2 bg-[var(--success)] rounded-full inline-block absolute inset-0 animate-ping opacity-50" />
-            </div>
-          </div>
-          {filteredPings.map(ping => {
-            const act = getActivity(ping.activityId);
-            const isMe = ping.userId === user?.id;
-            return (
-              <div
-                key={ping.id}
-                className={`card p-4 transition-all duration-300 ${
-                  isMe ? '' : 'glow-hover'
-                }`}
-                style={isMe ? {
-                  border: '2px solid rgba(34,197,94,0.3)',
-                  background: 'linear-gradient(135deg, rgba(34,197,94,0.05), rgba(6,182,212,0.03))',
-                } : {}}
-              >
-                <div className="flex items-start gap-3.5">
-                  <div
-                    className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0"
-                    style={{ backgroundColor: (act?.color || '#7c3aed') + '18' }}
-                  >
-                    {act?.label?.charAt(0) || 'A'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-bold truncate">
-                        {isMe ? 'You' : (ping.isAnonymous ? 'Anonymous' : ping.userName)}
-                      </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full text-[var(--muted)]" style={{ background: 'var(--surface-light)' }}>
-                        {ping.zone}
-                      </span>
-                    </div>
-                    <p className="text-xs font-semibold" style={{ color: act?.color || 'var(--primary-light)' }}>
-                      Looking for {act?.label || 'something'}
-                    </p>
-                    {ping.note && (
-                      <p className="text-xs text-[var(--muted)] mt-1 italic">&ldquo;{ping.note}&rdquo;</p>
-                    )}
-                    <div className="flex items-center gap-3 mt-2.5">
-                      <span className="text-[10px] text-[var(--muted)]">{timeAgo(ping.createdAt)}</span>
-                      <span className="text-[10px] text-[var(--muted)]">{timeLeft(ping.expiresAt)}</span>
-                    </div>
-                  </div>
-                  {!isMe && !ping.isAnonymous && (
-                    <button
-                      onClick={() => handleConnect(ping)}
-                      disabled={connectingTo === ping.id}
-                      className="shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold text-white transition-all duration-300 hover:shadow-lg active:scale-[0.97] disabled:opacity-50"
-                      style={{ background: 'linear-gradient(135deg, var(--primary), #6d28d9)', boxShadow: '0 2px 12px rgba(124,58,237,0.3)' }}
-                    >
-                      {connectingTo === ping.id ? 'Connecting...' : 'Connect'}
-                    </button>
-                  )}
-                  {!isMe && ping.isAnonymous && (
-                    <button
-                      onClick={() => handleConnect(ping)}
-                      disabled={connectingTo === ping.id}
-                      className="shrink-0 px-4 py-2 rounded-xl text-[11px] font-bold text-white transition-all duration-300 hover:shadow-lg active:scale-[0.97] disabled:opacity-50"
-                      style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 2px 12px rgba(99,102,241,0.3)' }}
-                    >
-                      {connectingTo === ping.id ? 'Connecting...' : 'Connect'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Bottom Info */}
+      {/* ─── Footer ─── */}
       <div className="text-center py-4">
         <p className="text-[10px] text-[var(--muted)]">
-          Broadcasts expire automatically after 2 hours • Only your campus can see this
+          Broadcasts expire automatically · Only your campus can see this
         </p>
       </div>
 
       <style jsx>{`
-        .radar-polish {
-          z-index: 1;
-        }
-
+        .radar-polish { z-index: 1; }
         .radar-aura {
-          position: absolute;
-          pointer-events: none;
-          border-radius: 999px;
-          filter: blur(52px);
-          opacity: 0.12;
-          z-index: 0;
+          position: absolute; pointer-events: none; border-radius: 999px;
+          filter: blur(52px); opacity: 0.12; z-index: 0;
         }
-
-        .radar-aura-1 {
-          width: 260px;
-          height: 190px;
-          right: -90px;
-          top: 110px;
-          background: rgba(99, 102, 241, 0.34);
-        }
-
-        .radar-aura-2 {
-          width: 220px;
-          height: 170px;
-          left: -70px;
-          top: 300px;
-          background: rgba(34, 197, 94, 0.2);
-        }
-
-        .radar-chip {
-          display: inline-flex;
-          align-items: center;
-          border-radius: 999px;
-          border: 1px solid var(--glass-border);
-          background: color-mix(in srgb, var(--surface) 93%, transparent);
-          color: var(--muted);
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-          padding: 5px 10px;
-        }
-
-        .radar-chip-success {
-          border-color: rgba(34, 197, 94, 0.26);
-          background: rgba(34, 197, 94, 0.12);
-          color: #86efac;
-        }
-
-        .radar-chip-accent {
-          border-color: rgba(124, 58, 237, 0.26);
-          background: rgba(124, 58, 237, 0.12);
-          color: #c4b5fd;
-        }
-
-        @media (max-width: 640px) {
-          .radar-aura {
-            opacity: 0.08;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .radar-aura {
-            display: none;
-          }
-        }
+        .radar-aura-1 { width: 260px; height: 190px; right: -90px; top: 110px; background: rgba(99, 102, 241, 0.34); }
+        .radar-aura-2 { width: 220px; height: 170px; left: -70px; top: 300px; background: rgba(34, 197, 94, 0.2); }
+        @media (max-width: 640px) { .radar-aura { opacity: 0.08; } }
+        @media (prefers-reduced-motion: reduce) { .radar-aura { display: none; } }
       `}</style>
-    </div>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-[var(--muted)] px-1">
-      {children}
     </div>
   );
 }
