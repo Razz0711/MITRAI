@@ -338,7 +338,6 @@ export default function RadarPage() {
 
       {/* ─── Study SOS ─── */}
       {sosPings.length > 0 && sosPings.map(sos => {
-        const act = getActivity(sos.activityId);
         const displayName = sos.isAnonymous ? 'Anonymous' : sos.userName;
         const noteText = sos.note?.replace(' [SOS]', '') || '';
         return (
