@@ -289,7 +289,7 @@ export default function MatchesPage() {
               <div className="mt-5 rounded-2xl border border-[var(--primary)]/20 bg-[var(--primary)]/10 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-semibold text-[var(--primary-light)]">
-                    {TYPE_MAP[user.matchKey[0]] || 'Student'} - {DEPT_MAP[user.matchKey.slice(3)] || user.deptCode?.toUpperCase() || ''} - Batch '{user.batchYear || user.matchKey.slice(1, 3)}
+                    {TYPE_MAP[user.matchKey[0]] || 'Student'} - {DEPT_MAP[user.matchKey.slice(3)] || user.deptCode?.toUpperCase() || ''} - Batch &apos;{user.batchYear || user.matchKey.slice(1, 3)}
                   </span>
                 </div>
                 <p className="text-[11px] text-[var(--muted)]">
