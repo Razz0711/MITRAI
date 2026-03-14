@@ -904,10 +904,9 @@ export default function AnonLobbyPage() {
           }
         }
       `}</style>
-        </div>{/* max-w-2xl */}
-        </div>{/* flex-1 */}
-      </div>{/* flex */}
-    </div>{/* main */}
+      </div>
+      </div>
+    </div>
   );
 }
 
