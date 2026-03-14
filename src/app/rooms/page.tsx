@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import SubTabBar from '@/components/SubTabBar';
+import ChatSideNav from '@/components/ChatSideNav';
 
 interface StudyRoom {
   id: string;
@@ -128,8 +128,11 @@ export default function RoomsPage() {
   const displayRooms = tab === 'mine' ? myRooms : rooms;
 
   return (
+    <div className="min-h-screen">
+      <div className="h-[calc(100vh-4.5rem)] md:h-[calc(100vh-3.5rem)] flex">
+        <ChatSideNav />
+        <div className="flex-1 overflow-y-auto">
     <div className="max-w-2xl mx-auto px-4 py-4 space-y-5">
-      <SubTabBar group="chat" />
 
       {/* Header */}
       <div className="text-center">
@@ -287,6 +290,9 @@ export default function RoomsPage() {
           ))}
         </div>
       )}
+    </div>
+    </div>
+    </div>
     </div>
   );
 }

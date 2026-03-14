@@ -9,11 +9,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { DirectMessage, ChatThread, UserStatus, StudentProfile, MatchResult } from '@/lib/types';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import ChatSideNav from '@/components/ChatSideNav';
 import {
   Search,
   Paperclip,
@@ -21,9 +21,6 @@ import {
   Send,
   MoreVertical,
   Phone,
-  Ghost,
-  CircleDot,
-  Users2,
   X,
   MessageSquare,
 } from 'lucide-react';
@@ -84,8 +81,6 @@ function ProfilePopup({
 
 export default function ChatPage() {
   const { user } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
   const { play: playSound } = useNotificationSound();
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -259,15 +254,6 @@ export default function ChatPage() {
   });
   const quickReplies = ['Study together?', 'Free tonight?', 'Need help?'];
 
-  // Sidebar sub-tabs (Chats, Anon, Circles, Rooms) — desktop only
-  const sidebarTabs = [
-    { id: 'chats', label: 'Chats', icon: MessageSquare, href: '/chat' },
-    { id: 'anon', label: 'Anon', icon: Ghost, href: '/anon' },
-    { id: 'circles', label: 'Circles', icon: CircleDot, href: '/circles' },
-    { id: 'rooms', label: 'Rooms', icon: Users2, href: '/rooms' },
-  ];
-  const activeSidebarTab = pathname === '/chat' ? 'chats' : sidebarTabs.find(t => pathname.startsWith(t.href))?.id || 'chats';
-
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -309,40 +295,13 @@ export default function ChatPage() {
       <div className="chat-aura chat-aura-1" />
       <div className="chat-aura chat-aura-2" />
 
-      {/* NO SubTabBar here — tabs are inside sidebar on desktop, bottom nav on mobile */}
-
       <div className="h-[calc(100vh-4.5rem)] md:h-[calc(100vh-3.5rem)] flex">
+
+        {/* Vertical icon nav — desktop only */}
+        <ChatSideNav />
 
         {/* ═══════ SIDEBAR ═══════ */}
         <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-72 lg:w-80 md:border-r md:border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)] overflow-hidden`}>
-
-          {/* Sidebar tabs — hidden on mobile (bottom nav handles it) */}
-          <div className="flex items-center gap-1 px-3 pt-3 pb-2 overflow-x-auto no-scrollbar">
-            {sidebarTabs.map(tab => {
-              const isActive = tab.id === activeSidebarTab;
-              const Icon = tab.icon;
-              return tab.href === '/chat' ? (
-                <button
-                  key={tab.id}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    isActive ? 'bg-white text-[var(--background)]' : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]'
-                  }`}
-                >
-                  <Icon size={13} /> {tab.label}
-                </button>
-              ) : (
-                <Link
-                  key={tab.id}
-                  href={tab.href}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    isActive ? 'bg-white text-[var(--background)]' : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]'
-                  }`}
-                >
-                  <Icon size={13} /> {tab.label}
-                </Link>
-              );
-            })}
-          </div>
 
           {/* Search */}
           <div className="p-3 border-b border-[var(--border)]">

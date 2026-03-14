@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { ROOM_TYPES, ANON_PRICING, UPI_CONFIG } from '@/lib/anon-aliases';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
-import SubTabBar from '@/components/SubTabBar';
+import ChatSideNav from '@/components/ChatSideNav';
 
 type Status = 'loading' | 'no-pass' | 'pending-payment' | 'banned' | 'idle' | 'queuing' | 'matched';
 
@@ -288,11 +288,13 @@ export default function AnonLobbyPage() {
   const queueEstimate = stats ? Math.max(1, Math.ceil((stats.queueCount + 1) / 2)) : null;
 
   return (
-    <div className="min-h-screen px-4 anon-polish relative">
+    <div className="min-h-screen anon-polish relative">
       <div className="anon-aura anon-aura-1" />
       <div className="anon-aura anon-aura-2" />
-      <SubTabBar group="chat" />
-      <div className="max-w-2xl mx-auto">
+      <div className="h-[calc(100vh-4.5rem)] md:h-[calc(100vh-3.5rem)] flex">
+        <ChatSideNav />
+        <div className="flex-1 overflow-y-auto px-4">
+        <div className="max-w-2xl mx-auto">
         {/* Ambient glow */}
         <div className="ambient-glow" />
 
@@ -902,7 +904,10 @@ export default function AnonLobbyPage() {
           }
         }
       `}</style>
-    </div>
+        </div>{/* max-w-2xl */}
+        </div>{/* flex-1 */}
+      </div>{/* flex */}
+    </div>{/* main */}
   );
 }
 
