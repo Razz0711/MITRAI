@@ -1,5 +1,6 @@
 // ============================================
-// MitrAI - WhatsApp-like Chat Page
+// MitrAI - Chat Page (redesigned)
+// Split view: sidebar with Arya AI + contacts | chat area
 // ============================================
 
 'use client';
@@ -7,10 +8,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { DirectMessage, ChatThread, UserStatus } from '@/lib/types';
+import { DirectMessage, ChatThread, UserStatus, StudentProfile, MatchResult } from '@/lib/types';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import SubTabBar from '@/components/SubTabBar';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import {
+  Search,
+  Paperclip,
+  Smile,
+  Send,
+  MoreVertical,
+  Phone,
+} from 'lucide-react';
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -24,6 +33,11 @@ export default function ChatPage() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
   const [pendingFriend, setPendingFriend] = useState<{ id: string; name: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'friends'>('all');
+  const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
+  const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
+  const [matchScores, setMatchScores] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -31,7 +45,72 @@ export default function ChatPage() {
     ? localStorage.getItem('mitrai_student_id') || user?.id
     : user?.id;
 
-  // Load threads
+  const currentStudent = allStudents.find(s => s.id === studentId) || null;
+
+  /* ─── helpers ─── */
+  const avatarColors = ['bg-violet-600', 'bg-emerald-600', 'bg-blue-600', 'bg-pink-600', 'bg-amber-600', 'bg-cyan-600', 'bg-indigo-600', 'bg-rose-600'];
+  const getAvatarColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return avatarColors[Math.abs(hash) % avatarColors.length];
+  };
+  const getInitial = (name: string) => name.trim().charAt(0).toUpperCase() || '?';
+
+  const getOtherUserName = (thread: ChatThread) => {
+    if (thread.user1Id === studentId) return thread.user2Name || 'Unknown';
+    return thread.user1Name || 'Unknown';
+  };
+  const getOtherUserId = (thread: ChatThread) => {
+    return thread.user1Id === studentId ? thread.user2Id : thread.user1Id;
+  };
+  const getUnreadCount = (thread: ChatThread) => {
+    if (thread.user1Id === studentId) return thread.unreadCount1;
+    return thread.unreadCount2;
+  };
+
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60000) return 'now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  const formatMessageTime = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+  };
+
+  const getDateLabel = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) return `Today · ${d.toLocaleDateString([], { day: 'numeric', month: 'short' })}`;
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) return `Yesterday · ${d.toLocaleDateString([], { day: 'numeric', month: 'short' })}`;
+    return d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+
+  const getStudentInfo = (userId: string) => {
+    return allStudents.find(s => s.id === userId);
+  };
+
+  const getLastSeenText = (userId: string) => {
+    const status = statuses[userId];
+    if (!status) return '';
+    if (status.status === 'online' || status.status === 'in-session') return 'Online';
+    if (status.lastSeen) {
+      const diff = Date.now() - new Date(status.lastSeen).getTime();
+      if (diff < 3600000) return `last seen ${Math.floor(diff / 60000)}m ago`;
+      if (diff < 86400000) return `last seen ${Math.floor(diff / 3600000)}h ago`;
+      return `last seen ${new Date(status.lastSeen).toLocaleDateString([], { day: 'numeric', month: 'short' })}`;
+    }
+    return 'Offline';
+  };
+
+  /* ─── data loading ─── */
   const loadThreads = useCallback(async () => {
     if (!studentId) return;
     try {
@@ -41,7 +120,7 @@ export default function ChatPage() {
       ]);
       const threadsData = await threadsRes.json();
       setThreads(threadsData.threads || []);
-      
+
       const statusData = await statusRes.json();
       if (statusData.success) {
         const map: Record<string, UserStatus> = {};
@@ -52,7 +131,6 @@ export default function ChatPage() {
     setLoading(false);
   }, [studentId]);
 
-  // Load messages for selected chat (merges new, preserves optimistic)
   const loadMessages = useCallback(async () => {
     if (!selectedChatId || !studentId) return;
     try {
@@ -60,14 +138,12 @@ export default function ChatPage() {
       const data = await res.json();
       const serverMsgs: DirectMessage[] = data.messages || [];
       setMessages(prev => {
-        // Keep optimistic messages that aren't yet confirmed by server
         const optimistic = prev.filter(m => m.id.startsWith('optimistic_') && !serverMsgs.some(s => s.text === m.text && s.senderId === m.senderId));
         return [...serverMsgs, ...optimistic];
       });
     } catch (err) { console.error('loadMessages:', err); }
   }, [selectedChatId, studentId]);
 
-  // Mark messages as read
   const markRead = useCallback(async () => {
     if (!selectedChatId || !studentId) return;
     try {
@@ -79,9 +155,55 @@ export default function ChatPage() {
     } catch (err) { console.error('markRead:', err); }
   }, [selectedChatId, studentId]);
 
+  const loadStudents = useCallback(async () => {
+    try {
+      const res = await fetch('/api/students');
+      const data = await res.json();
+      if (data.success) setAllStudents(data.data || []);
+    } catch { /* ignore */ }
+  }, []);
+
+  const loadFriends = useCallback(async () => {
+    if (!studentId) return;
+    try {
+      const res = await fetch(`/api/friends?userId=${studentId}`);
+      const data = await res.json();
+      if (data.success) {
+        const ids = new Set<string>(
+          (data.data.friends || []).map((f: { user1Id: string; user2Id: string }) =>
+            f.user1Id === studentId ? f.user2Id : f.user1Id
+          )
+        );
+        setFriendIds(ids);
+      }
+    } catch { /* ignore */ }
+  }, [studentId]);
+
+  const loadMatchScores = useCallback(async () => {
+    if (!studentId) return;
+    try {
+      const res = await fetch('/api/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId }),
+      });
+      const data = await res.json();
+      if (data.success && data.data.matches) {
+        const scores: Record<string, number> = {};
+        data.data.matches.forEach((m: MatchResult) => {
+          scores[m.student.id] = m.score.overall;
+        });
+        setMatchScores(scores);
+      }
+    } catch { /* ignore */ }
+  }, [studentId]);
+
   useEffect(() => {
     loadThreads();
-  }, [loadThreads]);
+    loadStudents();
+    loadFriends();
+    loadMatchScores();
+  }, [loadThreads, loadStudents, loadFriends, loadMatchScores]);
 
   useEffect(() => {
     if (selectedChatId) {
@@ -90,16 +212,12 @@ export default function ChatPage() {
     }
   }, [selectedChatId, loadMessages, markRead]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll
   useEffect(() => {
-    const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    messagesEndRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Supabase Realtime: insert messages directly from payload (no refetch)
+  // Realtime
   useEffect(() => {
     if (!studentId) return;
 
@@ -112,18 +230,10 @@ export default function ChatPage() {
           const row = payload.new as Record<string, string> | undefined;
           if (!row) return;
           if (row.sender_id !== studentId && row.receiver_id !== studentId) return;
-
-          // 🔊 Play sound for incoming messages from others
-          if (row.sender_id !== studentId) {
-            playSound('message');
-          }
-
-          // Refresh sidebar threads
+          if (row.sender_id !== studentId) playSound('message');
           loadThreads();
-
-          // If this message is in the currently open chat, add it directly
           if (selectedChatId && row.chat_id === selectedChatId) {
-            const newMsg: DirectMessage = {
+            const newMessage: DirectMessage = {
               id: row.id,
               chatId: row.chat_id,
               senderId: row.sender_id,
@@ -134,20 +244,11 @@ export default function ChatPage() {
               createdAt: row.created_at,
             };
             setMessages(prev => {
-              // Skip duplicates
-              if (prev.some(m => m.id === newMsg.id)) return prev;
-              // Replace optimistic message from same sender with same text
-              const optIdx = prev.findIndex(
-                m => m.id.startsWith('optimistic_') && m.senderId === newMsg.senderId && m.text === newMsg.text
-              );
-              if (optIdx >= 0) {
-                const updated = [...prev];
-                updated[optIdx] = newMsg;
-                return updated;
-              }
-              return [...prev, newMsg];
+              if (prev.some(m => m.id === newMessage.id)) return prev;
+              const optIdx = prev.findIndex(m => m.id.startsWith('optimistic_') && m.senderId === newMessage.senderId && m.text === newMessage.text);
+              if (optIdx >= 0) { const updated = [...prev]; updated[optIdx] = newMessage; return updated; }
+              return [...prev, newMessage];
             });
-            // Auto mark-read if message is from the other person
             if (row.sender_id !== studentId) markRead();
           }
         }
@@ -158,7 +259,6 @@ export default function ChatPage() {
         (payload) => {
           const row = payload.new as Record<string, string> | undefined;
           if (!row) return;
-          // Update read status in-place
           if (selectedChatId && row.chat_id === selectedChatId) {
             setMessages(prev => prev.map(m => m.id === row.id ? { ...m, read: row.read === 'true' || (row.read as unknown) === true } : m));
           }
@@ -166,20 +266,12 @@ export default function ChatPage() {
       )
       .subscribe();
 
-    // Thread updates for sidebar
     const threadChannel = supabaseBrowser
       .channel('chat-threads')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'chat_threads' },
-        () => { loadThreads(); }
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_threads' }, () => { loadThreads(); })
       .subscribe();
 
-    // Polling fallback every 5s for messages in current chat
-    const poll = setInterval(() => {
-      if (selectedChatId) loadMessages();
-    }, 5000);
+    const poll = setInterval(() => { if (selectedChatId) loadMessages(); }, 5000);
 
     return () => {
       supabaseBrowser.removeChannel(msgChannel);
@@ -188,81 +280,52 @@ export default function ChatPage() {
     };
   }, [studentId, selectedChatId, loadThreads, loadMessages, markRead, playSound]);
 
-  // Send message — optimistic UI for instant feel
-  const sendMessage = async () => {
-    if (!newMsg.trim() || !selectedChatId || !studentId || sending) return;
+  // Send message
+  const sendMessage = async (text?: string) => {
+    const msgText = (text || newMsg).trim();
+    if (!msgText || !selectedChatId || !studentId || sending) return;
 
     let receiverId: string;
     let receiverName: string;
-
     const selectedThread = threads.find(t => t.chatId === selectedChatId);
     if (selectedThread) {
-      receiverId = selectedThread.user1Id === studentId
-        ? selectedThread.user2Id
-        : selectedThread.user1Id;
-      receiverName = selectedThread.user1Id === studentId
-        ? selectedThread.user2Name
-        : selectedThread.user1Name;
+      receiverId = selectedThread.user1Id === studentId ? selectedThread.user2Id : selectedThread.user1Id;
+      receiverName = selectedThread.user1Id === studentId ? selectedThread.user2Name : selectedThread.user1Name;
     } else if (pendingFriend) {
       receiverId = pendingFriend.id;
       receiverName = pendingFriend.name;
-    } else {
-      return;
-    }
+    } else return;
 
-    const text = newMsg.trim();
     setSending(true);
     setNewMsg('');
     inputRef.current?.focus();
 
-    // Optimistic: show message immediately
     const optimisticId = `optimistic_${Date.now()}`;
     const optimisticMsg: DirectMessage = {
-      id: optimisticId,
-      chatId: selectedChatId,
-      senderId: studentId,
-      senderName: user?.name || 'Unknown',
-      receiverId,
-      text,
-      read: false,
-      createdAt: new Date().toISOString(),
+      id: optimisticId, chatId: selectedChatId, senderId: studentId,
+      senderName: user?.name || 'Unknown', receiverId, text: msgText,
+      read: false, createdAt: new Date().toISOString(),
     };
     setMessages(prev => [...prev, optimisticMsg]);
-
-    // Optimistic: update thread sidebar immediately
-    setThreads(prev => {
-      const existing = prev.find(t => t.chatId === selectedChatId);
-      if (existing) {
-        return prev.map(t => t.chatId === selectedChatId
-          ? { ...t, lastMessage: text, lastMessageAt: new Date().toISOString() }
-          : t
-        );
-      }
-      return prev;
-    });
+    setThreads(prev => prev.map(t => t.chatId === selectedChatId ? { ...t, lastMessage: msgText, lastMessageAt: new Date().toISOString() } : t));
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senderId: studentId, senderName: user?.name || 'Unknown', receiverId, receiverName, text }),
+        body: JSON.stringify({ senderId: studentId, senderName: user?.name || 'Unknown', receiverId, receiverName, text: msgText }),
       });
       const data = await res.json();
-      if (data.message) {
-        // Replace optimistic message with real one
-        setMessages(prev => prev.map(m => m.id === optimisticId ? { ...data.message } : m));
-      }
+      if (data.message) setMessages(prev => prev.map(m => m.id === optimisticId ? { ...data.message } : m));
       setPendingFriend(null);
-      // Background refresh threads (non-blocking)
       loadThreads();
     } catch (err) { console.error('sendMessage:', err); }
     setSending(false);
   };
 
-  // Delete message — optimistic removal
+  // Delete message
   const handleDeleteMessage = async (messageId: string) => {
     if (!studentId || !confirm('Delete this message?')) return;
-    // Optimistic: remove immediately
     setMessages(prev => prev.filter(m => m.id !== messageId));
     try {
       const res = await fetch('/api/chat', {
@@ -271,19 +334,12 @@ export default function ChatPage() {
         body: JSON.stringify({ messageId, userId: studentId }),
       });
       const data = await res.json();
-      if (data.success) {
-        loadThreads(); // Background refresh
-      } else {
-        // If delete failed, restore messages
-        loadMessages();
-      }
-    } catch (err) {
-      console.error('deleteMessage:', err);
-      loadMessages(); // Restore on error
-    }
+      if (data.success) loadThreads();
+      else loadMessages();
+    } catch { loadMessages(); }
   };
 
-  // Open a chat (from friends page redirect with query params) - NO auto-send
+  // URL params for deep linking
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -293,43 +349,25 @@ export default function ChatPage() {
       const chatId = [studentId, friendId].sort().join('__');
       setSelectedChatId(chatId);
       setShowSidebar(false);
-
-      // Store pending friend info so the user can send the first message themselves
-      if (friendName) {
-        setPendingFriend({ id: friendId, name: friendName });
-      }
-      // Clean URL
+      if (friendName) setPendingFriend({ id: friendId, name: friendName });
       window.history.replaceState({}, '', '/chat');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
 
-  const getOtherUserName = (thread: ChatThread) => {
-    if (thread.user1Id === studentId) return thread.user2Name || 'Unknown';
-    return thread.user1Name || 'Unknown';
-  };
+  /* ─── computed ─── */
+  const totalUnread = threads.reduce((sum, t) => sum + getUnreadCount(t), 0);
 
-  const getUnreadCount = (thread: ChatThread) => {
-    if (thread.user1Id === studentId) return thread.unreadCount1;
-    return thread.unreadCount2;
-  };
+  const filteredThreads = threads.filter(t => {
+    const name = getOtherUserName(t);
+    if (searchQuery && !name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (filter === 'unread' && getUnreadCount(t) === 0) return false;
+    if (filter === 'friends' && !friendIds.has(getOtherUserId(t))) return false;
+    return true;
+  });
 
-  const totalUnread = threads.reduce((sum, thread) => sum + getUnreadCount(thread), 0);
-  const onlineThreads = threads.filter((thread) => {
-    const otherId = thread.user1Id === studentId ? thread.user2Id : thread.user1Id;
-    const st = statuses[otherId];
-    return st?.status === 'online' || st?.status === 'in-session';
-  }).length;
-
-  const formatTime = (iso: string) => {
-    const d = new Date(iso);
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    if (diff < 60000) return 'now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
-    if (diff < 86400000) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  };
+  // Quick replies
+  const quickReplies = ['Study together?', 'Free tonight?', 'Need help?'];
 
   if (!user) {
     return (
@@ -342,59 +380,150 @@ export default function ChatPage() {
     );
   }
 
+  /* ─── get selected chat info ─── */
+  const selectedThread = threads.find(t => t.chatId === selectedChatId);
+  const chatOtherName = selectedThread ? getOtherUserName(selectedThread) : (pendingFriend?.name || '?');
+  const chatOtherId = selectedThread ? getOtherUserId(selectedThread) : (pendingFriend?.id || '');
+  const chatOtherStudent = getStudentInfo(chatOtherId);
+  const chatOtherStatus = statuses[chatOtherId];
+  const chatIsOnline = chatOtherStatus?.status === 'online' || chatOtherStatus?.status === 'in-session';
+  const chatMatchScore = matchScores[chatOtherId] || 0;
+
+  // Build match context
+  const getMatchContext = () => {
+    if (!currentStudent || !chatOtherStudent) return null;
+    const parts: string[] = [];
+    if (currentStudent.department?.toLowerCase() === chatOtherStudent.department?.toLowerCase() && currentStudent.department) {
+      parts.push(chatOtherStudent.department);
+    }
+    if (currentStudent.yearLevel?.toLowerCase() === chatOtherStudent.yearLevel?.toLowerCase() && currentStudent.yearLevel) {
+      parts.push(chatOtherStudent.yearLevel);
+    }
+    if (parts.length === 0 && chatMatchScore === 0) return null;
+    const context = parts.length > 0
+      ? `You and ${chatOtherName.split(' ')[0]} are both in ${parts.join(' ')}`
+      : `You and ${chatOtherName.split(' ')[0]} are matched`;
+    return `${context}${chatMatchScore > 0 ? ` · ${chatMatchScore}% match` : ''}`;
+  };
+
+  // Group messages by date
+  const messagesByDate: { date: string; msgs: DirectMessage[] }[] = [];
+  messages.forEach(msg => {
+    const dateKey = new Date(msg.createdAt).toDateString();
+    const group = messagesByDate.find(g => g.date === dateKey);
+    if (group) group.msgs.push(msg);
+    else messagesByDate.push({ date: dateKey, msgs: [msg] });
+  });
+
   return (
     <div className="min-h-screen chat-polish relative">
       <div className="chat-aura chat-aura-1" />
       <div className="chat-aura chat-aura-2" />
       <SubTabBar group="chat" />
       <div className="h-[calc(100vh-9rem)] flex">
-        {/* ======= Sidebar / Thread List ======= */}
+
+        {/* ═══════ SIDEBAR ═══════ */}
         <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 border-r border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)]`}>
-          {/* Header */}
-          <div className="p-4 border-b border-[var(--border)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] font-bold">Direct messages</p>
-                <h1 className="text-lg font-semibold text-[var(--foreground)] leading-tight">Chats</h1>
-              </div>
-              <Link href="/friends" className="text-xs text-[var(--primary-light)] hover:underline">
-                Friends
-              </Link>
+
+          {/* Search */}
+          <div className="p-3 border-b border-[var(--border)]">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search chats..."
+                className="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-[var(--glass-border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none focus:ring-1 focus:ring-[var(--primary)]/30"
+              />
             </div>
-            <p className="text-xs text-[var(--muted)] mt-1">Message your study buddies</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="chat-chip">{threads.length} chats</span>
-              <span className="chat-chip">{onlineThreads} online</span>
-              <span className="chat-chip chat-chip-accent">{totalUnread} unread</span>
+          </div>
+
+          {/* Arya AI Banner */}
+          <div className="mx-3 mt-3 p-4 rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-sm font-bold">A</div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--foreground)]">Arya</p>
+                  <p className="text-[10px] text-[var(--muted)]">The most realistic AI</p>
+                </div>
+              </div>
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-green-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Online
+              </span>
+            </div>
+            <div className="flex gap-2 mb-3">
+              {[
+                { icon: '💜', label: 'Feels your emotions' },
+                { icon: '💬', label: 'Talks like a friend' },
+                { icon: '✨', label: 'Personal growth' },
+              ].map(f => (
+                <div key={f.label} className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl" style={{ background: 'var(--surface-light)' }}>
+                  <span className="text-sm">{f.icon}</span>
+                  <span className="text-[9px] text-[var(--muted)] text-center leading-tight">{f.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Link href="/doubts" className="flex-1 py-2 rounded-xl text-xs font-semibold text-white text-center" style={{ background: 'linear-gradient(135deg, var(--primary), #6d28d9)' }}>
+                Chat with Arya
+              </Link>
+              <button className="w-10 h-10 rounded-xl bg-violet-500/15 border border-violet-500/20 flex items-center justify-center text-violet-400">
+                <Phone size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* PEOPLE label + Filters */}
+          <div className="px-3 pt-4 pb-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] mb-2">People</p>
+            <div className="flex gap-1.5">
+              {(['all', 'unread', 'friends'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    filter === f
+                      ? 'bg-white text-[var(--background)]'
+                      : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]'
+                  }`}
+                >
+                  {f === 'all' ? 'All' : f === 'unread' ? 'Unread' : 'Friends'}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Thread List */}
           <div className="flex-1 overflow-y-auto">
             {loading ? (
-              <div className="flex flex-col items-center justify-center h-32 gap-2" aria-live="polite">
+              <div className="flex flex-col items-center justify-center h-32 gap-2">
                 <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
-                <p className="text-[11px] text-[var(--muted)]">Loading your conversations...</p>
+                <p className="text-[11px] text-[var(--muted)]">Loading conversations...</p>
               </div>
-            ) : threads.length === 0 ? (
+            ) : filteredThreads.length === 0 ? (
               <div className="p-6 text-center">
-                <div className="text-sm font-bold text-[var(--muted)] mb-3">No chats yet</div>
-                <p className="text-sm text-[var(--muted)]">Start one from your friends list in one tap.</p>
-                <p className="text-xs text-[var(--muted)] mt-1">
-                  Add friends from the <Link href="/friends" className="text-[var(--primary-light)] hover:underline">Friends</Link> page to start chatting!
+                <p className="text-xs text-[var(--muted)]">
+                  {searchQuery ? 'No matches found.' : filter === 'unread' ? 'No unread messages.' : 'No chats yet.'}
                 </p>
-                <Link href="/friends" className="btn-secondary text-xs mt-3 inline-block">
-                  Open friends
-                </Link>
+                {!searchQuery && filter === 'all' && (
+                  <Link href="/friends" className="text-xs text-[var(--primary-light)] hover:underline mt-2 inline-block">
+                    Find friends to start chatting
+                  </Link>
+                )}
               </div>
             ) : (
-              threads.map(thread => {
+              filteredThreads.map(thread => {
                 const otherName = getOtherUserName(thread);
-                const otherId = thread.user1Id === studentId ? thread.user2Id : thread.user1Id;
+                const otherId = getOtherUserId(thread);
+                const otherStudent = getStudentInfo(otherId);
                 const otherStatus = statuses[otherId];
                 const isOnline = otherStatus?.status === 'online' || otherStatus?.status === 'in-session';
                 const unread = getUnreadCount(thread);
                 const isActive = selectedChatId === thread.chatId;
+                const score = matchScores[otherId] || 0;
+
                 return (
                   <button
                     key={thread.chatId}
@@ -403,35 +532,49 @@ export default function ChatPage() {
                       setShowSidebar(false);
                       markRead();
                     }}
-                    className={`w-full text-left mx-2 my-1.5 px-3.5 py-3 rounded-xl flex items-center gap-3 transition-colors border ${
+                    className={`w-full text-left mx-2 my-1 px-3 py-3 rounded-xl flex items-center gap-3 transition-colors border ${
                       isActive
                         ? 'bg-[var(--surface-light)] border-[var(--primary)]/35'
-                        : 'bg-[var(--surface)]/50 border-transparent hover:bg-[var(--surface)] hover:border-[var(--border)]'
+                        : 'bg-transparent border-transparent hover:bg-[var(--surface)] hover:border-[var(--border)]'
                     }`}
                   >
-                    {/* Avatar with status dot */}
+                    {/* Avatar */}
                     <div className="relative flex-shrink-0">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center text-white font-semibold text-sm">
-                        {otherName.charAt(0).toUpperCase()}
+                      <div className={`w-10 h-10 rounded-xl ${getAvatarColor(otherName)} flex items-center justify-center text-white font-semibold text-sm`}>
+                        {getInitial(otherName)}
                       </div>
-                      <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[var(--background)] ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
+                      {isOnline && (
+                        <span className="absolute -bottom-0.5 -left-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-[var(--background)]" />
+                      )}
                     </div>
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-[var(--foreground)] truncate">
-                          {otherName}
-                        </span>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-sm font-semibold text-[var(--foreground)] truncate">{otherName}</span>
+                        </div>
                         <span className="text-[10px] text-[var(--muted)] flex-shrink-0">
                           {thread.lastMessageAt ? formatTime(thread.lastMessageAt) : ''}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between mt-0.5">
-                        <span className="text-xs text-[var(--muted)] truncate">
-                          {thread.lastMessage || 'No messages yet'}
-                        </span>
+                      {/* Badges */}
+                      <div className="flex items-center gap-1.5 mb-1">
+                        {otherStudent?.department && (
+                          <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-violet-500/15 text-violet-400 border border-violet-500/20 truncate max-w-[80px]">
+                            {otherStudent.department.length > 8 ? otherStudent.department.slice(0, 8) : otherStudent.department} · {otherStudent.yearLevel || '?'}
+                          </span>
+                        )}
+                        {score > 0 && (
+                          <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-green-500/15 text-green-400 border border-green-500/20">
+                            {score}%
+                          </span>
+                        )}
+                      </div>
+                      {/* Last message */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-[var(--muted)] truncate">{thread.lastMessage || 'No messages yet'}</span>
                         {unread > 0 && (
-                          <span className="ml-2 bg-[var(--primary)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 min-w-[18px] text-center">
+                          <span className="ml-2 w-5 h-5 rounded-full bg-green-500 text-[10px] font-bold text-white flex items-center justify-center flex-shrink-0">
                             {unread}
                           </span>
                         )}
@@ -444,96 +587,141 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* ======= Chat / Message Area ======= */}
+        {/* ═══════ CHAT AREA ═══════ */}
         <div className={`${!showSidebar ? 'flex' : 'hidden'} md:flex flex-col flex-1 bg-[var(--surface)]/30`}>
           {selectedChatId ? (
             <>
               {/* Chat Header */}
-              <div className="px-4 py-3 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_95%,transparent)] flex items-center gap-3">
-                {/* Back button (mobile) */}
-                <button
-                  onClick={() => setShowSidebar(true)}
-                  className="md:hidden text-[var(--muted)] hover:text-[var(--foreground)] p-1"
-                  aria-label="Back to conversations"
-                >
-                  ← 
-                </button>
-                {/* Avatar */}
-                {(() => {
-                  const thread = threads.find(t => t.chatId === selectedChatId);
-                  const name = thread ? getOtherUserName(thread) : (pendingFriend?.name || '?');
-                  const otherId = thread ? (thread.user1Id === studentId ? thread.user2Id : thread.user1Id) : (pendingFriend?.id || '');
-                  const otherStatus = statuses[otherId];
-                  const isOnline = otherStatus?.status === 'online' || otherStatus?.status === 'in-session';
-                  return (
-                    <>
-                      <div className="relative">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center text-white font-semibold text-xs">
-                          {name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[var(--background)] ${isOnline ? 'bg-green-500' : 'bg-gray-500'}`} />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-[var(--foreground)]">{name}</div>
-                        <div className="text-[10px] text-[var(--muted)]">{isOnline ? 'Online' : 'Offline'}</div>
-                      </div>
-                    </>
-                  );
-                })()}
+              <div className="px-4 py-3 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_95%,transparent)] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {/* Back (mobile) */}
+                  <button
+                    onClick={() => setShowSidebar(true)}
+                    className="md:hidden text-[var(--muted)] hover:text-[var(--foreground)] text-sm"
+                  >
+                    ←
+                  </button>
+                  {/* Avatar */}
+                  <div className="relative">
+                    <div className={`w-9 h-9 rounded-xl ${getAvatarColor(chatOtherName)} flex items-center justify-center text-white font-semibold text-sm`}>
+                      {getInitial(chatOtherName)}
+                    </div>
+                    {chatIsOnline && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-[var(--background)]" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-[var(--foreground)]">{chatOtherName}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {chatOtherStudent?.department && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-violet-500/15 text-violet-400 border border-violet-500/20">
+                          {chatOtherStudent.department.length > 8 ? chatOtherStudent.department.slice(0, 8) : chatOtherStudent.department} · {chatOtherStudent.yearLevel || '?'}
+                        </span>
+                      )}
+                      {chatMatchScore > 0 && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-green-500/15 text-green-400 border border-green-500/20">
+                          {chatMatchScore}% match
+                        </span>
+                      )}
+                      <span className="text-[10px] text-[var(--muted)]">
+                        · {getLastSeenText(chatOtherId)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors">
+                    <MoreVertical size={16} />
+                  </button>
+                </div>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 chat-message-pane">
+              <div className="flex-1 overflow-y-auto px-4 py-3 chat-message-pane">
                 {messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <p className="text-sm font-semibold text-[var(--muted)] mb-2">No messages yet</p>
-                      <p className="text-sm text-[var(--muted)]">Say hi!</p>
+                      <p className="text-xs text-[var(--muted)]">Say hi to {chatOtherName.split(' ')[0]}!</p>
                     </div>
                   </div>
                 ) : (
-                  messages.map(msg => {
-                    const isMine = msg.senderId === studentId;
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex ${isMine ? 'justify-end' : 'justify-start'} group`}
-                      >
-                        {isMine && (
-                          <button
-                            onClick={() => handleDeleteMessage(msg.id)}
-                            className="opacity-40 md:opacity-0 md:group-hover:opacity-100 transition-opacity self-center mr-1 text-red-400 hover:text-red-500 active:opacity-100 text-xs px-1.5 py-0.5 rounded hover:bg-red-500/10"
-                            title="Delete message"
-                            aria-label="Delete message"
-                          >
-                            ✕
-                          </button>
-                        )}
-                        <div
-                          className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
-                            isMine
-                              ? 'bg-[var(--primary)] text-white rounded-br-md'
-                              : 'bg-[var(--surface-light)] text-[var(--foreground)] rounded-bl-md border border-[var(--glass-border)]'
-                          }`}
-                        >
-                          <p className="break-words whitespace-pre-wrap">{msg.text}</p>
-                          <div className={`flex items-center gap-1 mt-1 ${isMine ? 'justify-end' : 'justify-start'}`}>
-                            <span className={`text-[10px] ${isMine ? 'text-white/60' : 'text-[var(--muted)]'}`}>
-                              {formatTime(msg.createdAt)}
-                            </span>
-                            {isMine && (
-                              <span className="text-[10px] text-white/60">
-                                {msg.read ? '✓✓' : '✓'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                  messagesByDate.map(group => (
+                    <div key={group.date}>
+                      {/* Date separator */}
+                      <div className="flex items-center justify-center my-4">
+                        <span className="px-3 py-1 rounded-full text-[10px] font-medium text-[var(--muted)]" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
+                          {getDateLabel(group.msgs[0].createdAt)}
+                        </span>
                       </div>
-                    );
-                  })
+
+                      {/* Match context banner (only on first date group) */}
+                      {group.date === messagesByDate[0]?.date && getMatchContext() && (
+                        <div className="mx-auto max-w-md mb-4 px-4 py-3 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-violet-400 mb-1">Match Context</p>
+                          <p className="text-xs text-[var(--foreground)]">{getMatchContext()}</p>
+                        </div>
+                      )}
+
+                      {/* Messages */}
+                      <div className="space-y-2">
+                        {group.msgs.map(msg => {
+                          const isMine = msg.senderId === studentId;
+                          return (
+                            <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} group`}>
+                              {isMine && (
+                                <button
+                                  onClick={() => handleDeleteMessage(msg.id)}
+                                  className="opacity-40 md:opacity-0 md:group-hover:opacity-100 transition-opacity self-center mr-1 text-red-400 hover:text-red-500 text-xs px-1.5 py-0.5 rounded hover:bg-red-500/10"
+                                  title="Delete message"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                              <div className={`max-w-[75%] px-3.5 py-2.5 rounded-2xl text-sm ${
+                                isMine
+                                  ? 'bg-[var(--primary)] text-white rounded-br-md'
+                                  : 'bg-[var(--surface-light)] text-[var(--foreground)] rounded-bl-md border border-[var(--glass-border)]'
+                              }`}>
+                                <p className="break-words whitespace-pre-wrap">{msg.text}</p>
+                                <div className={`flex items-center gap-1 mt-1 ${isMine ? 'justify-end' : 'justify-start'}`}>
+                                  <span className={`text-[10px] ${isMine ? 'text-white/60' : 'text-[var(--muted)]'}`}>
+                                    {formatMessageTime(msg.createdAt)}
+                                  </span>
+                                  {isMine && (
+                                    <span className="text-[10px] text-white/60">
+                                      {msg.read ? '✓✓' : '✓'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
                 )}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Quick replies */}
+              {messages.length <= 2 && (
+                <div className="px-4 py-2 border-t border-[var(--border)] flex gap-2 overflow-x-auto no-scrollbar">
+                  {quickReplies.map(reply => (
+                    <button
+                      key={reply}
+                      onClick={() => sendMessage(reply)}
+                      className="shrink-0 px-4 py-2 rounded-full text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--surface-light)]"
+                      style={{ border: '1px solid var(--glass-border)' }}
+                    >
+                      {reply}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Input Area */}
               <div className="p-3 border-t border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)]">
@@ -541,6 +729,12 @@ export default function ChatPage() {
                   onSubmit={(e) => { e.preventDefault(); sendMessage(); }}
                   className="flex items-center gap-2"
                 >
+                  <button type="button" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1">
+                    <Paperclip size={18} />
+                  </button>
+                  <button type="button" className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1">
+                    <Smile size={18} />
+                  </button>
                   <input
                     ref={inputRef}
                     type="text"
@@ -554,13 +748,13 @@ export default function ChatPage() {
                   <button
                     type="submit"
                     disabled={!newMsg.trim() || sending}
-                    className="btn-primary py-2.5 px-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label={sending ? 'Sending message' : 'Send message'}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all disabled:opacity-40"
+                    style={{ background: 'linear-gradient(135deg, var(--primary), #6d28d9)' }}
                   >
                     {sending ? (
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      'Send'
+                      <Send size={16} />
                     )}
                   </button>
                 </form>
@@ -582,69 +776,16 @@ export default function ChatPage() {
       </div>
 
       <style jsx>{`
-        .chat-polish {
-          z-index: 1;
-        }
-
+        .chat-polish { z-index: 1; }
         .chat-aura {
-          position: absolute;
-          pointer-events: none;
-          border-radius: 999px;
-          filter: blur(52px);
-          opacity: 0.12;
-          z-index: 0;
+          position: absolute; pointer-events: none; border-radius: 999px;
+          filter: blur(52px); opacity: 0.12; z-index: 0;
         }
-
-        .chat-aura-1 {
-          width: 260px;
-          height: 180px;
-          top: 70px;
-          left: -90px;
-          background: rgba(99, 102, 241, 0.35);
-        }
-
-        .chat-aura-2 {
-          width: 240px;
-          height: 170px;
-          top: 260px;
-          right: -70px;
-          background: rgba(236, 72, 153, 0.2);
-        }
-
-        .chat-chip {
-          display: inline-flex;
-          align-items: center;
-          border-radius: 999px;
-          border: 1px solid var(--glass-border);
-          background: color-mix(in srgb, var(--surface) 92%, transparent);
-          color: var(--muted);
-          font-size: 10px;
-          font-weight: 700;
-          padding: 4px 9px;
-          letter-spacing: 0.03em;
-        }
-
-        .chat-chip-accent {
-          border-color: rgba(124, 58, 237, 0.25);
-          background: rgba(124, 58, 237, 0.12);
-          color: #c4b5fd;
-        }
-
-        .chat-message-pane {
-          background-image: radial-gradient(circle at 20% 0%, rgba(124, 58, 237, 0.07), transparent 45%);
-        }
-
-        @media (max-width: 768px) {
-          .chat-aura {
-            opacity: 0.08;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .chat-aura {
-            display: none;
-          }
-        }
+        .chat-aura-1 { width: 260px; height: 180px; top: 70px; left: -90px; background: rgba(99, 102, 241, 0.35); }
+        .chat-aura-2 { width: 240px; height: 170px; top: 260px; right: -70px; background: rgba(236, 72, 153, 0.2); }
+        .chat-message-pane { background-image: radial-gradient(circle at 20% 0%, rgba(124, 58, 237, 0.07), transparent 45%); }
+        @media (max-width: 768px) { .chat-aura { opacity: 0.08; } }
+        @media (prefers-reduced-motion: reduce) { .chat-aura { display: none; } }
       `}</style>
     </div>
   );
