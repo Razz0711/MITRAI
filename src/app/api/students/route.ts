@@ -29,6 +29,8 @@ function buildStudentProfile(source: Record<string, unknown>, id: string): Stude
     country: (source.country as string) || 'India',
     timezone: (source.timezone as string) || 'IST',
     preferredLanguage: (source.preferredLanguage as string) || 'English',
+    bio: (source.bio as string) || '',
+    schedulePreferences: (source.schedulePreferences as string[]) || [],
     currentStudy: (source.currentStudy as string) || '',
     institution: (source.institution as string) || 'SVNIT Surat',
     department: (source.department as string) || '',

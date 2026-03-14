@@ -15,6 +15,8 @@ export interface StudentProfile {
   country: string;
   timezone: string;
   preferredLanguage: string;
+  bio?: string;
+  schedulePreferences?: string[];
 
   // Academic Info
   department: string; // CSE, AI, Mechanical, etc.

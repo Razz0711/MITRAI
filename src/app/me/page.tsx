@@ -115,7 +115,7 @@ export default function MePage() {
             </p>
           </div>
           <Link
-            href="/onboarding"
+            href="/me/edit"
             className="text-xs text-[var(--foreground)] font-medium px-4 py-2 rounded-xl border border-[var(--border)] hover:bg-white/5 transition-colors shrink-0"
           >
             Edit
