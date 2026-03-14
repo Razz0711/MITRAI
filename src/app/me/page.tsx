@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { StudentProfile } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import { X } from 'lucide-react';
 
 export default function MePage() {
   const { user, logout } = useAuth();
@@ -21,6 +22,7 @@ export default function MePage() {
   const [topMatch, setTopMatch] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
   const [subscription, setSubscription] = useState<{ plan: string; status: string } | null>(null);
+  const [zoomPhoto, setZoomPhoto] = useState(false); // For photo zoom
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -96,12 +98,15 @@ export default function MePage() {
   const circleTags = student?.strongSubjects?.slice(0, 2).map(s => `${s} Circle`) || [];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
+    <div className="max-w-2xl mx-auto px-4 py-4 space-y-4 overflow-x-hidden">
 
       {/* ═══════ PROFILE CARD ═══════ */}
       <div className="card p-5" style={{ border: '1px solid rgba(124,58,237,0.2)' }}>
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-14 h-14 rounded-full shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[var(--primary)]/20">
+          <div 
+            className="w-14 h-14 rounded-full shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[var(--primary)]/20 cursor-pointer transition-transform active:scale-95"
+            onClick={() => setZoomPhoto(true)}
+          >
             {(student?.name || user?.name || 'S').charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
@@ -121,6 +126,24 @@ export default function MePage() {
             Edit
           </Link>
         </div>
+
+        {/* ── Photo Zoom Modal ── */}
+        {zoomPhoto && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-200" onClick={() => setZoomPhoto(false)}>
+            <button 
+              className="absolute top-6 right-6 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setZoomPhoto(false); }}
+            >
+              <X size={24} />
+            </button>
+            <div 
+              className="w-64 h-64 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] border-4 border-white/20 flex items-center justify-center text-white font-bold text-6xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(student?.name || user?.name || 'S').charAt(0).toUpperCase()}
+            </div>
+          </div>
+        )}
 
         {/* Circle Tags */}
         <div className="flex flex-wrap gap-2 mb-4">

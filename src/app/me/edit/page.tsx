@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { StudentProfile } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { ArrowLeft, Edit2, Lock, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Edit2, Lock, ChevronDown, X } from 'lucide-react';
 
 const SCHEDULE_OPTIONS = [
   { id: 'Morning', icon: '🌅', label: 'Morning' },
@@ -26,6 +26,7 @@ export default function EditProfilePage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [zoomPhoto, setZoomPhoto] = useState(false); // For photo zoom
 
   // Form state
   const [bio, setBio] = useState('');
@@ -98,7 +99,7 @@ export default function EditProfilePage() {
   const initial = (profile?.name || user?.name || 'S').charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[var(--background)] max-w-2xl mx-auto flex flex-col pt-3">
+    <div className="min-h-screen bg-[var(--background)] max-w-2xl mx-auto flex flex-col pt-3 overflow-x-hidden">
       {/* ── Top Bar ── */}
       <div className="flex items-center justify-between px-4 pb-4">
         <div className="flex items-center gap-3">
@@ -123,8 +124,8 @@ export default function EditProfilePage() {
       <div className="flex-1 overflow-y-auto px-4 pb-20 space-y-4">
         {/* ── Avatar Section ── */}
         <div className="card p-6 flex flex-col items-center text-center">
-          <div className="relative mb-4 group cursor-pointer">
-            <div className="w-24 h-24 rounded-full bg-indigo-900/40 border-2 border-indigo-500/20 flex items-center justify-center text-white font-bold text-4xl shadow-xl">
+          <div className="relative mb-4 group cursor-pointer" onClick={() => setZoomPhoto(true)}>
+            <div className="w-24 h-24 rounded-full bg-indigo-900/40 border-2 border-indigo-500/20 flex items-center justify-center text-white font-bold text-4xl shadow-xl transition-transform active:scale-95">
               {initial}
             </div>
             <div className="absolute bottom-0 right-0 w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center text-white border-2 border-[var(--surface)] shadow-md group-hover:bg-indigo-400 transition-colors">
@@ -138,6 +139,24 @@ export default function EditProfilePage() {
             Upload Photo
           </button>
         </div>
+
+        {/* ── Photo Zoom Modal ── */}
+        {zoomPhoto && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-200" onClick={() => setZoomPhoto(false)}>
+            <button 
+              className="absolute top-6 right-6 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setZoomPhoto(false); }}
+            >
+              <X size={24} />
+            </button>
+            <div 
+              className="w-64 h-64 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-indigo-600 to-purple-800 border-4 border-white/20 flex items-center justify-center text-white font-bold text-6xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {initial}
+            </div>
+          </div>
+        )}
 
         {/* ── BIO Section ── */}
         <div className="card p-5">
