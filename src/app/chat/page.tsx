@@ -13,7 +13,7 @@ import { useAuth } from '@/lib/auth';
 import { DirectMessage, ChatThread, UserStatus, StudentProfile, MatchResult } from '@/lib/types';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
-import ChatSideNav from '@/components/ChatSideNav';
+
 import {
   Search,
   Paperclip,
@@ -297,8 +297,7 @@ export default function ChatPage() {
 
       <div className="h-[calc(100vh-4.5rem)] md:h-[calc(100vh-3.5rem)] flex">
 
-        {/* Vertical icon nav */}
-        <ChatSideNav />
+
 
         {/* ═══════ SIDEBAR ═══════ */}
         <div className={`${showSidebar ? 'flex' : 'hidden'} md:flex flex-col flex-1 md:flex-none md:w-72 lg:w-80 md:border-r md:border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)] overflow-hidden`}>
