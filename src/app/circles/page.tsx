@@ -10,8 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import ChatSideNav from '@/components/ChatSideNav';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, ArrowLeft } from 'lucide-react';
 
 interface Circle {
   id: string;
@@ -199,7 +198,6 @@ export default function CirclesPage() {
     return (
       <div className="min-h-screen">
         <div className="h-[calc(100vh-4.5rem)] md:h-[calc(100vh-3.5rem)] flex">
-          <ChatSideNav />
           <div className="flex-1 flex items-center justify-center">
             <LoadingSkeleton type="cards" count={4} label="Loading circles..." />
           </div>
@@ -227,10 +225,9 @@ export default function CirclesPage() {
   return (
     <div className="min-h-screen overflow-x-hidden">
       <div className="h-[calc(100vh-4.5rem)] md:h-[calc(100vh-3.5rem)] flex">
-        <ChatSideNav />
 
         {/* ═══════ CIRCLE LIST (left panel) ═══════ */}
-        <div className="flex flex-col flex-1 md:flex-none md:w-72 lg:w-80 md:border-r border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)]">
+        <div className={`flex flex-col flex-1 md:flex-none md:w-72 lg:w-80 md:border-r border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)] ${selectedCircle ? 'hidden md:flex' : 'flex'}`}>
 
           {/* Header */}
           <div className="p-4 pb-2 flex items-center gap-2">
@@ -325,10 +322,18 @@ export default function CirclesPage() {
           </div>
         </div>
 
-        {/* ═══════ CIRCLE DETAIL (right panel — desktop) ═══════ */}
-        <div className="hidden md:flex flex-col flex-1 overflow-y-auto bg-[var(--background)]">
+        {/* ═══════ CIRCLE DETAIL (right panel) ═══════ */}
+        <div className={`${selectedCircle ? 'flex' : 'hidden md:flex'} flex-col flex-1 overflow-y-auto bg-[var(--background)]`}>
           {activeCircle ? (
             <div className="p-6 max-w-2xl">
+              {/* Mobile back button */}
+              <button
+                onClick={() => setSelectedCircle(null)}
+                className="md:hidden flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--foreground)] mb-4 transition-colors"
+              >
+                <ArrowLeft size={16} />
+                Back to Circles
+              </button>
               {/* ─── Circle header ─── */}
               <div className="flex items-start gap-4 mb-5">
                 <div
