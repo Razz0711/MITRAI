@@ -1,16 +1,14 @@
 // ============================================
-// MitrAI v2 - Premium Top Bar + Mobile Bottom Tabs
-// Glass header with smooth tab transitions
+// MitrAI v2 - Clean Top Bar + Mobile Bottom Tabs
+// Glass header (no logo/theme toggle), smooth tabs
 // ============================================
 
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useTheme } from '@/components/ThemeProvider';
 import {
-  Home, MessageCircle, Sun, Moon,
+  Home, MessageCircle,
   Handshake,
   User, Compass
 } from 'lucide-react';
@@ -25,7 +23,6 @@ const tabs = [
 ];
 
 export default function TopBar() {
-  const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const activeTab = getActiveTab(pathname);
 
@@ -35,34 +32,21 @@ export default function TopBar() {
     /^\/chat\/[^/]+/.test(pathname) ||    // direct chat thread
     /^\/call(\/|$)/.test(pathname);       // call page
 
+  // Hide top bar on mobile (only show desktop nav)
+  const hideTopBarOnMobile = true;
+
   return (
     <>
-      {/* ─── Top Header Bar (glass) ─── */}
-      <header className="fixed top-0 left-0 right-0 z-50" style={{
+      {/* ─── Desktop Top Header Bar ─── */}
+      <header className={`fixed top-0 left-0 right-0 z-50 ${hideTopBarOnMobile ? 'hidden md:block' : ''}`} style={{
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(20px) saturate(1.5)',
         WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
         borderBottom: '1px solid var(--glass-border)',
       }}>
         <div className="flex items-center h-14 px-4 max-w-7xl mx-auto">
-          {/* Logo */}
-          <Link href="/home" className="flex items-center gap-2 shrink-0 mr-4 group">
-            <Image
-              src="/logo.jpg"
-              alt="MitrAI"
-              width={36}
-              height={36}
-              className="h-9 w-auto rounded-xl shadow-lg group-hover:scale-105 transition-transform"
-              priority
-            />
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-[var(--foreground)] leading-none">MitrAI</span>
-              <span className="text-[9px] text-[var(--muted)] leading-none mt-0.5 hidden sm:block">SVNIT</span>
-            </div>
-          </Link>
-
           {/* Desktop Center tabs */}
-          <nav className="hidden md:flex items-center justify-center gap-1 flex-1">
+          <nav className="flex items-center justify-center gap-1 flex-1">
             {tabs.map(tab => {
               const isActive = tab.id === activeTab;
               const Icon = tab.icon;
@@ -85,20 +69,6 @@ export default function TopBar() {
               );
             })}
           </nav>
-
-          {/* Spacer for mobile */}
-          <div className="flex-1 md:hidden" />
-
-          {/* Right actions */}
-          <div className="flex items-center gap-1 shrink-0 ml-3">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl hover:bg-[var(--surface-light)] text-[var(--muted)] hover:text-[var(--foreground)] transition-all duration-200"
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-          </div>
         </div>
       </header>
 

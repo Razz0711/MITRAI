@@ -34,7 +34,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <TopBar />
         <GlobalNotificationPoller />
         <IncomingCallBanner />
-        <main className="pt-16 pb-20 md:pb-4 min-h-screen">
+        <main className="pt-2 md:pt-16 pb-20 md:pb-4 min-h-screen">
           {children}
         </main>
       </>
