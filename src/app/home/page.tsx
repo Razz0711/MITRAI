@@ -151,15 +151,26 @@ export default function CampusFeedPage() {
     }
   }, []);
 
-  // Fetch student info
+  // Fetch student info from profiles table
   useEffect(() => {
     if (!user) return;
-    fetch('/api/students/me').then(r => r.json()).then(d => {
-      if (d.success && d.data) {
-        setStudentName(d.data.name || '');
-        setStudentPhoto(d.data.photoUrl || '');
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/students/me');
+        const d = await res.json();
+        if (d.success && d.data) {
+          const name = d.data.fullName || d.data.full_name || d.data.name || user.name || '';
+          setStudentName(name);
+          setStudentPhoto(d.data.photoUrl || d.data.photo_url || d.data.avatarUrl || d.data.avatar_url || '');
+        } else {
+          // Fallback to user object
+          setStudentName(user.name || user.email?.split('@')[0] || '');
+        }
+      } catch {
+        setStudentName(user.name || user.email?.split('@')[0] || '');
       }
-    }).catch(() => {});
+    };
+    fetchProfile();
   }, [user]);
 
   // Fetch feed
@@ -372,10 +383,13 @@ export default function CampusFeedPage() {
             />
             <button
               onClick={() => setComposeAnon(!composeAnon)}
-              className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${composeAnon ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]'}`}
+              className="shrink-0 flex items-center gap-1.5"
               title={composeAnon ? 'Posting anonymously' : 'Post with name'}
             >
-              <span className="text-[10px] font-bold">{composeAnon ? 'A' : 'N'}</span>
+              <span className="text-[9px] font-medium text-[var(--muted)]">Anon</span>
+              <div className={`relative w-9 h-5 rounded-full transition-all duration-300 ${composeAnon ? 'bg-purple-500' : 'bg-zinc-600'}`}>
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${composeAnon ? 'left-[18px]' : 'left-0.5'}`} />
+              </div>
             </button>
           </div>
 
@@ -514,7 +528,7 @@ export default function CampusFeedPage() {
           <div className="absolute inset-0 bg-black/60" />
           <div
             className="relative w-full max-w-lg rounded-t-3xl p-5 pb-8 space-y-5 slide-up"
-            style={{ background: 'var(--card-bg)', borderTop: '2px solid rgba(168,85,247,0.3)' }}
+            style={{ background: 'var(--surface-solid)', borderTop: '2px solid rgba(168,85,247,0.3)' }}
             onClick={e => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto" />
@@ -590,7 +604,7 @@ export default function CampusFeedPage() {
           <div className="absolute inset-0 bg-black/60" />
           <div
             className="relative w-full max-w-lg rounded-t-3xl p-5 pb-8 space-y-5 slide-up"
-            style={{ background: 'var(--card-bg)', borderTop: '2px solid rgba(34,197,94,0.3)' }}
+            style={{ background: 'var(--surface-solid)', borderTop: '2px solid rgba(34,197,94,0.3)' }}
             onClick={e => e.stopPropagation()}
           >
             <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto" />
