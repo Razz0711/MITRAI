@@ -398,7 +398,16 @@ export async function pollForMatch(userId: string): Promise<{ matched: boolean; 
   const { data: candidates } = await query;
   if (!candidates || candidates.length === 0) return { matched: false };
 
-  const partner = candidates.find(c => !blockedIds.includes(c.user_id));
+  // Get recently matched users (last 7 days) to avoid re-matching
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recentMatches } = await supabase
+    .from('anon_match_history')
+    .select('matched_user_id')
+    .eq('user_id', userId)
+    .gte('matched_at', sevenDaysAgo);
+  const recentMatchIds = (recentMatches || []).map(r => r.matched_user_id);
+
+  const partner = candidates.find(c => !blockedIds.includes(c.user_id) && !recentMatchIds.includes(c.user_id));
   if (!partner) return { matched: false };
 
   // 3. Create room + add both members
@@ -418,6 +427,13 @@ export async function pollForMatch(userId: string): Promise<{ matched: boolean; 
 
   // Remove both from queue
   await supabase.from('anon_queue').delete().in('user_id', [userId, partner.user_id]);
+
+  // Log match history (for 7-day re-match prevention — survives ephemeral deletion)
+  const now = new Date().toISOString();
+  await supabase.from('anon_match_history').insert([
+    { user_id: userId, matched_user_id: partner.user_id, room_type: myEntry.room_type, matched_at: now },
+    { user_id: partner.user_id, matched_user_id: userId, room_type: myEntry.room_type, matched_at: now },
+  ]);
 
   return { matched: true, roomId };
 }
@@ -518,9 +534,14 @@ export async function toggleRevealConsent(roomId: string, userId: string): Promi
   return { revealed: false, myConsent: newConsent, partnerConsent };
 }
 
-/** Close/leave a room */
+/** Close/leave a room — EPHEMERAL: deletes all messages, members, and the room itself */
 export async function closeAnonRoom(roomId: string): Promise<void> {
-  await supabase.from('anon_rooms').update({ status: 'closed', closed_at: new Date().toISOString() }).eq('id', roomId);
+  // 1. Delete all messages (no trace)
+  await supabase.from('anon_messages').delete().eq('room_id', roomId);
+  // 2. Delete all members
+  await supabase.from('anon_room_members').delete().eq('room_id', roomId);
+  // 3. Delete the room itself
+  await supabase.from('anon_rooms').delete().eq('id', roomId);
 }
 
 /** Get user's active room (if any) */
@@ -538,19 +559,21 @@ export async function getUserActiveRoom(userId: string): Promise<string | null> 
 // REPORTS & BLOCKS
 // ═══════════════════════════════════════════
 
-/** Get live stats: users in queue and active rooms */
+/** Get live stats: users in queue and active rooms — REAL-TIME only */
 export async function getAnonLiveStats(): Promise<{ queueCount: number; activeRooms: number; queueByType: Record<string, number> }> {
-  // Count users in queue
+  // Only count queue entries from last 5 minutes (fresh entries)
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   const { data: queueData, error: qErr } = await supabase
     .from('anon_queue')
-    .select('room_type');
+    .select('room_type')
+    .gte('joined_at', fiveMinAgo);
   const queueCount = queueData?.length || 0;
   const queueByType: Record<string, number> = {};
   (queueData || []).forEach(q => {
     queueByType[q.room_type] = (queueByType[q.room_type] || 0) + 1;
   });
 
-  // Count active rooms
+  // Count active rooms (these are real since we now delete closed ones)
   const { count, error: rErr } = await supabase
     .from('anon_rooms')
     .select('id', { count: 'exact', head: true })
