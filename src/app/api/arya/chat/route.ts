@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Initialize Gemini model with system prompt
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       systemInstruction: ARYA_SYSTEM_PROMPT,
     });
 
