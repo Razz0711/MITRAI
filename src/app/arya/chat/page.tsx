@@ -138,13 +138,14 @@ export default function AryaChatPage() {
           setMessages(prev => [...prev, aryaMsg]);
         }
       } else {
-        // Fallback if API fails
-        const fallback = await persistMessage('assistant', 'sorry yaar... network issue 🥺 ek min try karna phir se');
+        // Fallback if API fails — show error for debugging
+        const errText = data.error || 'unknown error';
+        const fallback = await persistMessage('assistant', `[DEBUG] API error: ${errText}`);
         if (fallback) setMessages(prev => [...prev, fallback]);
       }
     } catch (err) {
       console.error('Arya chat error:', err);
-      const fallback = await persistMessage('assistant', 'arre yaar kuch toh error aa gaya 😢 thodi der baad try kar na');
+      const fallback = await persistMessage('assistant', `[DEBUG] Fetch error: ${err instanceof Error ? err.message : String(err)}`);
       if (fallback) setMessages(prev => [...prev, fallback]);
     }
 
