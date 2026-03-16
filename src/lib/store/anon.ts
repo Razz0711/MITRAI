@@ -557,11 +557,13 @@ export async function getAnonLiveStats(): Promise<{ queueCount: number; activeRo
     queueByType[q.room_type] = (queueByType[q.room_type] || 0) + 1;
   });
 
-  // Count active rooms (these are real since we now delete closed ones)
+  // Count active rooms created in last 1 hour (older = stale/abandoned)
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { count, error: rErr } = await supabase
     .from('anon_rooms')
     .select('id', { count: 'exact', head: true })
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .gte('created_at', oneHourAgo);
   const activeRooms = count || 0;
 
   if (qErr) console.error('getAnonStats queue error:', qErr);
