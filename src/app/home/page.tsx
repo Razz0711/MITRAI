@@ -156,10 +156,10 @@ export default function CampusFeedPage() {
     if (!user) return;
     const fetchProfile = async () => {
       try {
-        const res = await fetch('/api/students/me');
+        const res = await fetch(`/api/students?id=${encodeURIComponent(user.id)}`);
         const d = await res.json();
         if (d.success && d.data) {
-          const name = d.data.fullName || d.data.full_name || d.data.name || user.name || '';
+          const name = d.data.name || d.data.fullName || d.data.full_name || user.name || '';
           setStudentName(name);
           setStudentPhoto(d.data.photoUrl || d.data.photo_url || d.data.avatarUrl || d.data.avatar_url || '');
         } else {

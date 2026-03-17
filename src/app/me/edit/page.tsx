@@ -211,7 +211,7 @@ export default function EditProfilePage() {
         </button>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-3">
         {/* ── Avatar Section ── */}
         <div className="rounded-2xl p-6 flex flex-col items-center text-center" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           <div className="relative mb-4 group cursor-pointer" onClick={() => setZoomPhoto(true)}>
@@ -279,31 +279,6 @@ export default function EditProfilePage() {
           </div>
         )}
 
-        {/* ── Social Links Section ── */}
-        <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
-          <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">Social Links</h3>
-          <p className="text-[10px] text-[var(--muted)] mb-4">Add your socials so friends can find you</p>
-          <div className="space-y-3">
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-pink-400 text-sm">📸</span>
-              <input
-                value={instagramId}
-                onChange={e => setInstagramId(e.target.value)}
-                placeholder="Instagram username (e.g. raj.xyz)"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-white/5 border border-[var(--glass-border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:border-violet-500/40 transition-colors"
-              />
-            </div>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400 text-sm">𝕏</span>
-              <input
-                value={twitterId}
-                onChange={e => setTwitterId(e.target.value)}
-                placeholder="Twitter / X username (e.g. raj_tweets)"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-white/5 border border-[var(--glass-border)] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:border-violet-500/40 transition-colors"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* ── BIO Section ── */}
         <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>

@@ -23,6 +23,9 @@ export default function MePage() {
   const [topMatch, setTopMatch] = useState(0);
   const [zoomPhoto, setZoomPhoto] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const [comingSoon, setComingSoon] = useState(false);
+
+  const showComingSoon = () => { setComingSoon(true); setTimeout(() => setComingSoon(false), 2500); };
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -240,7 +243,7 @@ export default function MePage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] px-1 mb-2">PREFERENCES</p>
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           {/* Change Language */}
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
+          <button onClick={showComingSoon} className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-lg">🌐</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Change Language</p>
@@ -264,22 +267,10 @@ export default function MePage() {
             </div>
           </button>
 
-          <div className="h-px bg-[var(--border)]" />
 
-          {/* Notifications */}
-          <Link href="/home" className="flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-lg">🔔</div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-[var(--foreground)]">Notifications</p>
-              <p className="text-[10px] text-[var(--muted)]">Manage your alerts</p>
-            </div>
-            <span className="text-[var(--muted)] text-xs">›</span>
-          </Link>
-
-          <div className="h-px bg-[var(--border)]" />
 
           {/* Privacy */}
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
+          <button onClick={showComingSoon} className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-lg">🔒</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Privacy</p>
@@ -295,7 +286,7 @@ export default function MePage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] px-1 mb-2">SUPPORT</p>
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           {/* Feedback */}
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
+          <button onClick={showComingSoon} className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-pink-500/15 flex items-center justify-center text-lg">💬</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Feedback</p>
@@ -307,7 +298,7 @@ export default function MePage() {
           <div className="h-px bg-[var(--border)]" />
 
           {/* Help & FAQ */}
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
+          <button onClick={showComingSoon} className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-lg">❓</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Help & FAQ</p>
@@ -337,6 +328,15 @@ export default function MePage() {
         <span>·</span>
         <span>MitrAI v1.0</span>
       </div>
+
+      {/* Coming Soon Toast */}
+      {comingSoon && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
+          <div className="px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-2xl animate-bounce" style={{background:'linear-gradient(135deg, #8B5CF6, #6d28d9)',boxShadow:'0 8px 32px rgba(124,58,237,0.4)'}}>
+            🚀 Coming Soon!
+          </div>
+        </div>
+      )}
     </div>
   );
 }

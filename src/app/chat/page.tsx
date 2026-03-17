@@ -322,14 +322,9 @@ export default function ChatPage() {
           {/* Header */}
           <div className="p-4 pb-2 flex items-center justify-between">
             <h1 className="text-lg font-bold text-[var(--foreground)]">Chats</h1>
-            <div className="flex items-center gap-2">
-              <button onClick={() => document.getElementById('chat-search')?.focus()} className="w-9 h-9 rounded-full bg-[var(--surface)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
-                <Search size={16} />
-              </button>
-              <button onClick={() => setShowDiscoverSheet(true)} className="w-9 h-9 rounded-full bg-gradient-to-r from-[var(--primary)] to-[#6d28d9] flex items-center justify-center text-white hover:shadow-lg hover:shadow-purple-500/20 active:scale-95 transition-all" title="Find SVNIT students">
-                <Plus size={18} />
-              </button>
-            </div>
+            <button onClick={() => document.getElementById('chat-search')?.focus()} className="w-9 h-9 rounded-full bg-[var(--surface)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
+              <Search size={16} />
+            </button>
           </div>
 
           {/* Search */}
@@ -428,6 +423,17 @@ export default function ChatPage() {
             )}
           </div>
         </div>
+
+        {/* FAB — WhatsApp-style + button */}
+        {showSidebar && (
+          <button
+            onClick={() => setShowDiscoverSheet(true)}
+            className="fixed bottom-24 right-5 z-30 w-14 h-14 rounded-full bg-gradient-to-r from-[var(--primary)] to-[#6d28d9] flex items-center justify-center text-white shadow-2xl shadow-purple-500/30 hover:shadow-purple-500/50 active:scale-90 transition-all md:bottom-8 md:right-8"
+            title="Find SVNIT students"
+          >
+            <Plus size={24} />
+          </button>
+        )}
         {/* ═══════ CHAT AREA ═══════ */}
         <div className={`${!showSidebar ? 'flex' : 'hidden'} md:flex flex-col flex-1 bg-[var(--surface)]/30`}>
           {selectedChatId ? (
