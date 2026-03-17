@@ -3,13 +3,26 @@
 // Hero with animated orbs, glass cards, stagger animations
 // ============================================
 
+'use client';
+
+import { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 import {
   Sparkles, Users, Brain, Phone, BookOpen, BarChart3,
   MessageCircle, Zap, Target, ArrowRight, Star, Shield
 } from 'lucide-react';
 
 export default function Home() {
+  const { user } = useAuth();
+  const router = useRouter();
+
+  // Auto-redirect logged-in users to /home
+  useEffect(() => {
+    if (user) router.replace('/home');
+  }, [user, router]);
+
   return (
     <div className="min-h-screen overflow-hidden">
       {/* ─── Ambient Background Orbs ─── */}

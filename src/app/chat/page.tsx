@@ -310,11 +310,11 @@ export default function ChatPage() {
   const popupThread = profilePopup ? threads.find(t => getOtherUserId(t) === profilePopup) : null;
 
   return (
-    <div className="min-h-screen chat-polish relative overflow-x-hidden max-w-[100vw]">
+    <div className="min-h-screen chat-polish relative overflow-hidden max-w-[100vw]">
       <div className="chat-aura chat-aura-1" />
       <div className="chat-aura chat-aura-2" />
 
-      <div className="h-[calc(100vh-4.5rem)] md:h-[calc(100vh-3.5rem)] flex">
+      <div className="h-[calc(100dvh-7.5rem)] md:h-[calc(100dvh-3.5rem)] flex">
 
 
 

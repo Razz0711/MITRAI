@@ -61,7 +61,7 @@ export default function AryaProfilePage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto pb-28 -mt-2 md:-mt-16">
+    <div className="max-w-lg mx-auto pb-32 -mt-2 md:-mt-16">
 
       {/* ── Header Banner ── */}
       <div className="relative h-44 overflow-hidden" style={{
