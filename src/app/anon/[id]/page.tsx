@@ -276,7 +276,7 @@ export default function AnonChatRoomPage() {
   const canReveal = messages.length >= 10 && !isRevealed;
 
   return (
-    <div className="chat-container">
+    <div className="chat-container overflow-x-hidden">
       {/* Header */}
       <div className="fixed top-14 left-0 right-0 z-40 bg-[var(--background)]/90 backdrop-blur-md border-b border-[var(--border)]">
         <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-between">
