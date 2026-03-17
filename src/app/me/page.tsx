@@ -243,14 +243,14 @@ export default function MePage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] px-1 mb-2">PREFERENCES</p>
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           {/* Change Language */}
-          <button onClick={showComingSoon} className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
+          <Link href="/me/language" className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-lg">🌐</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Change Language</p>
               <p className="text-[10px] text-[var(--muted)]">English (default)</p>
             </div>
             <span className="text-[var(--muted)] text-xs">›</span>
-          </button>
+          </Link>
 
           <div className="h-px bg-[var(--border)]" />
 
@@ -270,14 +270,14 @@ export default function MePage() {
 
 
           {/* Privacy */}
-          <button onClick={showComingSoon} className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
+          <Link href="/me/privacy" className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-lg">🔒</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Privacy</p>
               <p className="text-[10px] text-[var(--muted)]">Control who sees you</p>
             </div>
             <span className="text-[var(--muted)] text-xs">›</span>
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -286,26 +286,26 @@ export default function MePage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] px-1 mb-2">SUPPORT</p>
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           {/* Feedback */}
-          <button onClick={showComingSoon} className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
+          <Link href="/me/feedback" className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-pink-500/15 flex items-center justify-center text-lg">💬</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Feedback</p>
               <p className="text-[10px] text-[var(--muted)]">Help us improve MitrAI</p>
             </div>
             <span className="text-[var(--muted)] text-xs">›</span>
-          </button>
+          </Link>
 
           <div className="h-px bg-[var(--border)]" />
 
           {/* Help & FAQ */}
-          <button onClick={showComingSoon} className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
+          <Link href="/me/help" className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-lg">❓</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Help & FAQ</p>
               <p className="text-[10px] text-[var(--muted)]">How to use MitrAI</p>
             </div>
             <span className="text-[var(--muted)] text-xs">›</span>
-          </button>
+          </Link>
         </div>
       </div>
 

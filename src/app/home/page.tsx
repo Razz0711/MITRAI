@@ -335,7 +335,7 @@ export default function CampusFeedPage() {
         <div className="flex items-center gap-3 max-w-2xl mx-auto">
           <Link href="/me" className="shrink-0">
             {studentPhoto ? (
-              <Image src={studentPhoto} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-[var(--primary)]/30" />
+              <Image src={studentPhoto} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-[var(--primary)]/30" unoptimized onError={() => setStudentPhoto('')} />
             ) : (
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white text-sm font-bold">
                 {initial}
@@ -361,19 +361,8 @@ export default function CampusFeedPage() {
       <div className="max-w-2xl mx-auto px-4 space-y-4 mt-4" ref={feedRef}>
         {/* ─── Compose Bar ─── */}
         <div className="card p-3 space-y-2.5">
-          {/* Line 1: Avatar + Input + Anon Toggle */}
+          {/* Line 1: Input + Anon Toggle */}
           <div className="flex items-center gap-2.5">
-            <div className="shrink-0">
-              {composeAnon ? (
-                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                  <Sparkles size={14} className="text-purple-400" />
-                </div>
-              ) : studentPhoto ? (
-                <Image src={studentPhoto} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white text-xs font-bold">{initial}</div>
-              )}
-            </div>
             <input
               type="text"
               value={composeText}
