@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error('Gemini chat error:', errMsg);
     return NextResponse.json(
-      { success: false, error: errMsg },
+      { success: false, error: 'sorry yaar, thoda busy hoon 🙏 ek min mein try karna' },
       { status: 500 }
     );
   }
