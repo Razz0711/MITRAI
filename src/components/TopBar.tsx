@@ -13,7 +13,7 @@ import {
 import { getActiveTab } from './BottomTabs';
 
 const tabs = [
-  { id: 'home', label: 'Feed', icon: LayoutGrid, href: '/home' },
+  { id: 'home', label: 'Home', icon: LayoutGrid, href: '/home' },
   { id: 'arya', label: 'Arya', icon: Sparkles, href: '/arya' },
   { id: 'anon', label: 'Anon', icon: Ghost, href: '/anon' },
   { id: 'chat', label: 'Chat', icon: MessageCircle, href: '/chat' },

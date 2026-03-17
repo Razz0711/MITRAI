@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, MessageSquare, Phone, X, Instagram, Pencil } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Phone, X, Instagram, Pencil, Camera } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function AryaProfilePage() {
@@ -16,11 +16,16 @@ export default function AryaProfilePage() {
   const [isImageOpen, setIsImageOpen] = useState(false);
   const [displayName, setDisplayName] = useState('Arya AI ✨');
   const [isEditing, setIsEditing] = useState(false);
+  const [showPicSheet, setShowPicSheet] = useState(false);
+  const [customAvatar, setCustomAvatar] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const picInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('arya_display_name');
     if (saved) setDisplayName(saved);
+    const savedPic = localStorage.getItem('arya_custom_avatar');
+    if (savedPic) setCustomAvatar(savedPic);
   }, []);
 
   const saveName = () => {
@@ -33,6 +38,27 @@ export default function AryaProfilePage() {
   useEffect(() => {
     if (isEditing && nameInputRef.current) nameInputRef.current.focus();
   }, [isEditing]);
+
+  const aryaAvatar = customAvatar || '/arya-avatar.png';
+
+  const handlePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setCustomAvatar(dataUrl);
+      localStorage.setItem('arya_custom_avatar', dataUrl);
+      setShowPicSheet(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePicRemove = () => {
+    setCustomAvatar(null);
+    localStorage.removeItem('arya_custom_avatar');
+    setShowPicSheet(false);
+  };
 
   return (
     <div className="max-w-lg mx-auto pb-28 -mt-2 md:-mt-16">
@@ -61,16 +87,27 @@ export default function AryaProfilePage() {
 
       {/* ── Avatar (overlapping banner) — tap to fullscreen ── */}
       <div className="flex justify-center -mt-14 mb-3 relative z-10">
-        <button onClick={() => setIsImageOpen(true)} className="w-28 h-28 rounded-full border-4 border-[var(--background)] shadow-2xl overflow-hidden hover:scale-105 transition-transform">
-          <Image
-            src="/arya-avatar.png"
-            alt="Arya"
-            width={112}
-            height={112}
-            className="w-full h-full object-cover"
-          />
-        </button>
+        <div className="relative">
+          <button onClick={() => setIsImageOpen(true)} className="w-28 h-28 rounded-full border-4 border-[var(--background)] shadow-2xl overflow-hidden hover:scale-105 transition-transform">
+            <Image
+              src={aryaAvatar}
+              alt="Arya"
+              width={112}
+              height={112}
+              className="w-full h-full object-cover"
+              unoptimized={!!customAvatar}
+            />
+          </button>
+          {/* Camera badge - tap to change */}
+          <button
+            onClick={() => setShowPicSheet(true)}
+            className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-violet-600 border-3 border-[var(--background)] flex items-center justify-center text-white hover:bg-violet-500 transition-colors shadow-md"
+          >
+            <Camera size={14} />
+          </button>
+        </div>
       </div>
+      <input ref={picInputRef} type="file" accept="image/*" className="hidden" onChange={handlePicChange} />
 
       {/* ── Name & Status ── */}
       <div className="text-center px-4 mb-6">
@@ -166,14 +203,46 @@ export default function AryaProfilePage() {
             <X size={22} />
           </button>
           <Image
-            src="/arya-avatar.png"
+            src={aryaAvatar}
             alt="Arya"
             width={400}
             height={400}
             className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl"
+            unoptimized={!!customAvatar}
             onClick={e => e.stopPropagation()}
           />
         </div>
+      )}
+
+      {/* ═══ Pic Change/Remove Sheet ═══ */}
+      {showPicSheet && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/60" onClick={() => setShowPicSheet(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] space-y-2" style={{ background: 'var(--surface-solid)', border: '1px solid var(--border)' }}>
+            <div className="w-10 h-1 rounded-full bg-[var(--muted)]/30 mx-auto mb-3" />
+            <p className="text-sm font-bold text-[var(--foreground)] text-center mb-3">Arya&apos;s Photo</p>
+            <button
+              onClick={() => { picInputRef.current?.click(); }}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/20 transition-colors"
+            >
+              📸 Change Photo
+            </button>
+            {customAvatar && (
+              <button
+                onClick={handlePicRemove}
+                className="w-full py-3 rounded-xl text-sm font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 transition-colors"
+              >
+                🗑️ Remove Photo
+              </button>
+            )}
+            <button
+              onClick={() => setShowPicSheet(false)}
+              className="w-full py-3 rounded-xl text-sm font-medium text-[var(--muted)] bg-[var(--surface)] border border-[var(--border)] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

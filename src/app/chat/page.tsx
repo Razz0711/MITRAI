@@ -92,16 +92,30 @@ export default function ChatPage() {
   const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
   const [pendingFriend, setPendingFriend] = useState<{ id: string; name: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'unread' | 'friends'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'friends' | 'discover'>('all');
   const [allStudents, setAllStudents] = useState<StudentProfile[]>([]);
   const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
   const [matchScores, setMatchScores] = useState<Record<string, number>>({});
-  const [comingSoon, setComingSoon] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [profilePopup, setProfilePopup] = useState<string | null>(null); // userId
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const showComingSoon = () => { setComingSoon(true); setTimeout(() => setComingSoon(false), 2500); };
+  const COMMON_EMOJIS = ['😊','😂','❤️','🔥','👍','😭','🥺','😍','🙏','💕','✨','😅','🤔','💜','👀','🎉','😎','🥰','💪','😢','🤣','😘','🙈','👏','💯','😳','🤗','✌️','💀','🫶','😌','🤝','🫣','👋','😤','🥵','❤️‍🔥','🤭','😏','💔'];
+
+  const insertEmoji = (emoji: string) => {
+    setNewMsg(prev => prev + emoji);
+    inputRef.current?.focus();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Send file name as a message (attachment placeholder)
+    sendMessage(`📎 ${file.name}`);
+    e.target.value = '';
+  };
 
   const studentId = typeof window !== 'undefined'
     ? localStorage.getItem('mitrai_student_id') || user?.id
@@ -319,57 +333,74 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Aarya AI Banner — clickable avatar */}
-          <div className="mx-3 mt-2 p-3 rounded-2xl" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(109,40,217,0.18))', border: '1px solid rgba(139,92,246,0.25)' }}>
-            <div className="flex items-center justify-between mb-2.5">
-              <div className="flex items-center gap-2.5">
-                <button onClick={() => window.location.href='/arya'} className="w-10 h-10 rounded-full overflow-hidden shrink-0" title="View Arya's profile">
-                  <Image src="/arya-avatar.png" alt="Arya" width={40} height={40} className="w-full h-full object-cover" />
-                </button>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--foreground)]">Arya</p>
-                  <p className="text-[10px] text-[var(--muted)]">The most realistic AI</p>
-                </div>
-              </div>
-              <span className="flex items-center gap-1 text-[10px] font-semibold text-green-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Online
-              </span>
-            </div>
-            <div className="flex gap-1.5 mb-2.5">
-              {[{icon:'💜',label:'Feels your emotions'},{icon:'💬',label:'Talks like a friend'},{icon:'✨',label:'Personal growth'}].map(f=>(
-                <div key={f.label} className="flex-1 flex flex-col items-center gap-1 py-1.5 rounded-xl" style={{background:'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.15)'}}>
-                  <span className="text-xs">{f.icon}</span>
-                  <span className="text-[8px] text-[var(--muted)] text-center leading-tight">{f.label}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => window.location.href='/arya/chat'} className="flex-1 py-2 rounded-xl text-xs font-semibold text-white text-center" style={{background:'linear-gradient(135deg, var(--primary), #6d28d9)'}}>
-                Chat with Arya
-              </button>
-              <button onClick={() => window.location.href='/arya/call'} className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/25 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/30 transition-colors shrink-0">
-                <Phone size={14} />
-              </button>
-            </div>
-          </div>
 
           <div className="px-3 pt-3 pb-2">
-            <div className="flex gap-1.5">
-              {(['all','unread','friends'] as const).map(f=>(
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+              {(['all','unread','friends','discover'] as const).map(f=>(
                 <button key={f} onClick={()=>setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filter===f?'bg-[var(--primary)]/15 text-[var(--primary-light)] border border-[var(--primary)]/30':'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]'}`}>
-                  {f==='all'?'All':f==='unread'?'Unread':'Friends'}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${filter===f?'bg-[var(--primary)]/15 text-[var(--primary-light)] border border-[var(--primary)]/30':'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]'}`}>
+                  {f==='all'?'All':f==='unread'?'Unread':f==='friends'?'Friends':'Discover'}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* PEOPLE label */}
+          {/* PEOPLE / DISCOVER label */}
           <div className="px-4 pt-2 pb-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">People</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{filter === 'discover' ? 'All SVNIT Students' : 'People'}</p>
           </div>
 
-          {/* Thread List */}
+          {/* Discover Tab: Browse all SVNIT users */}
+          {filter === 'discover' ? (
+            <div className="flex-1 overflow-y-auto">
+              {allStudents.filter(s => s.id !== studentId).length === 0 ? (
+                <div className="p-6 text-center">
+                  <p className="text-xs text-[var(--muted)]">No students found yet.</p>
+                </div>
+              ) : (
+                allStudents.filter(s => s.id !== studentId).map(student => {
+                  const isOnline = statuses[student.id]?.status === 'online' || statuses[student.id]?.status === 'in-session';
+                  const score = matchScores[student.id] || 0;
+                  return (
+                    <div key={student.id} className="flex items-center gap-2.5 px-3 py-2.5 hover:bg-[var(--surface)]/50 transition-colors">
+                      <button onClick={() => setProfilePopup(student.id)} className="shrink-0">
+                        <div className="relative">
+                          <div className={`w-10 h-10 rounded-xl ${getAvatarColor(student.name)} flex items-center justify-center text-white font-semibold text-sm`}>
+                            {getInitial(student.name)}
+                          </div>
+                          {isOnline && <span className="absolute -bottom-0.5 -left-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-[var(--background)]" />}
+                        </div>
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[var(--foreground)] truncate">{student.name}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {student.department && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-violet-500/15 text-violet-400 border border-violet-500/20">
+                              {student.department} · {student.yearLevel||'?'}
+                            </span>
+                          )}
+                          {score > 0 && <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-green-500/15 text-green-400 border border-green-500/20">{score}%</span>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (studentId) {
+                            const chatId = [studentId, student.id].sort().join('__');
+                            setSelectedChatId(chatId);
+                            setShowSidebar(false);
+                            setFilter('all');
+                          }
+                        }}
+                        className="shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-bold text-white bg-gradient-to-r from-[var(--primary)] to-[#6d28d9] hover:shadow-md hover:shadow-purple-500/20 active:scale-95 transition-all"
+                      >
+                        Connect
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          ) : (
           <div className="flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex flex-col items-center justify-center h-32 gap-2">
@@ -438,8 +469,8 @@ export default function ChatPage() {
               })
             )}
           </div>
+          )}
         </div>
-
         {/* ═══════ CHAT AREA ═══════ */}
         <div className={`${!showSidebar ? 'flex' : 'hidden'} md:flex flex-col flex-1 bg-[var(--surface)]/30`}>
           {selectedChatId ? (
@@ -534,9 +565,22 @@ export default function ChatPage() {
 
               {/* Input */}
               <div className="p-3 border-t border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)]">
+                {/* Emoji Picker */}
+                {emojiOpen && (
+                  <div className="mb-2 p-2 rounded-xl border border-[var(--glass-border)] bg-[var(--surface)]">
+                    <div className="grid grid-cols-10 gap-1">
+                      {COMMON_EMOJIS.map(emoji => (
+                        <button key={emoji} onClick={() => insertEmoji(emoji)} className="w-8 h-8 rounded-lg flex items-center justify-center text-lg hover:bg-[var(--surface-light)] transition-colors active:scale-90">
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} />
                 <form onSubmit={e=>{e.preventDefault();sendMessage();}} className="flex items-center gap-2">
-                  <button type="button" onClick={showComingSoon} className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1" title="Attach file"><Paperclip size={18}/></button>
-                  <button type="button" onClick={showComingSoon} className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1" title="Emoji"><Smile size={18}/></button>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-1" title="Attach file"><Paperclip size={18}/></button>
+                  <button type="button" onClick={() => setEmojiOpen(!emojiOpen)} className={`transition-colors p-1 ${emojiOpen ? 'text-[var(--primary)]' : 'text-[var(--muted)] hover:text-[var(--foreground)]'}`} title="Emoji"><Smile size={18}/></button>
                   <input ref={inputRef} type="text" value={newMsg} onChange={e=>setNewMsg(e.target.value)} placeholder="Type a message..." className="flex-1 input-field text-sm py-2.5" disabled={sending} autoFocus />
                   <button type="submit" disabled={!newMsg.trim()||sending} className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all disabled:opacity-40" style={{background:'linear-gradient(135deg, var(--primary), #6d28d9)'}}>
                     {sending ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : <Send size={16}/>}
@@ -578,14 +622,6 @@ export default function ChatPage() {
         />
       )}
 
-      {/* Coming Soon Toast */}
-      {comingSoon && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 animate-bounce-in">
-          <div className="px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-2xl" style={{background:'linear-gradient(135deg, var(--primary), #6d28d9)',boxShadow:'0 8px 32px rgba(124,58,237,0.4)'}}>
-            🚀 Coming Soon!
-          </div>
-        </div>
-      )}
 
       <style jsx>{`
         .chat-polish { z-index: 1; }

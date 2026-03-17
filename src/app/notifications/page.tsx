@@ -31,7 +31,7 @@ export default function NotificationsPage() {
     // Fetch from API if available, otherwise show empty state
     const fetchNotifications = async () => {
       try {
-        const res = await fetch('/api/notifications');
+        const res = await fetch(`/api/notifications?userId=${encodeURIComponent(user.id)}`);
         const d = await res.json();
         if (d.success && d.data) {
           setNotifications(d.data);
