@@ -20,7 +20,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Send, MoreVertical, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Trash2, X, Phone, PhoneOff, Mic } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useChatStability } from '@/hooks/useChatStability';
 
@@ -44,6 +44,15 @@ export default function AryaChatPage() {
   const [clearConfirm, setClearConfirm] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Voice call states
+  const [inCall, setInCall] = useState(false);
+  const [callStatus, setCallStatus] = useState<'connecting' | 'listening' | 'thinking' | 'speaking'>('connecting');
+  const [callTimer, setCallTimer] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const recognitionRef = useRef<any>(null);
+  const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const callActiveRef = useRef(false);
   useChatStability();
 
   // Scroll to bottom on new messages
@@ -196,6 +205,175 @@ export default function AryaChatPage() {
     setSending(false);
   };
 
+  // ─── Voice Call Logic ───
+  const startCall = () => {
+    if (!conversationId) return;
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) {
+      alert('Voice calling is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+    setInCall(true);
+    setCallTimer(0);
+    setCallStatus('connecting');
+    setLiveTranscript('');
+    callActiveRef.current = true;
+
+    // Start call timer
+    callTimerRef.current = setInterval(() => {
+      setCallTimer(prev => prev + 1);
+    }, 1000);
+
+    // Small delay then start listening
+    setTimeout(() => {
+      if (callActiveRef.current) startListening();
+    }, 1000);
+  };
+
+  const endCall = () => {
+    callActiveRef.current = false;
+    setInCall(false);
+    setCallStatus('connecting');
+    setLiveTranscript('');
+    if (callTimerRef.current) clearInterval(callTimerRef.current);
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch { /* ignore */ }
+      recognitionRef.current = null;
+    }
+    window.speechSynthesis?.cancel();
+  };
+
+  const startListening = () => {
+    if (!callActiveRef.current) return;
+    setCallStatus('listening');
+    setLiveTranscript('');
+
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionAPI();
+    recognitionRef.current = recognition;
+    recognition.lang = 'en-IN';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      setLiveTranscript(finalTranscript || interim);
+    };
+
+    recognition.onend = () => {
+      if (!callActiveRef.current) return;
+      if (finalTranscript.trim()) {
+        handleVoiceResult(finalTranscript.trim());
+      } else {
+        // No speech detected — restart listening
+        setTimeout(() => {
+          if (callActiveRef.current) startListening();
+        }, 300);
+      }
+    };
+
+    recognition.onerror = () => {
+      if (!callActiveRef.current) return;
+      // Restart listening on error
+      setTimeout(() => {
+        if (callActiveRef.current) startListening();
+      }, 500);
+    };
+
+    recognition.start();
+  };
+
+  const handleVoiceResult = async (text: string) => {
+    if (!callActiveRef.current || !conversationId) return;
+    setCallStatus('thinking');
+    setLiveTranscript('');
+
+    // Persist user voice message
+    const userMsg: Message = {
+      id: `voice-user-${Date.now()}`,
+      role: 'user',
+      content: `🎤 ${text}`,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+    persistMessage('user', `🎤 ${text}`).catch(() => {});
+
+    // Call Arya API
+    const result = await callAryaAPI(conversationId, text, 1);
+
+    if (!callActiveRef.current) return;
+
+    const responseText = result.success && result.response
+      ? result.response
+      : 'sorry yaar, network issue on my side!';
+
+    // Persist Arya's response
+    const aryaMsg: Message = {
+      id: `voice-arya-${Date.now()}`,
+      role: 'assistant',
+      content: responseText,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, aryaMsg]);
+    persistMessage('assistant', responseText).catch(() => {});
+
+    // Speak the response
+    setCallStatus('speaking');
+    const utterance = new SpeechSynthesisUtterance(responseText);
+    utterance.lang = 'en-IN';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.1;
+
+    // Try to get a female voice
+    const voices = window.speechSynthesis.getVoices();
+    const femaleVoice = voices.find(v =>
+      v.lang.includes('en') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha') || v.name.includes('Google UK English Female'))
+    ) || voices.find(v => v.lang.includes('en-IN'))
+      || voices.find(v => v.lang.includes('en'));
+    if (femaleVoice) utterance.voice = femaleVoice;
+
+    utterance.onend = () => {
+      if (callActiveRef.current) {
+        setTimeout(() => startListening(), 400);
+      }
+    };
+
+    utterance.onerror = () => {
+      if (callActiveRef.current) {
+        setTimeout(() => startListening(), 400);
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      callActiveRef.current = false;
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+      if (recognitionRef.current) try { recognitionRef.current.abort(); } catch { /* */ }
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
+  const formatCallTime = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  };
+
   // Soft-delete single message (UI only — DB retains content)
   const handleDeleteMessage = async (msgId: string) => {
     setMenuMsgId(null);
@@ -260,6 +438,14 @@ export default function AryaChatPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Online
           </p>
         </div>
+        {/* Call button */}
+        <button
+          onClick={startCall}
+          className="p-2 rounded-xl hover:bg-green-500/15 text-green-400 transition-all active:scale-90"
+          title="Call Arya"
+        >
+          <Phone size={18} />
+        </button>
         {/* Header menu */}
         <div className="relative">
           <button 
@@ -415,6 +601,57 @@ export default function AryaChatPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ─── Voice Call Overlay ─── */}
+      {inCall && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center" style={{ background: 'linear-gradient(180deg, #1a0533 0%, #0a0a0a 100%)' }}>
+          {/* Animated pulse rings */}
+          <div className="relative mb-10">
+            <div className="absolute inset-0 w-32 h-32 rounded-full border-2 border-purple-500/20" style={{ animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite', top: '-16px', left: '-16px', width: '160px', height: '160px' }} />
+            <div className="absolute inset-0 w-32 h-32 rounded-full border border-purple-500/10" style={{ animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite 0.5s', top: '-32px', left: '-32px', width: '192px', height: '192px' }} />
+            <Image
+              src="/arya-avatar.png"
+              alt="Arya"
+              width={128}
+              height={128}
+              className="w-32 h-32 rounded-full object-cover ring-4 ring-purple-500/30 shadow-2xl shadow-purple-500/20"
+            />
+            {callStatus === 'listening' && (
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-lg shadow-green-500/30">
+                <Mic size={14} className="text-white animate-pulse" />
+              </div>
+            )}
+          </div>
+
+          {/* Name & Status */}
+          <h2 className="text-xl font-bold text-white mb-1">Arya</h2>
+          <p className="text-sm text-purple-300/80 mb-2">
+            {callStatus === 'connecting' && 'Connecting...'}
+            {callStatus === 'listening' && '🎙️ Listening...'}
+            {callStatus === 'thinking' && '💭 Thinking...'}
+            {callStatus === 'speaking' && '🔊 Speaking...'}
+          </p>
+
+          {/* Live transcript */}
+          {liveTranscript && (
+            <div className="px-6 max-w-xs text-center">
+              <p className="text-sm text-white/60 italic">"{liveTranscript}"</p>
+            </div>
+          )}
+
+          {/* Timer */}
+          <p className="text-2xl font-mono text-white/70 mt-6 tracking-widest">{formatCallTime(callTimer)}</p>
+
+          {/* End Call */}
+          <button
+            onClick={endCall}
+            className="mt-12 w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-xl shadow-red-500/30 active:scale-90 transition-transform"
+          >
+            <PhoneOff size={24} className="text-white" />
+          </button>
+          <p className="text-[11px] text-white/40 mt-3">End Call</p>
         </div>
       )}
     </div>
