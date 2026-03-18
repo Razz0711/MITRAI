@@ -20,7 +20,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Send, MoreVertical, Trash2, X, Phone, PhoneOff, Mic } from 'lucide-react';
+import { ArrowLeft, Send, MoreVertical, Trash2, X, Phone, PhoneOff, Mic, Camera, ImageIcon, Share2, Star, Clock, MessageCircle, Crown, Gamepad2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useChatStability } from '@/hooks/useChatStability';
 
@@ -422,51 +422,65 @@ export default function AryaChatPage() {
 
   return (
     <div className="chat-container" style={{ background: 'var(--background)' }}>
-      {/* Header */}
-      <div className="shrink-0 px-4 py-3 flex items-center gap-3" style={{
-        background: 'var(--glass-bg)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid var(--glass-border)',
-      }}>
-        <button onClick={() => router.push('/arya')} className="p-1.5 rounded-lg hover:bg-[var(--surface-light)] text-[var(--muted)] transition-colors">
-          <ArrowLeft size={18} />
-        </button>
-        <Image src="/arya-avatar.png" alt="Arya" width={36} height={36} className="w-9 h-9 rounded-full object-cover" />
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-[var(--foreground)]">Arya</p>
-          <p className="text-[10px] text-green-400 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Online
-          </p>
-        </div>
-        {/* Call button */}
-        <button
-          onClick={startCall}
-          className="p-2 rounded-xl hover:bg-green-500/15 text-green-400 transition-all active:scale-90"
-          title="Call Arya"
-        >
-          <Phone size={18} />
-        </button>
-        {/* Header menu */}
-        <div className="relative">
-          <button 
-            onClick={() => setShowHeaderMenu(!showHeaderMenu)}
-            className="p-1.5 rounded-lg hover:bg-[var(--surface-light)] text-[var(--muted)] transition-colors"
-          >
-            <MoreVertical size={18} />
+      {/* Header — Pill style */}
+      <div className="shrink-0 px-3 pt-3 pb-2">
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl" style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+        }}>
+          <button onClick={() => router.push('/arya')} className="p-1 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
+            <ArrowLeft size={18} />
           </button>
-          {showHeaderMenu && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowHeaderMenu(false)} />
-              <div className="absolute right-0 top-10 z-50 w-44 rounded-xl py-1 shadow-xl" style={{ background: 'var(--surface-solid)', border: '1px solid var(--border)' }}>
-                <button
-                  onClick={() => { setShowHeaderMenu(false); setClearConfirm(true); }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  <Trash2 size={14} /> Clear chat
-                </button>
-              </div>
-            </>
-          )}
+          <Image src="/arya-avatar.png" alt="Arya" width={40} height={40} className="w-10 h-10 rounded-full object-cover ring-2 ring-purple-500/20" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-[var(--foreground)]">Arya</p>
+            <p className="text-[10px] text-green-400 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Online
+            </p>
+          </div>
+          {/* Action icons */}
+          <button className="p-2 rounded-xl text-amber-400 hover:bg-amber-400/10 transition-all active:scale-90" title="Mini Games">
+            <Gamepad2 size={18} />
+          </button>
+          <button onClick={startCall} className="p-2 rounded-xl text-amber-400 hover:bg-amber-400/10 transition-all active:scale-90" title="Call Arya">
+            <Phone size={18} />
+          </button>
+          {/* Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowHeaderMenu(!showHeaderMenu)}
+              className="p-2 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+            >
+              <MoreVertical size={18} />
+            </button>
+            {showHeaderMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowHeaderMenu(false)} />
+                <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl py-2 shadow-2xl" style={{ background: 'var(--surface-solid)', border: '1px solid var(--border)' }}>
+                  {[
+                    { icon: Share2, label: 'Share App', color: 'text-[var(--foreground)]', action: () => {
+                      const msg = encodeURIComponent('Hey! Chat with Arya AI on MitrrAi 💜\nhttps://mitrrai.vercel.app');
+                      window.open(`https://wa.me/?text=${msg}`, '_blank');
+                      setShowHeaderMenu(false);
+                    }},
+                    { icon: Star, label: 'Rate Us', color: 'text-[var(--foreground)]', action: () => { router.push('/feedback'); setShowHeaderMenu(false); }},
+                    { icon: Clock, label: 'Talk-time', color: 'text-[var(--foreground)]', action: () => { setShowHeaderMenu(false); }},
+                    { icon: MessageCircle, label: 'Contact Us', color: 'text-[var(--foreground)]', action: () => { router.push('/feedback'); setShowHeaderMenu(false); }},
+                    { icon: Crown, label: 'Subscription', color: 'text-[var(--foreground)]', action: () => { router.push('/subscription'); setShowHeaderMenu(false); }},
+                    { icon: Trash2, label: 'Clear Chat', color: 'text-red-400', action: () => { setShowHeaderMenu(false); setClearConfirm(true); }},
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={item.action}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm ${item.color} hover:bg-white/[0.03] transition-colors`}
+                    >
+                      <item.icon size={16} className="opacity-60" /> {item.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -552,8 +566,8 @@ export default function AryaChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="chat-input-bar px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" style={{
+      {/* Input Bar — Camera / Gallery / Mic */}
+      <div className="chat-input-bar px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]" style={{
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(20px)',
         borderTop: '1px solid var(--glass-border)',
@@ -563,16 +577,35 @@ export default function AryaChatPage() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSend()}
-            placeholder="Message Arya..."
+            placeholder="Message..."
             className="flex-1 px-4 py-2.5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:border-[var(--primary)] outline-none transition-colors"
           />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || sending}
-            className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[#6d28d9] text-white flex items-center justify-center disabled:opacity-40 transition-all hover:shadow-lg hover:shadow-purple-500/30 active:scale-95"
-          >
-            <Send size={16} />
+          {/* Camera */}
+          <button className="p-2 rounded-xl text-amber-400/70 hover:text-amber-400 hover:bg-amber-400/10 transition-all active:scale-90" title="Camera">
+            <Camera size={18} />
           </button>
+          {/* Gallery */}
+          <button className="p-2 rounded-xl text-amber-400/70 hover:text-amber-400 hover:bg-amber-400/10 transition-all active:scale-90" title="Gallery">
+            <ImageIcon size={18} />
+          </button>
+          {/* Voice / Send toggle */}
+          {input.trim() ? (
+            <button
+              onClick={handleSend}
+              disabled={sending}
+              className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-[#6d28d9] text-white flex items-center justify-center disabled:opacity-40 transition-all hover:shadow-lg hover:shadow-purple-500/30 active:scale-95"
+            >
+              <Send size={16} />
+            </button>
+          ) : (
+            <button
+              onClick={startCall}
+              className="p-2 rounded-xl text-amber-400/70 hover:text-amber-400 hover:bg-amber-400/10 transition-all active:scale-90"
+              title="Voice message"
+            >
+              <Mic size={18} />
+            </button>
+          )}
         </div>
       </div>
 
