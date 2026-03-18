@@ -111,6 +111,34 @@ export default function AryaChatPage() {
     return null;
   };
 
+  // Helper: call the Arya API with auto-retry
+  const callAryaAPI = async (convId: string, text: string, retries = 1): Promise<{ success: boolean; response?: string }> => {
+    try {
+      const res = await fetch('/api/arya/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversation_id: convId, message: text }),
+      });
+      const data = await res.json();
+      if (data.success && data.data?.response) {
+        return { success: true, response: data.data.response };
+      }
+      // API returned error — retry if we have retries left
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, 1500));
+        return callAryaAPI(convId, text, retries - 1);
+      }
+      return { success: false };
+    } catch {
+      // Network error — retry if we have retries left
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, 1500));
+        return callAryaAPI(convId, text, retries - 1);
+      }
+      return { success: false };
+    }
+  };
+
   // Send message
   const handleSend = async () => {
     if (!input.trim() || sending || !conversationId) return;
@@ -136,43 +164,27 @@ export default function AryaChatPage() {
       }
     }).catch(() => { /* silent — optimistic msg stays */ });
 
-    try {
-      // Call Grok API
-      const res = await fetch('/api/arya/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversation_id: conversationId, message: text }),
-      });
-      const data = await res.json();
+    // Call API with 1 auto-retry on failure
+    const result = await callAryaAPI(conversationId, text, 1);
 
-      if (data.success && data.data?.response) {
-        // Show Arya's response IMMEDIATELY (optimistic)
-        const optimisticAryaId = `arya-temp-${Date.now()}`;
-        const optimisticAryaMsg: Message = {
-          id: optimisticAryaId,
-          role: 'assistant',
-          content: data.data.response,
-          created_at: new Date().toISOString(),
-        };
-        setMessages(prev => [...prev, optimisticAryaMsg]);
+    if (result.success && result.response) {
+      // Show Arya's response IMMEDIATELY (optimistic)
+      const optimisticAryaId = `arya-temp-${Date.now()}`;
+      setMessages(prev => [...prev, {
+        id: optimisticAryaId,
+        role: 'assistant' as const,
+        content: result.response!,
+        created_at: new Date().toISOString(),
+      }]);
 
-        // Persist to DB in background
-        persistMessage('assistant', data.data.response).then(aryaMsg => {
-          if (aryaMsg) {
-            setMessages(prev => prev.map(m => m.id === optimisticAryaId ? aryaMsg : m));
-          }
-        }).catch(() => { /* silent — optimistic msg stays */ });
-      } else {
-        // Show friendly error as Arya
-        setMessages(prev => [...prev, {
-          id: `err-${Date.now()}`,
-          role: 'assistant',
-          content: 'sorry yaar, there\'s a network issue on my side 🥺 try again in a sec!',
-          created_at: new Date().toISOString(),
-        }]);
-      }
-    } catch (err) {
-      console.error('Arya chat error:', err);
+      // Persist to DB in background
+      persistMessage('assistant', result.response).then(aryaMsg => {
+        if (aryaMsg) {
+          setMessages(prev => prev.map(m => m.id === optimisticAryaId ? aryaMsg : m));
+        }
+      }).catch(() => { /* silent */ });
+    } else {
+      // Both attempts failed — show friendly error
       setMessages(prev => [...prev, {
         id: `err-${Date.now()}`,
         role: 'assistant',
