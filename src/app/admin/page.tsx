@@ -104,6 +104,11 @@ export default function AdminDashboardPage() {
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
   const [actionMsg, setActionMsg] = useState('');
 
+  // Full users states
+  const [allUsers, setAllUsers] = useState<RecentUser[] | null>(null);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userQuery, setUserQuery] = useState('');
+
   // Check cookie-based admin auth on mount
   useEffect(() => {
     (async () => {
@@ -187,6 +192,22 @@ export default function AdminDashboardPage() {
       }
     } catch {
       setActionMsg('Generation failed');
+    }
+  };
+
+  const loadAllUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const url = adminKey ? `/api/admin/users?adminKey=${encodeURIComponent(adminKey)}` : '/api/admin/users';
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        setAllUsers(data.data);
+      }
+    } catch (e) {
+      setActionMsg('Failed to load full database');
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -351,14 +372,37 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      {/* Recent Users */}
+      {/* Users Database */}
       <section>
-        <h2 className="text-sm font-semibold text-[var(--foreground)] mb-3">Recent Users (last 50)</h2>
-        <div className="overflow-x-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+          <h2 className="text-sm font-semibold text-[var(--foreground)]">
+            Users Database {!allUsers ? '(Recent 50)' : `(${allUsers.length})`}
+          </h2>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              placeholder="Search name or email..." 
+              value={userQuery}
+              onChange={e => setUserQuery(e.target.value)}
+              className="input-field text-xs py-1.5 w-48"
+            />
+            {!allUsers && (
+              <button 
+                onClick={loadAllUsers} 
+                disabled={loadingUsers}
+                className="btn-secondary text-xs py-1.5 px-3 whitespace-nowrap"
+              >
+                {loadingUsers ? 'Loading...' : 'Load All Data'}
+              </button>
+            )}
+          </div>
+        </div>
+        
+        <div className="overflow-x-auto bg-[var(--surface)] p-2 rounded-xl border border-[var(--border)]">
           <table className="w-full text-xs">
             <thead>
               <tr className="text-left text-[var(--muted)] border-b border-[var(--border)]">
-                <th className="pb-2 pr-4">Name</th>
+                <th className="pb-2 pr-4 pl-2">Name</th>
                 <th className="pb-2 pr-4">Email</th>
                 <th className="pb-2 pr-4">Department</th>
                 <th className="pb-2 pr-4">Year</th>
@@ -366,15 +410,22 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {recentUsers.map(u => (
-                <tr key={u.id} className="border-b border-[var(--border)]/50">
-                  <td className="py-2 pr-4 text-[var(--foreground)]">{u.name}</td>
-                  <td className="py-2 pr-4 text-[var(--muted)]">{u.email}</td>
-                  <td className="py-2 pr-4 text-[var(--muted)]">{u.department}</td>
-                  <td className="py-2 pr-4 text-[var(--muted)]">{u.year_level}</td>
-                  <td className="py-2 text-[var(--muted)]">{new Date(u.created_at).toLocaleDateString()}</td>
+              {(allUsers || recentUsers)
+                .filter(u => !userQuery || u.name.toLowerCase().includes(userQuery.toLowerCase()) || u.email.toLowerCase().includes(userQuery.toLowerCase()))
+                .map(u => (
+                <tr key={u.id} className="border-b border-[var(--border)]/30 hover:bg-white/[0.02]">
+                  <td className="py-2.5 pr-4 pl-2 text-[var(--foreground)] font-medium">{u.name}</td>
+                  <td className="py-2.5 pr-4 text-[var(--muted)] select-all">{u.email}</td>
+                  <td className="py-2.5 pr-4 text-[var(--muted)]">{u.department}</td>
+                  <td className="py-2.5 pr-4 text-[var(--muted)]">{u.year_level}</td>
+                  <td className="py-2.5 text-[var(--muted)]">{new Date(u.created_at).toLocaleDateString()}</td>
                 </tr>
               ))}
+              {(allUsers || recentUsers).filter(u => !userQuery || u.name.toLowerCase().includes(userQuery.toLowerCase()) || u.email.toLowerCase().includes(userQuery.toLowerCase())).length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-[var(--muted)] text-xs">No users found matching "{userQuery}"</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
