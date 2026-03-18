@@ -2,11 +2,11 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.mitrrai.study',
-  appName: 'MitrRAI',
+  appName: 'MitrrAi',
   // Point to your live Vercel URL (remote URL approach)
   // This means the app loads your live website inside a native shell
   server: {
-    url: 'https://mitrrai-study.vercel.app',
+    url: 'https://mitrrai.in',
     cleartext: false,
   },
   plugins: {
