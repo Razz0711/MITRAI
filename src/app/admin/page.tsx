@@ -40,6 +40,8 @@ interface RecentUser {
   department: string;
   year_level: string;
   created_at: string;
+  aryaMessageCount?: number;
+  anonMessageCount?: number;
 }
 
 interface FeedbackItem {
@@ -404,8 +406,8 @@ export default function AdminDashboardPage() {
               <tr className="text-left text-[var(--muted)] border-b border-[var(--border)]">
                 <th className="pb-2 pr-4 pl-2">Name</th>
                 <th className="pb-2 pr-4">Email</th>
-                <th className="pb-2 pr-4">Department</th>
-                <th className="pb-2 pr-4">Year</th>
+                <th className="pb-2 pr-4 text-center">Arya Chats</th>
+                <th className="pb-2 pr-4 text-center">Anon Posts</th>
                 <th className="pb-2">Joined</th>
               </tr>
             </thead>
@@ -416,8 +418,16 @@ export default function AdminDashboardPage() {
                 <tr key={u.id} className="border-b border-[var(--border)]/30 hover:bg-white/[0.02]">
                   <td className="py-2.5 pr-4 pl-2 text-[var(--foreground)] font-medium">{u.name}</td>
                   <td className="py-2.5 pr-4 text-[var(--muted)] select-all">{u.email}</td>
-                  <td className="py-2.5 pr-4 text-[var(--muted)]">{u.department}</td>
-                  <td className="py-2.5 pr-4 text-[var(--muted)]">{u.year_level}</td>
+                  <td className="py-2.5 pr-4 text-center">
+                    <span className="inline-block px-2 text-[10px] font-bold bg-[#D4AF37]/10 text-[#D4AF37] rounded-full">
+                      {u.aryaMessageCount || 0}
+                    </span>
+                  </td>
+                  <td className="py-2.5 pr-4 text-center">
+                    <span className="inline-block px-2 text-[10px] font-bold bg-violet-500/10 text-violet-400 rounded-full">
+                      {u.anonMessageCount || 0}
+                    </span>
+                  </td>
                   <td className="py-2.5 text-[var(--muted)]">{new Date(u.created_at).toLocaleDateString()}</td>
                 </tr>
               ))}

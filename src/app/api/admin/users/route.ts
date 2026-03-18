@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { data, error } = await supabase
+    // 1. Fetch all students
+    const { data: students, error } = await supabase
       .from('students')
       .select('*')
       .order('created_at', { ascending: false })
@@ -25,7 +26,40 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, data });
+    // 2. Fetch all Arya messages (just user_id to count) to see who's talking to Arya
+    const { data: aryaMessages } = await supabase
+      .from('arya_messages')
+      .select('user_id')
+      .eq('role', 'user');
+
+    // 3. Fetch all Anon messages (just sender_id)
+    const { data: anonMessages } = await supabase
+      .from('anon_messages')
+      .select('sender_id');
+
+    // Calculate aggregations
+    const aryaCounts: Record<string, number> = {};
+    if (aryaMessages) {
+      for (const msg of aryaMessages) {
+        aryaCounts[msg.user_id] = (aryaCounts[msg.user_id] || 0) + 1;
+      }
+    }
+
+    const anonCounts: Record<string, number> = {};
+    if (anonMessages) {
+      for (const msg of anonMessages) {
+        anonCounts[msg.sender_id] = (anonCounts[msg.sender_id] || 0) + 1;
+      }
+    }
+
+    // Merge into user data
+    const enrichedData = (students || []).map(student => ({
+      ...student,
+      aryaMessageCount: aryaCounts[student.id] || 0,
+      anonMessageCount: anonCounts[student.id] || 0,
+    }));
+
+    return NextResponse.json({ success: true, data: enrichedData });
   } catch (error) {
     console.error('[Admin Users] GET error:', error);
     return NextResponse.json({ success: false, error: 'Failed to load users' }, { status: 500 });
