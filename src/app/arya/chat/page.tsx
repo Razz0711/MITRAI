@@ -163,12 +163,11 @@ export default function AryaChatPage() {
           }
         }).catch(() => { /* silent — optimistic msg stays */ });
       } else {
-        // Show error inline
-        const errText = data.error || 'Arya is taking a break. Try again!';
+        // Show friendly error as Arya
         setMessages(prev => [...prev, {
           id: `err-${Date.now()}`,
           role: 'assistant',
-          content: errText,
+          content: 'sorry yaar, there\'s a network issue on my side 🥺 try again in a sec!',
           created_at: new Date().toISOString(),
         }]);
       }
@@ -177,7 +176,7 @@ export default function AryaChatPage() {
       setMessages(prev => [...prev, {
         id: `err-${Date.now()}`,
         role: 'assistant',
-        content: 'Network error. Please check your connection and try again.',
+        content: 'sorry yaar, there\'s a network issue on my side 🥺 try again in a sec!',
         created_at: new Date().toISOString(),
       }]);
     }
