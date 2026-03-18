@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Coupon Redemption API
+// MitrRAI - Coupon Redemption API
 // POST /api/anon/redeem { code }
 // ============================================
 

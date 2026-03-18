@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Campus Feed (Anonymous Public Discussion)
+// MitrRAI - Campus Feed (Anonymous Public Discussion)
 // Real-time anonymous group chat for all SVNIT students
 // ============================================
 

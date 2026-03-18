@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Arya Messages API
+// MitrRAI - Arya Messages API
 // GET: fetch messages for a conversation
 // POST: insert a new message
 // PATCH: soft-delete messages (is_deleted_by_user)

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Campus Feed API
+// MitrRAI - Campus Feed API
 // GET: fetch posts with filters
 // POST: create a new post
 // ============================================

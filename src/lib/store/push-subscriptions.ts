@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Push Subscription Store
+// MitrRAI - Push Subscription Store
 // CRUD for Web Push subscriptions + send push via web-push
 // ============================================
 

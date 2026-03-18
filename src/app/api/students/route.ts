@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Student Profile API
+// MitrRAI - Student Profile API
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';

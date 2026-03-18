@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Email Parser Tests
+// MitrRAI - Email Parser Tests
 // ============================================
 
 import { describe, it, expect } from 'vitest';

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Student CRUD Operations
+// MitrRAI - Student CRUD Operations
 // ============================================
 
 import { StudentProfile } from '../types';

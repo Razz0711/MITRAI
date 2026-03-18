@@ -1,5 +1,5 @@
 -- ============================================
--- MitrAI - Smart Email Parsing & Batch Matching
+-- MitrRAI - Smart Email Parsing & Batch Matching
 -- Migration: Add match_key columns to students table
 -- Run this in Supabase SQL Editor (Dashboard → SQL → New query)
 -- ============================================

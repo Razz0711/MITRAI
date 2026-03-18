@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Radar Connect API
+// MitrRAI - Radar Connect API
 // When someone clicks "Connect" on a broadcast:
 //   1. Sends notification + push to the broadcaster
 //   2. For anonymous pings: creates an anon chat room

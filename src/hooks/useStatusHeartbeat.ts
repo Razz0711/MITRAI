@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Online Status Heartbeat Hook
+// MitrRAI - Online Status Heartbeat Hook
 // Automatically sends heartbeat every 30s
 // Sets user as online when app is open
 // Sets user as offline on tab close / inactivity

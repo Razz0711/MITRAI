@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - App Providers (Client-side)
+// MitrRAI - App Providers (Client-side)
 // Wraps heartbeat and other client hooks
 // ============================================
 

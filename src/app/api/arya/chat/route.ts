@@ -1,27 +1,34 @@
 // ============================================
-// MitrAI - Arya Chat API (Gemini 1.5 Flash)
-// Loads full conversation history (ignores is_deleted_by_user)
-// Passes system prompt on every call
+// MitrRAI - Arya Chat API (xAI Grok)
+// Loads full conversation history
+// Adds "generate_selfie" tool (1 per user)
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { supabase } from '@/lib/store/core';
 import { ARYA_SYSTEM_PROMPT } from '@/lib/arya-prompt';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Allow more time for image generation if needed
 
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
 
   // Check API key
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROK_API_KEY;
   if (!apiKey) {
-    console.error('GEMINI_API_KEY not set');
-    return NextResponse.json({ success: false, error: 'GEMINI_API_KEY not configured' }, { status: 500 });
+    console.error('GROK_API_KEY not set');
+    return NextResponse.json({ success: false, error: 'GROK_API_KEY not configured' }, { status: 500 });
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
+  // Initialize OpenAI client pointing to xAI
+  const xai = new OpenAI({
+    apiKey: apiKey,
+    baseURL: 'https://api.x.ai/v1',
+  });
 
   const body = await req.json();
   const { conversation_id, message } = body;
@@ -31,11 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Load full conversation history from Supabase
-    // is_deleted_by_user is intentionally IGNORED here.
-    // Arya context loader always reads full message history
-    // regardless of this flag to maintain conversation continuity
-    // and learn user communication patterns.
+    // 1. Load History
     const { data: history, error: historyError } = await supabase
       .from('arya_messages')
       .select('role, content')
@@ -47,64 +50,144 @@ export async function POST(req: NextRequest) {
       console.error('History fetch error:', historyError);
     }
 
-    // Convert to Gemini format (Gemini uses 'model' instead of 'assistant')
-    // Gemini requires alternating user/model roles — merge consecutive same-role messages
-    const rawHistory = (history || []).map(msg => ({
-      role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
-      parts: [{ text: msg.content }],
-    }));
+    // 2. Format history for xAI
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: 'system', content: ARYA_SYSTEM_PROMPT }
+    ];
 
-    // Fix: merge consecutive same-role messages (Gemini rejects them)
-    const conversationHistory: typeof rawHistory = [];
-    for (const msg of rawHistory) {
-      if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === msg.role) {
-        // Merge with previous message of same role
-        conversationHistory[conversationHistory.length - 1].parts[0].text += '\n' + msg.parts[0].text;
-      } else {
-        conversationHistory.push({ ...msg });
+    if (history && history.length > 0) {
+      history.forEach(msg => {
+        // Discard existing image urls from DB context so the model doesn't get confused by raw markdown
+        let safeContent = msg.content;
+        if (safeContent.includes('![Arya Selfie](')) {
+          safeContent = "*Sent an image*"; 
+        }
+
+        messages.push({
+          role: msg.role === 'assistant' ? 'assistant' : 'user',
+          content: safeContent
+        });
+      });
+    }
+
+    // Avoid duplicating the user message if it was just saved in DB before this API call
+    if (messages.length === 1 || messages[messages.length - 1].content !== message) {
+      messages.push({ role: 'user', content: message });
+    }
+
+    // 3. Define Tools
+    const tools: OpenAI.Chat.ChatCompletionTool[] = [
+      {
+        type: "function",
+        function: {
+          name: "generate_selfie",
+          description: "Generates exactly one photo/selfie of Arya and sends it to the user. Call this ONLY IF the user explicitly asks for a selfie, photo, or picture of you.",
+          parameters: {
+            type: "object",
+            properties: {
+              prompt_suffix: {
+                type: "string",
+                description: "Optional detail to add to the image prompt, e.g., 'wearing glasses', 'at a cafe'. Must remain appropriate.",
+              }
+            },
+            additionalProperties: false,
+          }
+        }
+      }
+    ];
+
+    // 4. Call Grok
+    const completion = await xai.chat.completions.create({
+      model: 'grok-4-1-fast-non-reasoning', // or grok-3-mini
+      messages: messages,
+      tools: tools,
+      temperature: 0.7,
+    });
+
+    const responseMsg = completion.choices[0].message;
+
+    // 5. Handle Tool Calls
+    if (responseMsg.tool_calls && responseMsg.tool_calls.length > 0) {
+      const toolCall = responseMsg.tool_calls[0];
+      
+      if (toolCall.function.name === 'generate_selfie') {
+        // --- CHECK IF USER ALREADY GOT A SELFIE ---
+        const { data: existingSelfie } = await supabase
+          .from('arya_selfies')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (existingSelfie) {
+          // ALREADY HAS ONE! Block it and send a pre-written rejection text instead.
+          return NextResponse.json({
+            success: true,
+            data: { 
+              response: "Sorry yaar, I already sent you one selfie! Focus on studies now 🙈" 
+            }
+          });
+        }
+
+        // --- USER HAS NOT RECEIVED ONE. GENERATE IT. ---
+        try {
+          const args = JSON.parse(toolCall.function.arguments);
+          const suffix = args.prompt_suffix ? `, ${args.prompt_suffix}` : '';
+          
+          // Image Prompt carefully designed to match Arya's persona
+          const systemImagePrompt = `A casual, natural smartphone selfie of a cute 24-year-old Indian college girl from Mumbai named Arya. She has expressive brown eyes, medium length dark hair, soft natural lighting. She is wearing casual comfortable college clothes. Genuine, sweet, slightly shy smile. High quality, photorealistic${suffix}`;
+
+          const imageResponse = await xai.images.generate({
+            model: "grok-imagine-image",
+            prompt: systemImagePrompt,
+            size: "1024x1024",
+          });
+
+          const imageUrl = imageResponse.data[0].url;
+
+          if (imageUrl) {
+            // Log it in DB to prevent future claims
+            await supabase.from('arya_selfies').insert({
+              user_id: user.id,
+              image_url: imageUrl
+            });
+
+            // Return the image formatted as markdown so the chat UI renders it
+            return NextResponse.json({
+              success: true,
+              data: { 
+                response: `![Arya Selfie](${imageUrl})`
+              }
+            });
+          }
+        } catch (imgError) {
+          console.error("Image generation failed:", imgError);
+          return NextResponse.json({
+            success: true,
+            data: { response: "Uff, my camera is glitching out right now! Maybe later? 🥺" }
+          });
+        }
       }
     }
 
-    // Gemini requires history to start with 'user' role — remove leading 'model' messages
-    while (conversationHistory.length > 0 && conversationHistory[0].role === 'model') {
-      conversationHistory.shift();
+    // 6. Handle Standard Text Response
+    if (responseMsg.content) {
+      return NextResponse.json({
+        success: true,
+        data: { response: responseMsg.content }
+      });
     }
 
-    // Initialize Gemini model with system prompt
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: ARYA_SYSTEM_PROMPT,
-    });
-
-    // Start chat with conversation history (exclude the current message — it's sent via sendMessage)
-    // The last entry in history may be the user message we just persisted — remove it
-    const historyToSend = [...conversationHistory];
-    if (historyToSend.length > 0 && historyToSend[historyToSend.length - 1].role === 'user') {
-      // Check if the last user message matches the one being sent
-      const lastUserMsg = historyToSend[historyToSend.length - 1].parts[0].text;
-      if (lastUserMsg.includes(message)) {
-        historyToSend.pop();
-      }
-    }
-
-    const chat = model.startChat({
-      history: historyToSend,
-    });
-
-    // Send the new user message
-    const result = await chat.sendMessage(message);
-    const responseText = result.response.text();
-
+    // Fallback if neither tool nor text
     return NextResponse.json({
       success: true,
-      data: { response: responseText },
+      data: { response: "umm, text didn't send... what were we saying?" }
     });
-  } catch (err: unknown) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    console.error('Gemini chat error:', errMsg);
-    return NextResponse.json(
-      { success: false, error: 'sorry yaar, thoda busy hoon 🙏 ek min mein try karna' },
-      { status: 500 }
-    );
+
+  } catch (error: any) {
+    console.error('Arya API Error:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'sorry yaar, thoda busy hoon 🙏 ek min mein try karna' 
+    }, { status: 500 });
   }
 }

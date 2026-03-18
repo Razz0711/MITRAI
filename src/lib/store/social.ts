@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Social Operations
+// MitrRAI - Social Operations
 // Birthday Wishes, Friend Requests, Friendships, Buddy Ratings
 // ============================================
 

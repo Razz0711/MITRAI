@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Online Status API
+// MitrRAI - Online Status API
 // GET: get status for user(s)
 // POST: update own status (heartbeat)
 // ============================================

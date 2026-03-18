@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Rate Your Professor (Anonymous)
+// MitrRAI - Rate Your Professor (Anonymous)
 // Search / Browse → Professor Profile → Multi-factor Rating
 // ============================================
 

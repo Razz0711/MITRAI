@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Supabase Client (Service Role)
+// MitrRAI - Supabase Client (Service Role)
 // ============================================
 
 import { createClient } from '@supabase/supabase-js';

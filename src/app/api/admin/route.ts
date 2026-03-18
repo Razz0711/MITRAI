@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Admin Dashboard API
+// MitrRAI - Admin Dashboard API
 // Protected by ADMIN_KEY environment variable
 // GET: dashboard stats & pending items
 // POST: admin actions (approve sub, resolve report, etc.)

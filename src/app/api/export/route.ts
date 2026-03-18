@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - GDPR Data Export API
+// MitrRAI - GDPR Data Export API
 // GET: Export all user data as JSON
 // ============================================
 
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="mitrai-data-export-${userId}-${Date.now()}.json"`,
+        'Content-Disposition': `attachment; filename="mitrrai-data-export-${userId}-${Date.now()}.json"`,
       },
     });
   } catch (error) {

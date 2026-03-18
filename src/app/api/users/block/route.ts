@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - User Blocking & Reporting API
+// MitrRAI - User Blocking & Reporting API
 // POST: block/unblock a user, or report a user
 // GET: get blocked users list
 // ============================================

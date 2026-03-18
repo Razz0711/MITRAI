@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Health Check Endpoint
+// MitrRAI - Health Check Endpoint
 // GET /api/health — returns service status
 // Used for monitoring, uptime checks, and CI/CD
 // ============================================

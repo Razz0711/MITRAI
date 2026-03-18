@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Onboarding Questions Configuration
+// MitrRAI - Onboarding Questions Configuration
 // ============================================
 
 import { OnboardingStep } from './types';

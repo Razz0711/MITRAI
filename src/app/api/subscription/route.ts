@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Subscription API
+// MitrRAI - Subscription API
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';

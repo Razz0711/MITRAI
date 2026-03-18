@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Loading Skeleton Components
+// MitrRAI - Loading Skeleton Components
 // ============================================
 
 'use client';

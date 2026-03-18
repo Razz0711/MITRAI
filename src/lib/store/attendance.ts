@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Attendance Operations
+// MitrRAI - Attendance Operations
 // ============================================
 
 import { AttendanceRecord } from '../types';

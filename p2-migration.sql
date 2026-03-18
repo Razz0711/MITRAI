@@ -1,5 +1,5 @@
 -- ============================================
--- MitrAI P2 Migration — Run in Supabase SQL Editor
+-- MitrRAI P2 Migration — Run in Supabase SQL Editor
 -- Safe to re-run (uses DROP IF EXISTS + IF NOT EXISTS)
 -- ============================================
 

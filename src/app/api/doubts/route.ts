@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Doubts API
+// MitrRAI - Doubts API
 // GET: list doubts
 // POST: create a doubt
 // PATCH: upvote / close doubt

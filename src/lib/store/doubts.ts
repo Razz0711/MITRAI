@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Anonymous Doubts Store
+// MitrRAI - Anonymous Doubts Store
 // ============================================
 
 import { supabase, fromRow, toRow } from './core';

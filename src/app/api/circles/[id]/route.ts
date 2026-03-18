@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Circle Detail API
+// MitrRAI - Circle Detail API
 // GET: circle info + members (with profiles) + rooms
 // ============================================
 

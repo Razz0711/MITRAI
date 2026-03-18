@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Anonymous Chat Store Module
+// MitrRAI - Anonymous Chat Store Module
 // Queue, rooms, messages, reports, blocks, passes, coupons
 // ============================================
 

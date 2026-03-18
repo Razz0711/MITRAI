@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Online Status Indicator Component
+// MitrRAI - Online Status Indicator Component
 // ============================================
 
 'use client';

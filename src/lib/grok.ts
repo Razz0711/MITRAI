@@ -1,15 +1,18 @@
 // ============================================
-// MitrAI - Google Gemini AI Integration
+// MitrRAI - xAI Grok AI Integration
+// Replaces gemini.ts — all AI features now use Grok
 // ============================================
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { StudentProfile } from './types';
 
-const genAI = new GoogleGenerativeAI((process.env.GEMINI_API_KEY || '').trim());
-
-function getModel() {
-  return genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+function getClient(): OpenAI | null {
+  const apiKey = (process.env.GROK_API_KEY || '').trim();
+  if (!apiKey) return null;
+  return new OpenAI({ apiKey, baseURL: 'https://api.x.ai/v1' });
 }
+
+const MODEL = 'grok-4-1-fast-non-reasoning';
 
 // ============================================
 // Onboarding AI - Friendly Chat Agent
@@ -21,9 +24,10 @@ export async function getOnboardingResponse(
   collectedData: Partial<StudentProfile>,
   conversationHistory: { role: string; content: string }[]
 ): Promise<string> {
-  const model = getModel();
+  const xai = getClient();
+  if (!xai) throw new Error('GROK_API_KEY not configured');
 
-  const systemPrompt = `You are a friendly onboarding assistant for MitrAI - A study buddy matching platform built for SVNIT Surat (Sardar Vallabhbhai National Institute of Technology) students.
+  const systemPrompt = `You are a friendly onboarding assistant for MitrRAI - A study buddy matching platform built for SVNIT Surat (Sardar Vallabhbhai National Institute of Technology) students.
 
 Your job is to collect student study preferences through a natural friendly conversation.
 The student's name, department, year, and admission number were already collected during registration.
@@ -68,18 +72,141 @@ If the user provides info for multiple fields at once, acknowledge all of it and
 
 TONE: Like a helpful SVNIT senior - warm, encouraging, relatable. Reference SVNIT life when appropriate (hostel, labs, library, cafeteria, etc.)`;
 
-  const chatHistory = conversationHistory.map(msg => ({
-    role: msg.role === 'assistant' ? 'model' : 'user' as const,
-    parts: [{ text: msg.content }],
-  }));
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: 'system', content: systemPrompt },
+  ];
 
-  const chat = model.startChat({
-    history: chatHistory.length > 0 ? chatHistory : undefined,
-    systemInstruction: systemPrompt,
+  for (const msg of conversationHistory) {
+    messages.push({
+      role: msg.role === 'assistant' ? 'assistant' : 'user',
+      content: msg.content,
+    });
+  }
+
+  messages.push({ role: 'user', content: userMessage });
+
+  const completion = await xai.chat.completions.create({
+    model: MODEL,
+    messages,
   });
 
-  const result = await chat.sendMessage(userMessage);
-  return result.response.text();
+  return completion.choices[0]?.message?.content || 'Could you say that again?';
+}
+
+// ============================================
+// Study Plan AI - Generate Weekly Plans
+// ============================================
+
+export async function generateStudyPlan(
+  student: StudentProfile,
+  buddy: StudentProfile,
+  weekDates: string
+): Promise<string> {
+  const xai = getClient();
+  if (!xai) throw new Error('GROK_API_KEY not configured');
+
+  const prompt = `You are a personal AI Study Planner. Create a detailed weekly study plan.
+
+STUDENT PROFILE:
+Name: ${student.name}
+Studying: ${student.currentStudy}
+Target Exam: ${student.targetExam} (Date: ${student.targetDate})
+Strong Subjects: ${student.strongSubjects.join(', ')}
+Weak Subjects: ${student.weakSubjects.join(', ')}
+Currently Studying: ${student.currentlyStudying}
+Study Method: ${student.studyMethod.join(', ')}
+Session Length: ${student.sessionLength}
+Available Days: ${student.availableDays.join(', ')}
+Available Times: ${student.availableTimes}
+Study Hours Target: ${student.studyHoursTarget} hours daily
+Short Term Goal: ${student.shortTermGoal}
+Weekly Goals: ${student.weeklyGoals}
+
+BUDDY PROFILE:
+Name: ${buddy.name}
+Strong Subjects: ${buddy.strongSubjects.join(', ')}
+Weak Subjects: ${buddy.weakSubjects.join(', ')}
+Available Days: ${buddy.availableDays.join(', ')}
+Available Times: ${buddy.availableTimes}
+Teaching Ability: ${buddy.teachingAbility}
+
+WEEK: ${weekDates}
+
+Create a structured weekly study plan that includes:
+1. Solo study sessions (what to study alone)
+2. Buddy study sessions (topics to cover together, who explains what)
+3. Daily targets with specific measurable goals
+4. Weekly summary with hours target
+5. Success metrics
+
+Format it nicely with emojis and clear structure. Make it encouraging and actionable.
+Consider who is strong in what subject - the strong student should help explain their strong subjects to the weaker student.`;
+
+  const completion = await xai.chat.completions.create({
+    model: MODEL,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return completion.choices[0]?.message?.content || 'Unable to generate study plan right now.';
+}
+
+// ============================================
+// In-Session AI Assistant
+// ============================================
+
+export async function getSessionAssistantResponse(
+  student1: StudentProfile,
+  student2: StudentProfile,
+  currentTopic: string,
+  sessionGoal: string,
+  userQuestion: string,
+  chatHistory: { role: string; content: string }[]
+): Promise<string> {
+  const xai = getClient();
+  if (!xai) throw new Error('GROK_API_KEY not configured');
+
+  const systemPrompt = `You are an AI Study Assistant present inside a live study session between two students.
+
+STUDENT 1: ${student1.name} (Strong in: ${student1.strongSubjects.join(', ')}, Learning type: ${student1.learningType})
+STUDENT 2: ${student2.name} (Strong in: ${student2.strongSubjects.join(', ')}, Learning type: ${student2.learningType})
+CURRENT TOPIC: ${currentTopic}
+SESSION GOAL: ${sessionGoal}
+
+YOUR ROLE:
+- Help when students are stuck
+- Explain concepts clearly with simple language
+- Give real world examples and analogies
+- Break complex topics into steps
+- Generate practice questions when asked
+- Keep energy positive and encouraging
+- Be like a helpful senior student
+
+RULES:
+- Keep responses concise (3-5 sentences unless explaining a concept)
+- Use emojis sparingly
+- If asked for practice questions, start easy and increase difficulty
+- Give hints before full answers
+- Celebrate when students get things right`;
+
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+    { role: 'system', content: systemPrompt },
+  ];
+
+  for (const msg of chatHistory) {
+    messages.push({
+      role: msg.role === 'assistant' ? 'assistant' : 'user',
+      content: msg.content,
+    });
+  }
+
+  messages.push({ role: 'user', content: userQuestion });
+
+  const completion = await xai.chat.completions.create({
+    model: MODEL,
+    messages,
+  });
+
+  return completion.choices[0]?.message?.content || 'Could you ask that again?';
 }
 
 // ============================================
@@ -91,7 +218,15 @@ export async function generateMatchExplanation(
   match: StudentProfile,
   score: { subject: number; schedule: number; style: number; goal: number; personality: number }
 ): Promise<{ whyItWorks: string; potentialChallenges: string; recommendedFirstTopic: string; bestFormat: string }> {
-  const model = getModel();
+  const xai = getClient();
+  if (!xai) {
+    return {
+      whyItWorks: `${student.name} and ${match.name} share compatible study goals and complementary strengths.`,
+      potentialChallenges: 'Different learning paces may require patience from both sides.',
+      recommendedFirstTopic: student.weakSubjects[0] || student.currentlyStudying || 'Introduction session',
+      bestFormat: student.sessionType === 'both' ? 'Peer teaching' : '1-on-1',
+    };
+  }
 
   const prompt = `You are a Study Buddy Matching Agent. Analyze this match and provide insights.
 
@@ -131,122 +266,23 @@ Respond in EXACTLY this JSON format (no markdown, no code blocks):
   "bestFormat": "1-on-1 / group / peer teaching - with brief reason"
 }`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const completion = await xai.chat.completions.create({
+    model: MODEL,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = (completion.choices[0]?.message?.content || '').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
   try {
     return JSON.parse(text);
-  } catch (err) {
-    console.error('parseMatchExplanation:', err);
-    return { whyItWorks: `${student.name} and ${match.name} share compatible study goals and complementary strengths. Their overlapping schedules make regular sessions possible.`,
+  } catch {
+    return {
+      whyItWorks: `${student.name} and ${match.name} share compatible study goals and complementary strengths.`,
       potentialChallenges: 'Different learning paces may require patience from both sides.',
       recommendedFirstTopic: student.weakSubjects[0] || student.currentlyStudying || 'Introduction session',
       bestFormat: student.sessionType === 'both' ? 'Peer teaching' : '1-on-1',
     };
   }
-}
-
-// ============================================
-// Study Plan AI - Generate Weekly Plans
-// ============================================
-
-export async function generateStudyPlan(
-  student: StudentProfile,
-  buddy: StudentProfile,
-  weekDates: string
-): Promise<string> {
-  const model = getModel();
-
-  const prompt = `You are a personal AI Study Planner. Create a detailed weekly study plan.
-
-STUDENT PROFILE:
-Name: ${student.name}
-Studying: ${student.currentStudy}
-Target Exam: ${student.targetExam} (Date: ${student.targetDate})
-Strong Subjects: ${student.strongSubjects.join(', ')}
-Weak Subjects: ${student.weakSubjects.join(', ')}
-Currently Studying: ${student.currentlyStudying}
-Study Method: ${student.studyMethod.join(', ')}
-Session Length: ${student.sessionLength}
-Available Days: ${student.availableDays.join(', ')}
-Available Times: ${student.availableTimes}
-Study Hours Target: ${student.studyHoursTarget} hours daily
-Short Term Goal: ${student.shortTermGoal}
-Weekly Goals: ${student.weeklyGoals}
-
-BUDDY PROFILE:
-Name: ${buddy.name}
-Strong Subjects: ${buddy.strongSubjects.join(', ')}
-Weak Subjects: ${buddy.weakSubjects.join(', ')}
-Available Days: ${buddy.availableDays.join(', ')}
-Available Times: ${buddy.availableTimes}
-Teaching Ability: ${buddy.teachingAbility}
-
-WEEK: ${weekDates}
-
-Create a structured weekly study plan that includes:
-1. Solo study sessions (what to study alone)
-2. Buddy study sessions (topics to cover together, who explains what)
-3. Daily targets with specific measurable goals
-4. Weekly summary with hours target
-5. Success metrics
-
-Format it nicely with emojis and clear structure. Make it encouraging and actionable.
-Consider who is strong in what subject - the strong student should help explain their strong subjects to the weaker student.`;
-
-  const result = await model.generateContent(prompt);
-  return result.response.text();
-}
-
-// ============================================
-// In-Session AI Assistant
-// ============================================
-
-export async function getSessionAssistantResponse(
-  student1: StudentProfile,
-  student2: StudentProfile,
-  currentTopic: string,
-  sessionGoal: string,
-  userQuestion: string,
-  chatHistory: { role: string; content: string }[]
-): Promise<string> {
-  const model = getModel();
-
-  const systemPrompt = `You are an AI Study Assistant present inside a live study session between two students.
-
-STUDENT 1: ${student1.name} (Strong in: ${student1.strongSubjects.join(', ')}, Learning type: ${student1.learningType})
-STUDENT 2: ${student2.name} (Strong in: ${student2.strongSubjects.join(', ')}, Learning type: ${student2.learningType})
-CURRENT TOPIC: ${currentTopic}
-SESSION GOAL: ${sessionGoal}
-
-YOUR ROLE:
-- Help when students are stuck
-- Explain concepts clearly with simple language
-- Give real world examples and analogies
-- Break complex topics into steps
-- Generate practice questions when asked
-- Keep energy positive and encouraging
-- Be like a helpful senior student
-
-RULES:
-- Keep responses concise (3-5 sentences unless explaining a concept)
-- Use emojis sparingly
-- If asked for practice questions, start easy and increase difficulty
-- Give hints before full answers
-- Celebrate when students get things right`;
-
-  const history = chatHistory.map(msg => ({
-    role: msg.role === 'assistant' ? 'model' : 'user' as const,
-    parts: [{ text: msg.content }],
-  }));
-
-  const chat = model.startChat({
-    history: history.length > 0 ? history : undefined,
-    systemInstruction: systemPrompt,
-  });
-
-  const result = await chat.sendMessage(userQuestion);
-  return result.response.text();
 }
 
 // ============================================
@@ -257,7 +293,17 @@ export async function runAgentConversation(
   studentA: StudentProfile,
   studentB: StudentProfile
 ): Promise<{ compatibility: string; confidence: number; strengths: string[]; issues: string[]; recommendation: string; suggestedFirstSession: string }> {
-  const model = getModel();
+  const xai = getClient();
+  if (!xai) {
+    return {
+      compatibility: 'Medium',
+      confidence: 60,
+      strengths: ['Shared exam target', 'Schedule overlap possible'],
+      issues: ['Compatibility analysis could not be fully completed'],
+      recommendation: 'Maybe',
+      suggestedFirstSession: 'Introduction and goal-setting session',
+    };
+  }
 
   const prompt = `You are analyzing compatibility between two students for a study buddy match.
 
@@ -300,14 +346,18 @@ Respond in EXACTLY this JSON format (no markdown, no code blocks):
   "suggestedFirstSession": "specific topic and format suggestion"
 }`;
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const completion = await xai.chat.completions.create({
+    model: MODEL,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = (completion.choices[0]?.message?.content || '').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
   try {
     return JSON.parse(text);
-  } catch (err) {
-    console.error('parseCompatibilityCheck:', err);
-    return { compatibility: 'Medium',
+  } catch {
+    return {
+      compatibility: 'Medium',
       confidence: 60,
       strengths: ['Shared exam target', 'Schedule overlap possible'],
       issues: ['Compatibility analysis could not be fully completed'],
@@ -328,7 +378,8 @@ export async function analyzeProgress(
   studyHours: number,
   buddyFeedback: string
 ): Promise<string> {
-  const model = getModel();
+  const xai = getClient();
+  if (!xai) throw new Error('GROK_API_KEY not configured');
 
   const prompt = `You are a Study Progress Analyzer. Provide actionable feedback.
 
@@ -350,6 +401,10 @@ Provide a progress report covering:
 Keep it encouraging, specific, and actionable. Like a caring mentor.
 Use emojis sparingly. Keep it under 300 words.`;
 
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  const completion = await xai.chat.completions.create({
+    model: MODEL,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return completion.choices[0]?.message?.content || 'Unable to analyze progress right now.';
 }

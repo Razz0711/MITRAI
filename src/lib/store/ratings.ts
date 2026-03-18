@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Professor Ratings Store
+// MitrRAI - Professor Ratings Store
 // Multi-factor anonymous professor ratings
 // ============================================
 

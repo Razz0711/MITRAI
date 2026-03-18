@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Notification Broadcast Helpers
+// MitrRAI - Notification Broadcast Helpers
 // Stores in-app notifications + sends real Web Push
 // ============================================
 

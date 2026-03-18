@@ -1,4 +1,4 @@
-package com.mitrai.study;
+package com.mitrrai.study;
 
 import com.getcapacitor.BridgeActivity;
 

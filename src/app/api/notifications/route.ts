@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Notifications API
+// MitrRAI - Notifications API
 // GET: get notifications for a user
 // POST: mark notification as read OR create notification
 // ============================================

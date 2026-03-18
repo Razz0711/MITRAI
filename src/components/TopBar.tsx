@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI v2 - Clean Top Bar + Mobile Bottom Tabs
+// MitrRAI v2 - Clean Top Bar + Mobile Bottom Tabs
 // Tabs: Feed, Arya, Anon, Chat, Community
 // ============================================
 

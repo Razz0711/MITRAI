@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Anonymous Chat Room Page
+// MitrRAI - Anonymous Chat Room Page
 // Real-time messaging, reveal, report, block
 // ============================================
 

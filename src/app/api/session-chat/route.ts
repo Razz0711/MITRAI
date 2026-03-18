@@ -1,10 +1,10 @@
 // ============================================
-// MitrAI - In-Session Chat API
+// MitrRAI - In-Session Chat API
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getStudentById } from '@/lib/store';
-import { getSessionAssistantResponse } from '@/lib/gemini';
+import { getSessionAssistantResponse } from '@/lib/grok';
 import { StudentProfile } from '@/lib/types';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const student1 = student1Id ? await getStudentById(student1Id) : null;
     const student2 = student2Id ? await getStudentById(student2Id) : null;
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GROK_API_KEY) {
       return NextResponse.json({
         success: true,
         data: {

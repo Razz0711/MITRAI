@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Circles API
+// MitrRAI - Circles API
 // GET: list all circles + user memberships
 // POST: join/leave a circle
 // ============================================

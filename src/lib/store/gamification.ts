@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Gamification Store (XP, Badges, Streaks)
+// MitrRAI - Gamification Store (XP, Badges, Streaks)
 // ============================================
 
 import { supabase, fromRow } from './core';

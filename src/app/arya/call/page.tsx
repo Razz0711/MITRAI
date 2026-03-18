@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Arya Call Page → Coming Soon
+// MitrRAI - Arya Call Page → Coming Soon
 // ============================================
 
 'use client';

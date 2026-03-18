@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Notification Sound Hook
+// MitrRAI - Notification Sound Hook
 // Web Audio API — zero external files needed.
 // Three tiers: urgent (double chime), important (soft chime), info (subtle pop)
 // ============================================

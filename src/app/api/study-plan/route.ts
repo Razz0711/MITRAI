@@ -1,10 +1,10 @@
 // ============================================
-// MitrAI - Study Plan API
+// MitrRAI - Study Plan API
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getStudentById } from '@/lib/store';
-import { generateStudyPlan } from '@/lib/gemini';
+import { generateStudyPlan } from '@/lib/grok';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Student or buddy not found' }, { status: 404 });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GROK_API_KEY) {
       // Fallback study plan
       const fallbackPlan = generateFallbackPlan(student.name, buddy.name, weekDates || 'This Week');
       return NextResponse.json({ success: true, data: { plan: fallbackPlan } });

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Store Barrel Export
+// MitrRAI - Store Barrel Export
 // Re-exports all domain modules so existing
 // `import { ... } from '@/lib/store'` keeps working.
 // ============================================

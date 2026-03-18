@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Birthday API
+// MitrRAI - Birthday API
 // GET: upcoming birthdays & today's birthday
 // POST: send birthday wish
 // ============================================

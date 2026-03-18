@@ -1,8 +1,8 @@
 // ============================================
-// MitrAI - Service Worker for Push Notifications
+// MitrRAI - Service Worker for Push Notifications
 // ============================================
 
-const CACHE_NAME = 'mitrai-v1';
+const CACHE_NAME = 'mitrrai-v1';
 
 // Install — activate immediately
 self.addEventListener('install', () => self.skipWaiting());
@@ -40,7 +40,7 @@ self.addEventListener('notificationclick', (event) => {
 
 // Handle push events (for future server-sent push)
 self.addEventListener('push', (event) => {
-  let data = { title: 'MitrAI', body: 'You have a new notification', url: '/dashboard' };
+  let data = { title: 'MitrRAI', body: 'You have a new notification', url: '/dashboard' };
 
   if (event.data) {
     try {
@@ -60,7 +60,7 @@ self.addEventListener('push', (event) => {
     vibrate: isCall
       ? [300, 150, 300, 150, 300, 150, 300, 150, 300]  // long ringtone vibration
       : [200, 100, 200],
-    tag: isCall ? 'mitrai-call-' + Date.now() : 'mitrai-notification',
+    tag: isCall ? 'mitrrai-call-' + Date.now() : 'mitrrai-notification',
     renotify: true,
     requireInteraction: isCall,  // keep call notifications visible until user acts
     data: { url: data.url },

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Download Material File
+// MitrRAI - Download Material File
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';

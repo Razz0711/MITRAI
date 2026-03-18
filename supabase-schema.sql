@@ -1,5 +1,5 @@
 -- ============================================
--- MitrAI - Supabase Database Schema
+-- MitrRAI - Supabase Database Schema
 -- Run this SQL in your Supabase SQL Editor
 -- (Dashboard → SQL Editor → New Query → Paste & Run)
 -- ============================================

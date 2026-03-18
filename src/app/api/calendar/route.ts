@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Calendar API
+// MitrRAI - Calendar API
 // GET: get events | POST: create | PUT: update | DELETE: delete
 // ============================================
 

@@ -107,7 +107,7 @@ export default function MatchesPage() {
 
   const loadBirthdays = useCallback(async () => {
     try {
-      const usersRaw = localStorage.getItem('mitrai_users') || '[]';
+      const usersRaw = localStorage.getItem('mitrrai_users') || '[]';
       const users = JSON.parse(usersRaw).map((entry: { id: string; name: string; department: string; dob: string; showBirthday?: boolean }) => ({
         id: entry.id, name: entry.name, department: entry.department || '', dob: entry.dob || '', showBirthday: entry.showBirthday !== false,
       }));
@@ -186,7 +186,7 @@ export default function MatchesPage() {
       const data = await res.json();
       if (data.success) {
         setAllStudents(data.data);
-        const savedId = localStorage.getItem('mitrai_student_id');
+        const savedId = localStorage.getItem('mitrrai_student_id');
         const preferredId = savedId || user?.id || '';
         const currentStudent = data.data.find((c: StudentProfile) => c.id === preferredId);
         if (currentStudent) setSelectedStudentId(currentStudent.id);

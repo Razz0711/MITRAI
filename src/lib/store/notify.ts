@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Unified Notification Sender
+// MitrRAI - Unified Notification Sender
 // Sends notifications via BOTH web push + native FCM
 // Drop-in replacement for sendPushToUser / sendPushToUsers
 // ============================================

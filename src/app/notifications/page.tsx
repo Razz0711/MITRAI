@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Notifications Page
+// MitrRAI - Notifications Page
 // Shows all notifications: matches, invites, nearby posts
 // ============================================
 

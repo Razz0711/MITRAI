@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Attendance API
+// MitrRAI - Attendance API
 // GET: list | POST: create/bulk-create | PUT: update | DELETE: delete
 // ============================================
 

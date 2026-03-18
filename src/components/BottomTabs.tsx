@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Tab Route Mapping (shared by TopBar & SubTabBar)
+// MitrRAI - Tab Route Mapping (shared by TopBar & SubTabBar)
 // Exported helpers for active tab detection
 // ============================================
 

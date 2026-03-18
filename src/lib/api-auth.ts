@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - API Auth Helper
+// MitrRAI - API Auth Helper
 // Verifies the authenticated user from Supabase session cookies
 // ============================================
 
@@ -16,7 +16,12 @@ export async function getAuthUser() {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return null;
     return user;
-  } catch (err) {
+  } catch (err: any) {
+    // Next.js throws an error if cookies are accessed during static generation.
+    // We catch it silently here so the build doesn't crash on Vercel.
+    if (err.message && err.message.includes('Dynamic server usage')) {
+      return null;
+    }
     console.error('getAuthUser:', err);
     return null;
   }

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - FCM Token Store
+// MitrRAI - FCM Token Store
 // CRUD for native push (FCM) tokens + send via Firebase Admin SDK (V1 API)
 // ============================================
 
@@ -124,7 +124,7 @@ export async function sendFcmPush(
         priority: 'high',
         notification: {
           sound: 'default',
-          channelId: 'mitrai_notifications',
+          channelId: 'mitrrai_notifications',
           clickAction: 'FLUTTER_NOTIFICATION_CLICK',
         },
       },

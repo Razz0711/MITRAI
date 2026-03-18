@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Web Push Notification Hook (REAL Push API)
+// MitrRAI - Web Push Notification Hook (REAL Push API)
 // Uses PushManager.subscribe() with VAPID for
 // server-sent notifications that work even when
 // the browser/tab is CLOSED.
@@ -164,7 +164,7 @@ export function usePushNotifications() {
   const showNotification = useCallback(
     (title: string, body: string, options?: { url?: string; tag?: string }) => {
       if (permission !== 'granted') return;
-      const tag = options?.tag || `mitrai-${Date.now()}`;
+      const tag = options?.tag || `mitrrai-${Date.now()}`;
       const notifOptions = {
         body,
         icon: '/logo.jpg',

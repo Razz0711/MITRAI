@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - User Availability & Status Operations
+// MitrRAI - User Availability & Status Operations
 // ============================================
 
 import { UserAvailability, UserStatus } from '../types';

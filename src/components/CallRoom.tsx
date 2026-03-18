@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Native WebRTC Voice/Video Call
+// MitrRAI - Native WebRTC Voice/Video Call
 // Uses Supabase Realtime Broadcast for signaling
 // P2P media — zero lag, no third-party iframe
 // Features: screen share, in-call chat, auto-hangup

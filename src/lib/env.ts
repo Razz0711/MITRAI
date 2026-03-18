@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Environment Variable Validation
+// MitrRAI - Environment Variable Validation
 // Validates required env vars at import time
 // ============================================
 
@@ -22,8 +22,8 @@ export const SUPABASE_SERVICE_ROLE_KEY = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 export const SMTP_EMAIL = optionalEnv('SMTP_EMAIL');
 export const SMTP_APP_PASSWORD = optionalEnv('SMTP_APP_PASSWORD');
 
-// --- Gemini AI ---
-export const GEMINI_API_KEY = optionalEnv('GEMINI_API_KEY');
+// --- Grok AI (xAI) ---
+export const GROK_API_KEY = optionalEnv('GROK_API_KEY');
 
 // --- Admin ---
 export const ADMIN_KEY = optionalEnv('ADMIN_KEY');

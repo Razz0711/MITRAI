@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Admin Auth API
+// MitrRAI - Admin Auth API
 // POST: Login with email/password, sets session cookie
 // GET: Verify current session
 // DELETE: Logout (clear cookie)

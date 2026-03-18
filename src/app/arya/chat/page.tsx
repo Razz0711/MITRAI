@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Arya Chat Page (Persistent)
+// MitrRAI - Arya Chat Page (Persistent)
 // Messages stored in Supabase arya_messages
 // Soft-delete via is_deleted_by_user flag
 // ============================================
@@ -118,20 +118,34 @@ export default function AryaChatPage() {
     setInput('');
     setSending(true);
 
-    // Persist user message
-    const userMsg = await persistMessage('user', text);
-    if (userMsg) {
-      setMessages(prev => [...prev, userMsg]);
-    }
+    // Optimistic UI update for instant feedback
+    const optimisticId = `user-temp-${Date.now()}`;
+    const optimisticMsg: Message = {
+      id: optimisticId,
+      role: 'user',
+      content: text,
+      created_at: new Date().toISOString(),
+    };
+    
+    setMessages(prev => [...prev, optimisticMsg]);
+
+    // Fire DB persistence and API call in parallel
+    const persistUserPromise = persistMessage('user', text);
 
     try {
-      // Call Gemini API with conversation history + system prompt
+      // Call Grok API with conversation history //
       const res = await fetch('/api/arya/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversation_id: conversationId, message: text }),
       });
       const data = await res.json();
+
+      // Ensure persistence finishes and replace optimistic ID so it can be targeted for deletion if needed
+      const userMsg = await persistUserPromise;
+      if (userMsg) {
+        setMessages(prev => prev.map(m => m.id === optimisticId ? userMsg : m));
+      }
 
       if (data.success && data.data?.response) {
         // Persist Arya's response
@@ -147,6 +161,11 @@ export default function AryaChatPage() {
       }
     } catch (err) {
       console.error('Arya chat error:', err);
+      // Wait for persistence even on error so state is correct
+      const userMsg = await persistUserPromise;
+      if (userMsg) {
+        setMessages(prev => prev.map(m => m.id === optimisticId ? userMsg : m));
+      }
       const fallback = await persistMessage('assistant', `[DEBUG] Fetch error: ${err instanceof Error ? err.message : String(err)}`);
       if (fallback) setMessages(prev => [...prev, fallback]);
     }

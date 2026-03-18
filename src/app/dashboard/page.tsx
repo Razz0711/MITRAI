@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Dashboard Redirect (-> /home)
+// MitrRAI - Dashboard Redirect (-> /home)
 // Dashboard was removed; all traffic redirects to /home.
 // ============================================
 

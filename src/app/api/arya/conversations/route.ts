@@ -1,11 +1,13 @@
 // ============================================
-// MitrAI - Arya Conversations API
+// MitrRAI - Arya Conversations API
 // GET: get or create conversation for user
 // ============================================
 
 import { NextResponse } from 'next/server';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { supabase } from '@/lib/store/core';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const user = await getAuthUser();

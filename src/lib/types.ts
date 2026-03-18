@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Study Buddy Matching Platform Types
+// MitrRAI - Study Buddy Matching Platform Types
 // ============================================
 
 export interface StudentProfile {

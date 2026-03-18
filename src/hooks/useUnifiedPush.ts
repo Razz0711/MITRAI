@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Unified Push Hook
+// MitrRAI - Unified Push Hook
 // Automatically uses web push on browsers,
 // native FCM on Android/iOS Capacitor apps
 // ============================================

@@ -23,7 +23,7 @@ if (osName.contains('windows')) {
     def localAppData = System.getenv('LOCALAPPDATA')
     if (localAppData) {
         // Keep Gradle outputs out of OneDrive-backed folders to avoid Windows file-lock/delete failures.
-        sharedBuildRoot = new File(localAppData, 'MitrAI/android-build')
+        sharedBuildRoot = new File(localAppData, 'MitrRAI/android-build')
     }
 }
 

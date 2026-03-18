@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Session Bookings API
+// MitrRAI - Session Bookings API
 // GET: list | POST: create | PATCH: accept/decline
 // ============================================
 

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Study Rooms Store
+// MitrRAI - Study Rooms Store
 // ============================================
 
 import { supabase, fromRow, toRow } from './core';

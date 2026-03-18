@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Single Room Page (chat + members + call)
+// MitrRAI - Single Room Page (chat + members + call)
 // ============================================
 
 'use client';

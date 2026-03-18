@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Study Materials Operations
+// MitrRAI - Study Materials Operations
 // ============================================
 
 import { StudyMaterial } from '../types';

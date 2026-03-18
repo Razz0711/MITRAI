@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Circle Detail Page
+// MitrRAI - Circle Detail Page
 // Shows members, study rooms, and activity
 // ============================================
 

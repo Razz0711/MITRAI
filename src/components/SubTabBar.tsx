@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI v2 - SubTabBar (Premium pill-style sub-tabs)
+// MitrRAI v2 - SubTabBar (Premium pill-style sub-tabs)
 // Glassmorphic, animated, with gradient active state
 // ============================================
 

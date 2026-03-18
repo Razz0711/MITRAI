@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Next.js Middleware
+// MitrRAI - Next.js Middleware
 // Protects routes by verifying Supabase Auth session
 // Refreshes session tokens on every request
 // ============================================
@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
   if (isApiRoute && !isPublicApi && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
     const origin = request.headers.get('origin');
     if (origin) {
-      const allowedHost = request.nextUrl.host; // e.g. "mitrai-study.vercel.app" or "localhost:3000"
+      const allowedHost = request.nextUrl.host; // e.g. "mitrrai-study.vercel.app" or "localhost:3000"
       try {
         const originHost = new URL(origin).host;
         if (originHost !== allowedHost) {

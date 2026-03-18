@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - App Shell (Conditional navigation wrapper)
+// MitrRAI - App Shell (Conditional navigation wrapper)
 // Handles TopBar, BottomTabs, and footer based on auth & route
 // ============================================
 
@@ -72,14 +72,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex items-center gap-2.5 group">
             <Image
               src="/logo.jpg"
-              alt="MitrAI"
+              alt="MitrRAI"
               width={36}
               height={36}
               className="h-9 w-auto rounded-xl shadow-lg group-hover:scale-105 transition-transform"
               priority
             />
             <div className="flex flex-col">
-              <span className="text-sm font-bold text-[var(--foreground)] leading-none">MitrAI</span>
+              <span className="text-sm font-bold text-[var(--foreground)] leading-none">MitrRAI</span>
               <span className="text-[9px] text-[var(--muted)] leading-none mt-0.5 hidden sm:block">SVNIT Surat</span>
             </div>
           </Link>
@@ -105,7 +105,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <span className="opacity-30">·</span>
         <Link href="/privacy" className="hover:text-[var(--foreground)] transition-colors">Privacy Policy</Link>
         <span className="opacity-30">·</span>
-        <span>© {new Date().getFullYear()} MitrAI — SVNIT</span>
+        <span>© {new Date().getFullYear()} MitrRAI — SVNIT</span>
       </footer>
     </>
   );

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Availability API
+// MitrRAI - Availability API
 // GET: get user availability grid
 // POST: update availability / book slot
 // ============================================

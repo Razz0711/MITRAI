@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - File Validation Utility
+// MitrRAI - File Validation Utility
 // Validates file types for uploads — blocks executables & dangerous files
 // ============================================
 

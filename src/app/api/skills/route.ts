@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Skills API
+// MitrRAI - Skills API
 // Skill swap: create offers, list, delete
 // ============================================
 

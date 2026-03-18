@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Friends & Ratings Page
+// MitrRAI - Friends & Ratings Page
 // ============================================
 
 'use client';

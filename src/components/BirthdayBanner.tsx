@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Birthday Banner Component
+// MitrRAI - Birthday Banner Component
 // ============================================
 
 'use client';

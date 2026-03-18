@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Arya AI Profile (Clean)
+// MitrRAI - Arya AI Profile (Clean)
 // Profile view with pic, about, Chat + Call
 // ============================================
 
@@ -130,7 +130,7 @@ export default function AryaProfilePage() {
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           Always online
         </p>
-        <p className="text-xs text-[var(--muted)] mt-1">Your AI study companion · MitrAI</p>
+        <p className="text-xs text-[var(--muted)] mt-1">Your AI study companion · MitrRAI</p>
       </div>
 
       {/* ── Action Buttons ── */}
@@ -177,7 +177,7 @@ export default function AryaProfilePage() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-[var(--foreground)]">Instagram</p>
-            <p className="text-xs text-[var(--muted)]">@arya.mitrai</p>
+            <p className="text-xs text-[var(--muted)]">@arya.mitrrai</p>
           </div>
         </a>
 

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Notification Operations
+// MitrRAI - Notification Operations
 // ============================================
 
 import { Notification } from '../types';

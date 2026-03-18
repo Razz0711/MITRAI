@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Call Invite API
+// MitrRAI - Call Invite API
 // Sends push notification to a user about an incoming call
 // ============================================
 

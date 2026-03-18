@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI v2 — Premium Landing Page
+// MitrRAI v2 — Premium Landing Page
 // Hero with animated orbs, glass cards, stagger animations
 // ============================================
 
@@ -61,7 +61,7 @@ export default function Home() {
             </p>
 
             <p className="text-sm text-[var(--muted)] mb-10 max-w-md mx-auto leading-relaxed slide-up-stagger-2">
-              MitrAI matches SVNIT students with compatible study partners using AI — across departments, subjects, schedules, and goals.
+              MitrRAI matches SVNIT students with compatible study partners using AI — across departments, subjects, schedules, and goals.
             </p>
 
             {/* CTAs */}
@@ -167,11 +167,11 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--muted)]">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white text-[8px] font-bold">M</div>
-            <span>&copy; 2026 MitrAI — SVNIT Surat</span>
+            <span>&copy; 2026 MitrRAI — SVNIT Surat</span>
           </div>
           <div className="flex gap-5">
             <a href="/feedback" className="hover:text-[var(--foreground)] transition-colors">Feedback</a>
-            <a href="https://github.com/Razz0711/MITRAI" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--foreground)] transition-colors">GitHub</a>
+            <a href="https://github.com/Razz0711/MITRRAI" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--foreground)] transition-colors">GitHub</a>
             <a href="mailto:rajkumaratsvnit@gmail.com" className="hover:text-[var(--foreground)] transition-colors">Contact</a>
           </div>
         </div>

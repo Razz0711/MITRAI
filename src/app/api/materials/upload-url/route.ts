@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Signed Upload URL API
+// MitrRAI - Signed Upload URL API
 // Creates a signed URL for direct browser-to-Supabase upload
 // This bypasses Vercel's 4.5MB body limit
 // ============================================

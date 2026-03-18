@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Auth Context (Supabase Auth)
+// MitrRAI - Auth Context (Supabase Auth)
 // Cookie-based sessions via @supabase/ssr
 // ============================================
 
@@ -90,9 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const u = mapSupabaseUser(session.user);
         setUser(u);
         // Set localStorage for backward-compat with pages that read it directly
-        localStorage.setItem('mitrai_student_id', u.id);
-        localStorage.setItem('mitrai_student_name', u.name);
-        localStorage.setItem('mitrai_session', JSON.stringify(u));
+        localStorage.setItem('mitrrai_student_id', u.id);
+        localStorage.setItem('mitrrai_student_name', u.name);
+        localStorage.setItem('mitrrai_session', JSON.stringify(u));
       }
       setIsLoading(false);
     });
@@ -103,14 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           const u = mapSupabaseUser(session.user);
           setUser(u);
-          localStorage.setItem('mitrai_student_id', u.id);
-          localStorage.setItem('mitrai_student_name', u.name);
-          localStorage.setItem('mitrai_session', JSON.stringify(u));
+          localStorage.setItem('mitrrai_student_id', u.id);
+          localStorage.setItem('mitrrai_student_name', u.name);
+          localStorage.setItem('mitrrai_session', JSON.stringify(u));
         } else {
           setUser(null);
-          localStorage.removeItem('mitrai_student_id');
-          localStorage.removeItem('mitrai_student_name');
-          localStorage.removeItem('mitrai_session');
+          localStorage.removeItem('mitrrai_student_id');
+          localStorage.removeItem('mitrrai_student_name');
+          localStorage.removeItem('mitrrai_session');
         }
       }
     );
@@ -218,11 +218,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     supabaseBrowser.auth.signOut();
     setUser(null);
-    localStorage.removeItem('mitrai_session');
-    localStorage.removeItem('mitrai_student_id');
-    localStorage.removeItem('mitrai_student_name');
+    localStorage.removeItem('mitrrai_session');
+    localStorage.removeItem('mitrrai_student_id');
+    localStorage.removeItem('mitrrai_student_name');
     // Clean up old localStorage auth data
-    localStorage.removeItem('mitrai_users');
+    localStorage.removeItem('mitrrai_users');
   };
 
   return (

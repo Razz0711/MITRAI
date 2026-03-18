@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Circles Page (Discord Model Redesign)
+// MitrRAI - Circles Page (Discord Model Redesign)
 // Circle = community, Room = live session inside
 // Left: circle list | Right: circle detail + rooms
 // ============================================

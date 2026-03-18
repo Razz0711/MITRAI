@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Auth API Route
+// MitrRAI - Auth API Route
 // Handles signup via Supabase Auth Admin API
 // ============================================
 

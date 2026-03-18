@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Study Rooms Page (Redesigned)
+// MitrRAI - Study Rooms Page (Redesigned)
 // Clean UI with CSS variables, inline create
 // ============================================
 

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Anonymous Chat Alias Generator
+// MitrRAI - Anonymous Chat Alias Generator
 // Creates fun random aliases like "CoolFox#4821"
 // ============================================
 
@@ -68,5 +68,5 @@ export const ANON_PRICING = [
 export const UPI_CONFIG = {
   upiId: '7061001946@ybl',
   merchantName: 'Raj Kumar',
-  note: 'MitrAI Anon Chat',
+  note: 'MitrRAI Anon Chat',
 };

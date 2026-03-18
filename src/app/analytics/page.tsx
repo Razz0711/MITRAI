@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Session History & Analytics Page
+// MitrRAI - Session History & Analytics Page
 // ============================================
 
 'use client';

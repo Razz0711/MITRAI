@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Feedback Operations
+// MitrRAI - Feedback Operations
 // ============================================
 
 import { Feedback } from '../types';

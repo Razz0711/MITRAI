@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Anonymous Chat API
+// MitrRAI - Anonymous Chat API
 // POST: join/leave queue, poll for match
 // GET: check status (active room, queue, pass)
 // ============================================

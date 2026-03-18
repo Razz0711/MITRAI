@@ -1,5 +1,5 @@
 -- ============================================
--- MitrAI - Migration 003: Session History & Analytics support
+-- MitrRAI - Migration 003: Session History & Analytics support
 -- Ensures sessions table exists for analytics
 -- Run in Supabase SQL Editor
 -- ============================================

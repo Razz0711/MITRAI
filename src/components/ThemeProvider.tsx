@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Theme Provider (Dark / Light Mode)
+// MitrRAI - Theme Provider (Dark / Light Mode)
 // ============================================
 
 'use client';
@@ -27,7 +27,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Hydrate from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('mitrai_theme') as Theme | null;
+    const saved = localStorage.getItem('mitrrai_theme') as Theme | null;
     if (saved === 'light' || saved === 'dark') {
       setTheme(saved);
       document.documentElement.setAttribute('data-theme', saved);
@@ -38,7 +38,7 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('mitrai_theme', next);
+    localStorage.setItem('mitrrai_theme', next);
   };
 
   return (

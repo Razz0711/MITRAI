@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Session Operations
+// MitrRAI - Session Operations
 // ============================================
 
 import { StudySession } from '../types';

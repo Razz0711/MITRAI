@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Subscription Operations
+// MitrRAI - Subscription Operations
 // ============================================
 
 import { Subscription } from '../types';

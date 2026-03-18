@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Global Notification Manager
+// MitrRAI - Global Notification Manager
 // Runs on every authenticated page inside AppShell.
 //
 // TWO notification channels:

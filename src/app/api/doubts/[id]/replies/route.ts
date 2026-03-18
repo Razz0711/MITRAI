@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Doubt Replies API
+// MitrRAI - Doubt Replies API
 // GET: get replies for a doubt
 // POST: add a reply
 // PATCH: accept a reply

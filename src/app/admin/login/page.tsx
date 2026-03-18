@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Admin Login Page
+// MitrRAI - Admin Login Page
 // Separate authentication with non-college email/password
 // ============================================
 
@@ -53,9 +53,9 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <Image src="/logo.jpg" alt="MitrAI" width={56} height={56} className="h-14 w-auto mx-auto mb-4" priority />
+          <Image src="/logo.jpg" alt="MitrRAI" width={56} height={56} className="h-14 w-auto mx-auto mb-4" priority />
           <h1 className="text-xl font-bold text-[var(--foreground)]">Admin Login</h1>
-          <p className="text-xs text-[var(--muted)] mt-1">MitrAI Administration Panel</p>
+          <p className="text-xs text-[var(--muted)] mt-1">MitrRAI Administration Panel</p>
         </div>
 
         {/* Login Form */}
@@ -104,7 +104,7 @@ export default function AdminLoginPage() {
         {/* Back link */}
         <div className="text-center mt-4">
           <Link href="/" className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
-            ← Back to MitrAI
+            ← Back to MitrRAI
           </Link>
         </div>
       </div>

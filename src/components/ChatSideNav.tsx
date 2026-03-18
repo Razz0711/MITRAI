@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - ChatSideNav (Vertical icon sidebar)
+// MitrRAI - ChatSideNav (Vertical icon sidebar)
 // Desktop-only: Chats, Anon, Circles, Rooms
 // ============================================
 

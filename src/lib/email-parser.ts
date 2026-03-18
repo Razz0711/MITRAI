@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - SVNIT Email Parser
+// MitrRAI - SVNIT Email Parser
 // Extracts batch, department, year, program type
 // from SVNIT email addresses automatically.
 //

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Chat / Messaging Operations
+// MitrRAI - Chat / Messaging Operations
 // ============================================
 
 import { DirectMessage, ChatThread } from '../types';

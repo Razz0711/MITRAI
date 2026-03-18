@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Study Rooms API
+// MitrRAI - Study Rooms API
 // GET: list active rooms
 // POST: create a room
 // ============================================

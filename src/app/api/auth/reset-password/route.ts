@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Password Reset API (OTP-based)
+// MitrRAI - Password Reset API (OTP-based)
 // Uses our own SMTP (same as login OTP emails) instead of Supabase's limited built-in mailer
 // Flow: send OTP → verify OTP → admin updates password
 // ============================================
@@ -29,17 +29,17 @@ const transporter = nodemailer.createTransport({
 async function sendResetOtpEmail(to: string, code: string) {
   const fromEmail = (process.env.SMTP_EMAIL || '').trim();
   await transporter.sendMail({
-    from: `"MitrAI" <${fromEmail}>`,
+    from: `"MitrRAI" <${fromEmail}>`,
     to,
-    subject: `${code} — MitrAI Password Reset Code`,
+    subject: `${code} — MitrRAI Password Reset Code`,
     html: `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #1a1a2e; border-radius: 16px; overflow: hidden;">
         <div style="background: #1a1a2e; padding: 28px 24px 12px; text-align: center;">
-          <img src="https://mitrai-study.vercel.app/logo.jpg" alt="MitrAI" width="120" style="display: block; margin: 0 auto; height: auto; border-radius: 14px;" />
+          <img src="https://mitrrai-study.vercel.app/logo.jpg" alt="MitrRAI" width="120" style="display: block; margin: 0 auto; height: auto; border-radius: 14px;" />
         </div>
         <div style="background: linear-gradient(180deg, #1a1a2e 0%, #7c3aed 80%, #a855f7 100%); padding: 8px 24px 24px; text-align: center;">
           <h1 style="color: white; font-size: 22px; margin: 0;">Password Reset</h1>
-          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0;">MitrAI — Your SVNIT Study Buddy</p>
+          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0;">MitrRAI — Your SVNIT Study Buddy</p>
         </div>
         <div style="padding: 32px 24px; text-align: center;">
           <p style="color: #e0e0e0; font-size: 15px; margin: 0 0 8px;">Your password reset code is:</p>
@@ -50,7 +50,7 @@ async function sendResetOtpEmail(to: string, code: string) {
           <p style="color: #666; font-size: 12px; margin: 8px 0 0;">If you didn&apos;t request this, you can safely ignore this email.</p>
         </div>
         <div style="background: rgba(255,255,255,0.03); padding: 16px 24px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
-          <p style="color: #555; font-size: 11px; margin: 0;">MitrAI &mdash; Find your perfect study partner at SVNIT</p>
+          <p style="color: #555; font-size: 11px; margin: 0;">MitrRAI &mdash; Find your perfect study partner at SVNIT</p>
         </div>
       </div>
     `,

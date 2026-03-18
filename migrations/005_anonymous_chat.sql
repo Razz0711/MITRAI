@@ -1,5 +1,5 @@
 -- ============================================
--- MitrAI - Migration 005: Anonymous Chat + Coupon/Pass System
+-- MitrRAI - Migration 005: Anonymous Chat + Coupon/Pass System
 -- Run in Supabase SQL Editor
 -- ============================================
 

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Session Bookings Operations
+// MitrRAI - Session Bookings Operations
 // ============================================
 
 import { SessionBooking } from '../types';

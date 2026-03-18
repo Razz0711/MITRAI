@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Admin Authentication Helpers
+// MitrRAI - Admin Authentication Helpers
 // Cookie-based admin auth with email/password login
 // Env vars: ADMIN_EMAIL, ADMIN_PASSWORD
 // ============================================
@@ -7,8 +7,8 @@
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
 
-export const ADMIN_COOKIE_NAME = 'mitrai_admin_session';
-const SECRET_SALT = 'mitrai-admin-auth-2024';
+export const ADMIN_COOKIE_NAME = 'mitrrai_admin_session';
+const SECRET_SALT = 'mitrrai-admin-auth-2024';
 
 /**
  * Generate a deterministic admin session token from env vars.

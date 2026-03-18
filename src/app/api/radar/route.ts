@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Radar API
+// MitrRAI - Radar API
 // Campus discovery: broadcast, list active pings, go offline
 // ============================================
 

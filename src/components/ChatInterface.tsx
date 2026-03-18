@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Chat Interface Component
+// MitrRAI - Chat Interface Component
 // ============================================
 
 'use client';
@@ -70,7 +70,7 @@ export default function ChatInterface({
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-[10px] text-white font-bold">
                     M
                   </div>
-                  <span className="text-xs text-[var(--muted)]">MitrAI</span>
+                  <span className="text-xs text-[var(--muted)]">MitrRAI</span>
                 </div>
               )}
               <div className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</div>

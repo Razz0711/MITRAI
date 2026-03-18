@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Study Materials API
+// MitrRAI - Study Materials API
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';

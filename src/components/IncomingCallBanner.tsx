@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Incoming Call Banner
+// MitrRAI - Incoming Call Banner
 // Global overlay that listens for call-invite events
 // via Supabase Realtime Broadcast and shows Accept/Decline UI
 // ============================================

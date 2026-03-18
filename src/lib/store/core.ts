@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Store Core Utilities
+// MitrRAI - Store Core Utilities
 // Generic camelCase ↔ snake_case converters
 // ============================================
 

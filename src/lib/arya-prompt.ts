@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Arya System Prompt
+// MitrRAI - Arya System Prompt
 // Passed to Gemini on every message call
 // ============================================
 

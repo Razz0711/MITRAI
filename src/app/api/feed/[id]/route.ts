@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Campus Feed Post API
+// MitrRAI - Campus Feed Post API
 // DELETE: delete own post
 // POST: toggle reaction (imin/reply/connect)
 // ============================================

@@ -1,5 +1,5 @@
 -- ============================================
--- MitrAI - A6 Migration: Feedback table
+-- MitrRAI - A6 Migration: Feedback table
 -- Run this in Supabase SQL Editor
 -- ============================================
 

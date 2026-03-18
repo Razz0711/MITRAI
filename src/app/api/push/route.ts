@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Push Subscription API
+// MitrRAI - Push Subscription API
 // POST: subscribe (save push subscription)
 // DELETE: unsubscribe (remove push subscription)
 // ============================================

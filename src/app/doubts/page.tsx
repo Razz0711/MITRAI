@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Campus Feed (Anonymous Doubts + Confessions)
+// MitrRAI - Campus Feed (Anonymous Doubts + Confessions)
 // Open anonymous feed visible to everyone
 // ============================================
 

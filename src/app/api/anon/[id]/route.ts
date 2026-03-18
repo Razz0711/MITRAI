@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Anonymous Chat Room API
+// MitrRAI - Anonymous Chat Room API
 // GET /api/anon/[id]: room details + messages
 // POST /api/anon/[id]: send message, report, reveal, close
 // ============================================

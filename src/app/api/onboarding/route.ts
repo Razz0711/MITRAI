@@ -1,9 +1,9 @@
 // ============================================
-// MitrAI - Onboarding Chat API
+// MitrRAI - Onboarding Chat API
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getOnboardingResponse } from '@/lib/gemini';
+import { getOnboardingResponse } from '@/lib/grok';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     collectedData = body.collectedData ?? {};
     conversationHistory = body.conversationHistory ?? [];
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GROK_API_KEY) {
       // Fallback responses when no API key
       const fallbackResponse = getFallbackResponse(step, message, collectedData);
       return NextResponse.json({ success: true, data: { response: fallbackResponse } });

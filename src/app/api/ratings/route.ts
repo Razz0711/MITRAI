@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Professor Ratings API
+// MitrRAI - Professor Ratings API
 // Multi-factor anonymous ratings + search
 // ============================================
 

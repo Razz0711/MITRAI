@@ -46,6 +46,6 @@ CREATE POLICY "Users can insert own payments"
 INSERT INTO anon_coupons (code, plan, max_uses, used_count, active, created_by)
 VALUES 
   ('SVNIT2026', 'monthly', 50, 0, true, '00000000-0000-0000-0000-000000000000'),
-  ('MITRAI-FREE', 'weekly', 100, 0, true, '00000000-0000-0000-0000-000000000000'),
+  ('MITRRAI-FREE', 'weekly', 100, 0, true, '00000000-0000-0000-0000-000000000000'),
   ('ANONCHAT', 'monthly', 25, 0, true, '00000000-0000-0000-0000-000000000000')
 ON CONFLICT (code) DO NOTHING;

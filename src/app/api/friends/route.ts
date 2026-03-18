@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Friends API
+// MitrRAI - Friends API
 // GET: list | POST: send_request/rate/check | PATCH: respond | DELETE: remove
 // ============================================
 

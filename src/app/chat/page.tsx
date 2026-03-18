@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Chat Page (redesigned v3)
+// MitrRAI - Chat Page (redesigned v3)
 // Fixed: tabs in sidebar, no double nav on mobile,
 // clickable profile popup, Arya avatar
 // ============================================
@@ -123,7 +123,7 @@ export default function ChatPage() {
   };
 
   const studentId = typeof window !== 'undefined'
-    ? localStorage.getItem('mitrai_student_id') || user?.id
+    ? localStorage.getItem('mitrrai_student_id') || user?.id
     : user?.id;
 
   const currentStudent = allStudents.find(s => s.id === studentId) || null;
@@ -556,7 +556,7 @@ export default function ChatPage() {
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">MitrAI Chat</h2>
+                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">MitrRAI Chat</h2>
                 <p className="text-sm text-[var(--muted)] mt-1">Select a conversation or start a new one</p>
                 <Link href="/friends" className="btn-primary mt-4 inline-block text-sm py-2 px-4">Find Friends</Link>
               </div>

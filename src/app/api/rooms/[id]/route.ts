@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Single Room API
+// MitrRAI - Single Room API
 // GET: room detail + members + messages
 // POST: join, leave, send message, archive
 // ============================================

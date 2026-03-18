@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Calendar Events
+// MitrRAI - Calendar Events
 // ============================================
 
 import { CalendarEvent } from '../types';

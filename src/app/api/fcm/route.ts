@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - FCM Token API
+// MitrRAI - FCM Token API
 // POST: save FCM token (from native Android/iOS app)
 // DELETE: remove FCM token
 // GET: health check

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Server-side Supabase Client (cookie-based auth)
+// MitrRAI - Server-side Supabase Client (cookie-based auth)
 // Used in API routes and Server Components for auth verification
 // ============================================
 

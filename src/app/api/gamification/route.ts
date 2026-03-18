@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Gamification API
+// MitrRAI - Gamification API
 // GET: user XP, badges, leaderboard
 // POST: award XP / badge
 // ============================================

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Admin Dashboard Page
+// MitrRAI - Admin Dashboard Page
 // Protected by ADMIN_KEY — shows stats, pending subscriptions, reports
 // ============================================
 

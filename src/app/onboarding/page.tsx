@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Onboarding Chat Page
+// MitrRAI - Onboarding Chat Page
 // ============================================
 
 'use client';
@@ -36,7 +36,7 @@ export default function OnboardingPage() {
     {
       id: uuidv4(),
       role: 'assistant',
-      content: `Hey ${userName}! Welcome to MitrAI. I already have your basic info from registration.\n\nLet's set up your study preferences so I can find you the perfect study buddy at SVNIT!\n\nWhat are you currently preparing for?`,
+      content: `Hey ${userName}! Welcome to MitrRAI. I already have your basic info from registration.\n\nLet's set up your study preferences so I can find you the perfect study buddy at SVNIT!\n\nWhat are you currently preparing for?`,
       timestamp: Date.now(),
     },
   ]);
@@ -189,7 +189,7 @@ export default function OnboardingPage() {
 
       // Use the auth user ID so the profile is linked to the account.
       // PUT will update if the auto-created profile exists, or create if not.
-      const profileId = user?.id || localStorage.getItem('mitrai_student_id') || '';
+      const profileId = user?.id || localStorage.getItem('mitrrai_student_id') || '';
       const response = await fetch('/api/students', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -199,8 +199,8 @@ export default function OnboardingPage() {
       const result = await response.json();
       if (result.success && result.data?.id) {
         // Store the student ID for later use
-        localStorage.setItem('mitrai_student_id', result.data.id);
-        localStorage.setItem('mitrai_student_name', result.data.name || user?.name || '');
+        localStorage.setItem('mitrrai_student_id', result.data.id);
+        localStorage.setItem('mitrrai_student_name', result.data.name || user?.name || '');
       }
     } catch (error) {
       console.error('Profile creation error:', error);
@@ -243,7 +243,7 @@ export default function OnboardingPage() {
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
           placeholder={isComplete ? '' : (hasOptions ? 'Or type your answer...' : 'Type your answer...')}
-          title="MitrAI Onboarding"
+          title="MitrRAI Onboarding"
           subtitle="Let's set up your study profile"
           quickActions={
             hasOptions && !isComplete && !isLoading ? (

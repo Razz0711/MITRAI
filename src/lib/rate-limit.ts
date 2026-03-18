@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - In-Memory Rate Limiter
+// MitrRAI - In-Memory Rate Limiter
 // Lightweight rate limiting for serverless (per-container)
 // ============================================
 

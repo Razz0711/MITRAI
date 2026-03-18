@@ -1,5 +1,5 @@
 -- ============================================================
--- MitrAI — COMPLETE Supabase SQL Setup
+-- MitrRAI — COMPLETE Supabase SQL Setup
 -- Run this ONCE in Supabase SQL Editor (Dashboard → SQL Editor → New Query)
 -- Safe to re-run: uses IF NOT EXISTS / IF EXISTS everywhere
 -- ============================================================

@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Browser-side Supabase Client
+// MitrRAI - Browser-side Supabase Client
 // Uses @supabase/ssr for cookie-based auth sessions
 // ============================================
 

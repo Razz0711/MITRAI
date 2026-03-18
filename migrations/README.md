@@ -1,5 +1,5 @@
 # ============================================
-# MitrAI - Database Migration System
+# MitrRAI - Database Migration System
 # ============================================
 #
 # Migrations are stored in the /migrations folder as numbered SQL files.

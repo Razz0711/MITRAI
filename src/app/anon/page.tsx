@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Anonymous Chat Lobby
+// MitrRAI - Anonymous Chat Lobby
 // Room type selection, queue, coupon gate, UPI payments
 // ============================================
 

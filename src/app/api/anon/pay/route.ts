@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Payment Submission API
+// MitrRAI - Payment Submission API
 // POST /api/anon/pay { plan, transactionId, upiRef }
 // GET  /api/anon/pay — check payment status
 // ============================================

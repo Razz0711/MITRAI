@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Circles Store
+// MitrRAI - Circles Store
 // ============================================
 
 import { supabase, fromRow, toRow } from './core';

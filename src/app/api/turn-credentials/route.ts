@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 // Read from Vercel env variable — never hardcoded in frontend
 const METERED_SECRET_KEY = process.env.METERED_SECRET_KEY || '';
-const METERED_DOMAIN = process.env.METERED_DOMAIN || 'mitrai.metered.live';
+const METERED_DOMAIN = process.env.METERED_DOMAIN || 'mitrrai.metered.live';
 
 export const dynamic = 'force-dynamic';
 

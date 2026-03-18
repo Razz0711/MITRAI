@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Push Notification Test & Debug
+// MitrRAI - Push Notification Test & Debug
 // GET  → debug info (subscription count, VAPID status)
 // POST → send a test push notification to yourself
 // ============================================
@@ -63,7 +63,7 @@ export async function POST() {
     }
 
     await sendPushToUser(authUser.id, {
-      title: '🔔 MitrAI Test Notification',
+      title: '🔔 MitrRAI Test Notification',
       body: 'Push notifications are working! You will receive alerts even when the browser is closed.',
       url: '/home',
     });

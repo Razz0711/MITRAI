@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Feedback API
+// MitrRAI - Feedback API
 // POST: submit feedback
 // ============================================
 

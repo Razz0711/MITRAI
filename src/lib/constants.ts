@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Shared Constants
+// MitrRAI - Shared Constants
 // Single source of truth for notification types,
 // event types, and other magic strings.
 // ============================================

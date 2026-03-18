@@ -1,5 +1,5 @@
 -- ============================================
--- MitrAI - Migration 004: Circles, Gamification, Study Rooms, Anonymous Doubts
+-- MitrRAI - Migration 004: Circles, Gamification, Study Rooms, Anonymous Doubts
 -- Run in Supabase SQL Editor
 -- ============================================
 

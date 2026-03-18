@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Session History & Analytics API
+// MitrRAI - Session History & Analytics API
 // GET: fetch session history + analytics for a user
 // ============================================
 

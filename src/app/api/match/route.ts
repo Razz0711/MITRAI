@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Matching API
+// MitrRAI - Matching API
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';

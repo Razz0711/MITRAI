@@ -1,5 +1,5 @@
 // ============================================
-// MitrAI - Campus Feed Store
+// MitrRAI - Campus Feed Store
 // CRUD for posts and reactions
 // ============================================
 

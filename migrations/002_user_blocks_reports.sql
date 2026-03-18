@@ -1,5 +1,5 @@
 -- ============================================
--- MitrAI - Migration 002: User Blocking & Reporting Tables
+-- MitrRAI - Migration 002: User Blocking & Reporting Tables
 -- Run in Supabase SQL Editor
 -- ============================================
 
