@@ -46,6 +46,10 @@ interface RecentUser {
   anonMessageCount?: number;
   reportCount?: number;
   totalSeconds?: number;
+  aryaSeconds?: number;
+  anonSeconds?: number;
+  feedSeconds?: number;
+  communitySeconds?: number;
 }
 
 interface FeedbackItem {
@@ -444,14 +448,24 @@ export default function AdminDashboardPage() {
                       <span className="text-[var(--muted)]/50">-</span>
                     )}
                   </td>
-                  <td className="py-2.5 pr-4 text-center text-[var(--foreground)] font-mono text-[11px]">
-                    {u.totalSeconds ? (() => {
-                      const h = Math.floor(u.totalSeconds / 3600);
-                      const m = Math.floor((u.totalSeconds % 3600) / 60);
-                      if (h > 0) return `${h}h ${m}m`;
-                      if (m > 0) return `${m}m`;
-                      return '< 1m';
-                    })() : '-'}
+                  <td className="py-2.5 pr-4 text-center">
+                    <div className="text-[var(--foreground)] font-mono text-[11px]">
+                      {u.totalSeconds ? (() => {
+                        const h = Math.floor(u.totalSeconds / 3600);
+                        const m = Math.floor((u.totalSeconds % 3600) / 60);
+                        if (h > 0) return `${h}h ${m}m`;
+                        if (m > 0) return `${m}m`;
+                        return '< 1m';
+                      })() : '-'}
+                    </div>
+                    {u.totalSeconds ? (
+                      <div className="text-[9px] text-[var(--muted)] mt-1 flex flex-col items-center gap-0.5">
+                        {u.aryaSeconds ? <span>Arya: {Math.ceil(u.aryaSeconds/60)}m</span> : null}
+                        {u.anonSeconds ? <span>Anon: {Math.ceil(u.anonSeconds/60)}m</span> : null}
+                        {u.feedSeconds ? <span>Feed: {Math.ceil(u.feedSeconds/60)}m</span> : null}
+                        {u.communitySeconds ? <span>Community: {Math.ceil(u.communitySeconds/60)}m</span> : null}
+                      </div>
+                    ) : null}
                   </td>
                   <td className="py-2.5 pr-4 text-[var(--muted)] whitespace-nowrap">
                     {u.last_active_at ? new Date(u.last_active_at).toLocaleDateString() : 'Never'}

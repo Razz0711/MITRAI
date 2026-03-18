@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     // 5. Fetch time logs
     const { data: timeLogs } = await supabase
       .from('user_time_logs')
-      .select('user_id, total_seconds');
+      .select('user_id, total_seconds, arya_seconds, anon_seconds, feed_seconds, community_seconds, general_seconds');
 
     // Calculate aggregations
     const aryaCounts: Record<string, { total: number, voice: number }> = {};
@@ -71,10 +71,18 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const timeCounts: Record<string, number> = {};
+    const timeCounts: Record<string, { total: number, arya: number, anon: number, feed: number, community: number, general: number }> = {};
     if (timeLogs) {
       for (const log of timeLogs) {
-        timeCounts[log.user_id] = (timeCounts[log.user_id] || 0) + (log.total_seconds || 0);
+        if (!timeCounts[log.user_id]) {
+          timeCounts[log.user_id] = { total: 0, arya: 0, anon: 0, feed: 0, community: 0, general: 0 };
+        }
+        timeCounts[log.user_id].total += (log.total_seconds || 0);
+        timeCounts[log.user_id].arya += (log.arya_seconds || 0);
+        timeCounts[log.user_id].anon += (log.anon_seconds || 0);
+        timeCounts[log.user_id].feed += (log.feed_seconds || 0);
+        timeCounts[log.user_id].community += (log.community_seconds || 0);
+        timeCounts[log.user_id].general += (log.general_seconds || 0);
       }
     }
 
@@ -85,7 +93,11 @@ export async function GET(req: NextRequest) {
       aryaVoiceCount: aryaCounts[student.id]?.voice || 0,
       anonMessageCount: anonCounts[student.id] || 0,
       reportCount: reportCounts[student.id] || 0,
-      totalSeconds: timeCounts[student.id] || 0,
+      totalSeconds: timeCounts[student.id]?.total || 0,
+      aryaSeconds: timeCounts[student.id]?.arya || 0,
+      anonSeconds: timeCounts[student.id]?.anon || 0,
+      feedSeconds: timeCounts[student.id]?.feed || 0,
+      communitySeconds: timeCounts[student.id]?.community || 0,
     }));
 
     return NextResponse.json({ success: true, data: enrichedData });
