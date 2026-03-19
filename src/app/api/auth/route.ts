@@ -10,15 +10,21 @@ import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 import { parseStudentEmail } from '@/lib/email-parser';
 
 // Admin client for user creation (uses service role key)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseAdmin = supabaseUrl && serviceRoleKey
+  ? createClient(supabaseUrl, serviceRoleKey)
+  : null;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { action } = body;
+
+    if (!supabaseAdmin) {
+      console.error('[Auth] Missing SUPABASE_URL or SERVICE_ROLE_KEY');
+      return NextResponse.json({ success: false, error: 'kuch gadbad ho gayi, admin se baat karo 🙏' }, { status: 500 });
+    }
 
     if (action === 'signup') {
       const { name, email, password, admissionNumber, department, yearLevel, dob,
@@ -145,7 +151,7 @@ export async function POST(req: NextRequest) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
             },
             body: JSON.stringify({ email: trimmedEmail, password }),
           }

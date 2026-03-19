@@ -99,13 +99,34 @@ export async function POST(req: NextRequest) {
       }
     ];
 
-    // 4. Call Grok
-    const completion = await xai.chat.completions.create({
-      model: 'grok-4-1-fast-non-reasoning', // or grok-3-mini
-      messages: messages,
-      tools: tools,
-      temperature: 0.7,
-    });
+    // 4. Call Grok with 10s timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    let completion;
+    try {
+      completion = await xai.chat.completions.create({
+        model: 'grok-4-1-fast-non-reasoning',
+        messages: messages,
+        tools: tools,
+        temperature: 0.7,
+      }, { signal: controller.signal });
+    } catch (apiError: any) {
+      clearTimeout(timeout);
+      if (apiError?.name === 'AbortError' || apiError?.code === 'ETIMEDOUT') {
+        return NextResponse.json({
+          success: true,
+          data: { response: 'arre yaar, thoda time lag raha hai 😅 ek minute mein try karna!' }
+        });
+      }
+      if (apiError?.status === 429 || apiError?.message?.includes('429')) {
+        return NextResponse.json({
+          success: true,
+          data: { response: 'arre yaar thoda busy hoon, ek minute mein try karna 🙏' }
+        });
+      }
+      throw apiError;
+    }
+    clearTimeout(timeout);
 
     const responseMsg = completion.choices[0].message;
 

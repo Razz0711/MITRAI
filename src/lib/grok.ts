@@ -13,6 +13,20 @@ function getClient(): OpenAI | null {
 }
 
 const MODEL = 'grok-4-1-fast-non-reasoning';
+const API_TIMEOUT_MS = 10000;
+
+/** Wraps an xAI API call with a 10s abort timeout */
+async function callWithTimeout<T>(
+  fn: (opts: { signal: AbortSignal }) => Promise<T>
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    return await fn({ signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // ============================================
 // Onboarding AI - Friendly Chat Agent
@@ -85,10 +99,9 @@ TONE: Like a helpful SVNIT senior - warm, encouraging, relatable. Reference SVNI
 
   messages.push({ role: 'user', content: userMessage });
 
-  const completion = await xai.chat.completions.create({
-    model: MODEL,
-    messages,
-  });
+  const completion = await callWithTimeout(({ signal }) =>
+    xai.chat.completions.create({ model: MODEL, messages }, { signal })
+  );
 
   return completion.choices[0]?.message?.content || 'Could you say that again?';
 }
@@ -142,10 +155,9 @@ Create a structured weekly study plan that includes:
 Format it nicely with emojis and clear structure. Make it encouraging and actionable.
 Consider who is strong in what subject - the strong student should help explain their strong subjects to the weaker student.`;
 
-  const completion = await xai.chat.completions.create({
-    model: MODEL,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  const completion = await callWithTimeout(({ signal }) =>
+    xai.chat.completions.create({ model: MODEL, messages: [{ role: 'user', content: prompt }] }, { signal })
+  );
 
   return completion.choices[0]?.message?.content || 'Unable to generate study plan right now.';
 }
@@ -201,10 +213,9 @@ RULES:
 
   messages.push({ role: 'user', content: userQuestion });
 
-  const completion = await xai.chat.completions.create({
-    model: MODEL,
-    messages,
-  });
+  const completion = await callWithTimeout(({ signal }) =>
+    xai.chat.completions.create({ model: MODEL, messages }, { signal })
+  );
 
   return completion.choices[0]?.message?.content || 'Could you ask that again?';
 }
@@ -266,10 +277,9 @@ Respond in EXACTLY this JSON format (no markdown, no code blocks):
   "bestFormat": "1-on-1 / group / peer teaching - with brief reason"
 }`;
 
-  const completion = await xai.chat.completions.create({
-    model: MODEL,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  const completion = await callWithTimeout(({ signal }) =>
+    xai.chat.completions.create({ model: MODEL, messages: [{ role: 'user', content: prompt }] }, { signal })
+  );
 
   const text = (completion.choices[0]?.message?.content || '').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
@@ -346,10 +356,9 @@ Respond in EXACTLY this JSON format (no markdown, no code blocks):
   "suggestedFirstSession": "specific topic and format suggestion"
 }`;
 
-  const completion = await xai.chat.completions.create({
-    model: MODEL,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  const completion = await callWithTimeout(({ signal }) =>
+    xai.chat.completions.create({ model: MODEL, messages: [{ role: 'user', content: prompt }] }, { signal })
+  );
 
   const text = (completion.choices[0]?.message?.content || '').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
@@ -401,10 +410,9 @@ Provide a progress report covering:
 Keep it encouraging, specific, and actionable. Like a caring mentor.
 Use emojis sparingly. Keep it under 300 words.`;
 
-  const completion = await xai.chat.completions.create({
-    model: MODEL,
-    messages: [{ role: 'user', content: prompt }],
-  });
+  const completion = await callWithTimeout(({ signal }) =>
+    xai.chat.completions.create({ model: MODEL, messages: [{ role: 'user', content: prompt }] }, { signal })
+  );
 
   return completion.choices[0]?.message?.content || 'Unable to analyze progress right now.';
 }

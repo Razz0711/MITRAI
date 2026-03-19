@@ -143,7 +143,6 @@ export default function AryaChatPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const userIsAtBottomRef = useRef(true);
 
-  /* ─── visualViewport keyboard handler (no body scroll lock per spec) ─── */
   /* ─── visualViewport keyboard handler ─── */
   useEffect(() => {
     const viewport = window.visualViewport;

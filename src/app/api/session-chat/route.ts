@@ -95,12 +95,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: { response } });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    console.error('Session chat error:', msg, error);
-    // Return the AI error details so we can debug
+    console.error('Session chat error:', msg);
     return NextResponse.json({
       success: false,
-      error: `AI error: ${msg}`,
-      data: { response: `I'm having trouble right now (${msg.slice(0, 100)}). Could you try again?` },
+      error: 'Something went wrong, please try again',
+      data: { response: 'arre yaar, abhi thoda issue aa raha hai 🙏 thodi der mein try karna!' },
     }, { status: 500 });
   }
 }

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: { plan } });
   } catch (error) {
     console.error('Study plan error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to generate study plan' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'study plan banana abhi thoda mushkil hai, thodi der mein try karo 🙏' }, { status: 500 });
   }
 }
 

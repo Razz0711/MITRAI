@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ threads });
   } catch (error) {
     console.error('Chat GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'kuch gadbad ho gayi, dobara try karo 🙏' }, { status: 500 });
   }
 }
 
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message });
   } catch (error) {
     console.error('Chat POST error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'kuch gadbad ho gayi, dobara try karo 🙏' }, { status: 500 });
   }
 }
 
@@ -106,7 +106,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Chat PATCH error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'kuch gadbad ho gayi, dobara try karo 🙏' }, { status: 500 });
   }
 }
 
@@ -127,6 +127,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Chat DELETE error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'kuch gadbad ho gayi, dobara try karo 🙏' }, { status: 500 });
   }
 }
