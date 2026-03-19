@@ -107,6 +107,46 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
 
+/* ════════════════════════════════════════════
+   Mobile-optimized sizing for native app feel
+   Bigger text, bigger touch targets, more padding
+   ════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  body {
+    font-size: 15.5px;
+    line-height: 1.65;
+  }
+
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.4rem; }
+  h3 { font-size: 1.15rem; }
+  h4 { font-size: 1.05rem; }
+
+  /* Bigger touch targets for buttons and inputs */
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+
+  .input-field {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+
+  /* Cards breathe more on mobile */
+  .card, .card-glass {
+    padding: 1rem;
+  }
+
+  /* Bottom nav icons slightly larger */
+  nav a, nav button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 @layer components {
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-[var(--primary)] via-[var(--accent)] to-[var(--secondary)];
