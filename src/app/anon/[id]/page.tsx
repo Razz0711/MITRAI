@@ -231,19 +231,24 @@ export default function AnonChatRoomPage() {
     <div className="flex flex-col" style={{ height: 'calc(var(--vh, 1vh) * 100)', maxHeight: '100dvh', background: '#090909', position: 'fixed', inset: 0, zIndex: 30 }}>
       {/* ─── Header ─── */}
       <div className="shrink-0 flex items-center gap-2 px-3 py-2.5" style={{ background: '#111111', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <button onClick={() => router.push('/anon')} className="p-1.5 rounded-lg text-white/50 hover:text-white transition-colors">
-          <ArrowLeft size={20} />
+        <button onClick={() => router.push('/anon')} className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition-colors">
+          <ArrowLeft size={24} />
         </button>
-        <span className="text-xs font-bold" style={{ color: roomType?.color || '#7c71ff' }}>{roomType?.label?.charAt(0) || 'R'}</span>
+        <div className="relative shrink-0">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg`} style={{ background: roomType?.color || '#7c71ff' }}>
+            {roomType?.label?.charAt(0) || 'R'}
+          </div>
+        </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[14px] font-bold text-white leading-tight truncate">{roomType?.label}</p>
-          <p className="text-[10px] text-white/35 truncate">
-            You: <span className="text-[#7c71ff]">{data.myAlias}</span>
-            {' · '}
-            Partner: <span className="text-purple-400">
-              {isRevealed && data.partnerRealInfo ? `${data.partnerRealInfo.name} (${data.partnerRealInfo.department})` : data.partnerAlias}
+          <h2 className="text-[16px] font-semibold text-white truncate leading-tight flex items-center gap-2">
+            {roomType?.label}
+          </h2>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className={`w-2 h-2 rounded-full ${closed ? 'bg-red-500' : 'bg-green-500'}`} />
+            <span className="text-[11px] text-green-400">
+              {closed ? 'Chat closed' : 'Online'}
             </span>
-          </p>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           {canReveal && (
@@ -276,9 +281,11 @@ export default function AnonChatRoomPage() {
           </p>
         </div>
 
-        {messages.map(msg => (
-          <AnonBubble key={msg.id} msg={msg} isMe={msg.senderId === user.id} />
-        ))}
+        {messages.map((msg, index) => {
+          const isMe = msg.senderId === user.id;
+          const isLast = index === messages.length - 1 || messages[index + 1].senderId !== msg.senderId;
+          return <AnonBubble key={msg.id} msg={msg} isMe={isMe} />;
+        })}
 
         {closed && (
           <div className="text-center py-4">
@@ -300,16 +307,17 @@ export default function AnonChatRoomPage() {
             placeholder="Type a message..."
             maxLength={1000}
             rows={1}
-            className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/30 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[#7c71ff]/50 transition-colors"
+            disabled={sending}
+            className="flex-1 resize-none bg-[#1e1e1e] text-white text-[15px] placeholder:text-white/40 rounded-[20px] px-4 py-2.5 outline-none tracking-tight transition-colors disabled:opacity-50"
             style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
           />
           <button
             onClick={sendMessage}
             disabled={!newMsg.trim() || sending}
-            className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
+            className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:scale-100"
             style={{ background: '#7c71ff' }}
           >
-            <Send size={16} className="text-white" />
+            <Send size={18} className="text-white ml-0.5" />
           </button>
         </div>
       )}

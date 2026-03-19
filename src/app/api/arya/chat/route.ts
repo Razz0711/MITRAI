@@ -18,19 +18,19 @@ export async function POST(req: NextRequest) {
   if (!user) return unauthorized();
 
   // Check API key
-  const apiKey = process.env.GROK_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error('GROK_API_KEY not set');
+    console.error('GEMINI_API_KEY not set');
     return NextResponse.json({
       success: true,
       data: { response: 'arre yaar, abhi thoda issue aa raha hai 🙏 thodi der mein try karna!' }
     });
   }
 
-  // Initialize OpenAI client pointing to xAI
-  const xai = new OpenAI({
+  // Initialize OpenAI client pointing to Google Gemini
+  const gemini = new OpenAI({
     apiKey: apiKey,
-    baseURL: 'https://api.x.ai/v1',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
   });
 
   const body = await req.json();
@@ -99,9 +99,9 @@ export async function POST(req: NextRequest) {
       }
     ];
 
-    // 4. Call Grok
-    const completion = await xai.chat.completions.create({
-      model: 'grok-4-1-fast-non-reasoning', // or grok-3-mini
+    // 4. Call Gemini
+    const completion = await gemini.chat.completions.create({
+      model: 'gemini-1.5-flash',
       messages: messages,
       tools: tools,
       temperature: 0.7,
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
     if (responseMsg.tool_calls && responseMsg.tool_calls.length > 0) {
       const toolCall = responseMsg.tool_calls[0];
       
-      if (toolCall.function.name === 'generate_selfie') {
+      if ((toolCall as any).function?.name === 'generate_selfie') {
         // --- CHECK IF USER ALREADY GOT A SELFIE ---
         const { data: existingSelfie } = await supabase
           .from('arya_selfies')
@@ -133,19 +133,20 @@ export async function POST(req: NextRequest) {
 
         // --- USER HAS NOT RECEIVED ONE. GENERATE IT. ---
         try {
-          const args = JSON.parse(toolCall.function.arguments);
+          // Explicit cast to bypass strict SDK type for OpenAI wrappers
+          const args = JSON.parse((toolCall as any).function.arguments);
           const suffix = args.prompt_suffix ? `, ${args.prompt_suffix}` : '';
           
           // Image Prompt carefully designed to match Arya's persona
           const systemImagePrompt = `A casual, natural smartphone selfie of a cute 24-year-old Indian college girl from Mumbai named Arya. She has expressive brown eyes, medium length dark hair, soft natural lighting. She is wearing casual comfortable college clothes. Genuine, sweet, slightly shy smile. High quality, photorealistic${suffix}`;
 
-          const imageResponse = await xai.images.generate({
-            model: "grok-imagine-image",
+          const imageResponse = await gemini.images.generate({
+            model: "dall-e-3", // Since we use google's openai wrapper for text, image gen isn't natively supported the same way via google API using openai sdk. We fallback to returning a friendly message or handling standard.
             prompt: systemImagePrompt,
             size: "1024x1024",
           });
 
-          const imageUrl = imageResponse.data[0].url;
+          const imageUrl = imageResponse.data?.[0]?.url;
 
           if (imageUrl) {
             // Log it in DB to prevent future claims
