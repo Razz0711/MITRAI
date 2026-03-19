@@ -38,7 +38,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <TopBar />
         <GlobalNotificationPoller />
         <IncomingCallBanner />
-        <main className="pt-2 md:pt-16 pb-20 md:pb-4 min-h-screen">
+        <main className="md:pt-16 pb-20 md:pb-4 min-h-screen" style={{ paddingTop: 'calc(max(8px, env(safe-area-inset-top)) + 0.5rem)' }}>
           {children}
         </main>
       </>

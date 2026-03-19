@@ -10,6 +10,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
+import Avatar from '@/components/Avatar';
+import PostCard from '@/components/PostCard';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import {
   Bell, Send, X, Filter, Trash2, Flag, MoreHorizontal,
@@ -327,6 +329,7 @@ export default function CampusFeedPage() {
     <div className="min-h-screen pb-4">
       {/* ─── Header ─── */}
       <div className="sticky top-0 z-40 px-4 py-3" style={{
+        paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(20px) saturate(1.5)',
         WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
@@ -334,13 +337,7 @@ export default function CampusFeedPage() {
       }}>
         <div className="flex items-center gap-3 max-w-2xl mx-auto">
           <Link href="/me" className="shrink-0">
-            {studentPhoto ? (
-              <Image src={studentPhoto} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover border-2 border-[var(--primary)]/30" unoptimized onError={() => setStudentPhoto('')} />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white text-sm font-bold">
-                {initial}
-              </div>
-            )}
+            <Avatar src={studentPhoto} name={studentName || '?'} size={36} className="w-9 h-9 border-2 border-[var(--primary)]/30" fallbackClassName="w-9 h-9 border-2 border-[var(--primary)]/30" />
           </Link>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] text-[var(--muted)] leading-none">{getGreeting()}, {studentName.split(' ')[0] || 'there'}!</p>
@@ -482,7 +479,7 @@ export default function CampusFeedPage() {
         {grouped.sos.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-red-400 px-1">🆘 SOS</h3>
-            {grouped.sos.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} isSos />)}
+            {grouped.sos.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} isSos categories={CATEGORIES} />)}
           </div>
         )}
 
@@ -490,7 +487,7 @@ export default function CampusFeedPage() {
         {grouped.fresh.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-green-400 px-1">| FRESH</h3>
-            {grouped.fresh.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} />)}
+            {grouped.fresh.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} categories={CATEGORIES} />)}
           </div>
         )}
 
@@ -498,7 +495,7 @@ export default function CampusFeedPage() {
         {grouped.active.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] px-1">| ACTIVE</h3>
-            {grouped.active.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} />)}
+            {grouped.active.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} categories={CATEGORIES} />)}
           </div>
         )}
 
@@ -506,7 +503,7 @@ export default function CampusFeedPage() {
         {grouped.older.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] opacity-60 px-1">| OLDER</h3>
-            {grouped.older.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} isOlder />)}
+            {grouped.older.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} isOlder categories={CATEGORIES} />)}
           </div>
         )}
       </div>
@@ -677,125 +674,4 @@ export default function CampusFeedPage() {
   );
 }
 
-/* ═══ Post Card Component ═══ */
-function PostCard({
-  post, userLat, userLng, userId, onReact, menuPostId, setMenuPostId, deleteConfirm, setDeleteConfirm, onDelete, isSos, isOlder
-}: {
-  post: FeedPost;
-  userLat: number | null;
-  userLng: number | null;
-  userId: string;
-  onReact: (postId: string, type: string) => void;
-  menuPostId: string | null;
-  setMenuPostId: (id: string | null) => void;
-  deleteConfirm: string | null;
-  setDeleteConfirm: (id: string | null) => void;
-  onDelete: (id: string) => void;
-  isSos?: boolean;
-  isOlder?: boolean;
-}) {
-  const freshness = getFreshness(post.createdAt);
-  const isOwn = post.userId === userId;
-  const distance = (userLat && userLng && post.lat && post.lng) ? haversineDistance(userLat, userLng, post.lat, post.lng) : null;
-  const catInfo = CATEGORIES.find(c => c.id === post.category);
-  const initial = post.userName ? post.userName.charAt(0).toUpperCase() : '?';
 
-  return (
-    <div
-      className={`card p-3.5 space-y-2.5 transition-all ${isSos ? 'border-red-500/40 shadow-lg shadow-red-500/10' : freshness === 'fresh' ? 'border-green-500/20' : ''} ${isOlder ? 'opacity-65' : ''}`}
-    >
-      {/* Header */}
-      <div className="flex items-center gap-2.5">
-        {post.isAnonymous ? (
-          <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-            <Sparkles size={14} className="text-purple-400" />
-          </div>
-        ) : post.userPhotoUrl ? (
-          <Image src={post.userPhotoUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white text-xs font-bold">{initial}</div>
-        )}
-        <div className="flex-1 min-w-0">
-          <span className="text-sm font-semibold text-[var(--foreground)]">{post.userName || 'Anonymous'}</span>
-          <div className="flex items-center gap-1.5 text-[9px] text-[var(--muted)]">
-            {distance !== null && <span className="text-amber-400 font-medium">{formatDistance(distance)}</span>}
-            <span>{timeAgo(post.createdAt)}</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-bold ${isSos ? 'bg-red-500/20 text-red-400' : freshness === 'fresh' ? 'bg-green-500/20 text-green-400' : freshness === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-[var(--surface)] text-[var(--muted)]'}`}>
-              {isSos ? 'SOS' : freshness}
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={() => setMenuPostId(menuPostId === post.id ? null : post.id)}
-          className="p-1.5 rounded-lg hover:bg-[var(--surface)] text-[var(--muted)] transition-colors"
-        >
-          <MoreHorizontal size={14} />
-        </button>
-      </div>
-
-      {/* Menu dropdown */}
-      {menuPostId === post.id && (
-        <div className="flex gap-2 px-2">
-          {isOwn && (
-            <button onClick={() => { setDeleteConfirm(post.id); setMenuPostId(null); }} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-[10px] font-medium">
-              <Trash2 size={10} /> Delete
-            </button>
-          )}
-          {!isOwn && (
-            <button className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[var(--surface)] text-[var(--muted)] text-[10px] font-medium">
-              <Flag size={10} /> Report
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Tags */}
-      <div className="flex flex-wrap gap-1.5">
-        {catInfo && (
-          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold ${isSos ? 'bg-red-500/20 text-red-400' : 'bg-[var(--primary)]/10 text-[var(--primary-light)]'}`}>
-            {catInfo.emoji} {catInfo.label}
-          </span>
-        )}
-        {post.subcategory && (
-          <span className="px-2 py-0.5 rounded-lg text-[10px] font-medium bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)]">
-            {post.subcategory}
-          </span>
-        )}
-      </div>
-
-      {/* Content */}
-      <p className="text-sm text-[var(--foreground)] leading-relaxed">{post.content}</p>
-
-      {/* Engagement count */}
-      {post.reactions && (post.reactions.imin > 0 || post.reactions.connect > 0) && (
-        <p className="text-[9px] text-[var(--muted)]">
-          {post.reactions.imin > 0 && `${post.reactions.imin} joined`}
-          {post.reactions.imin > 0 && post.reactions.connect > 0 && ' · '}
-          {post.reactions.connect > 0 && `${post.reactions.connect} connected`}
-        </p>
-      )}
-
-      {/* Action buttons */}
-      <div className="flex gap-2">
-        {(['imin', 'reply', 'connect'] as const).map(type => {
-          const active = post.myReactions?.includes(type);
-          const label = type === 'imin' ? "I'm in!" : type === 'reply' ? 'Reply' : 'Connect';
-          return (
-            <button
-              key={type}
-              onClick={() => onReact(post.id, type)}
-              className={`flex-1 py-1.5 rounded-xl text-[10px] font-semibold transition-all ${active
-                ? type === 'imin' ? 'bg-green-500 text-white shadow-md shadow-green-500/20'
-                  : type === 'reply' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20'
-                    : 'bg-purple-500 text-white shadow-md shadow-purple-500/20'
-                : 'bg-[var(--surface)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--primary)]/30'
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
