@@ -635,162 +635,141 @@ export default function AnonLobbyPage() {
 
             {/* CHOOSE YOUR VIBE heading */}
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)] flex items-center gap-2">
+              <h2 className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] flex items-center gap-2">
                 <span className="w-1 h-5 rounded-full bg-gradient-to-b from-[var(--primary)] to-[var(--accent)]" />
                 CHOOSE YOUR VIBE
               </h2>
               <span className="text-[10px] text-[var(--muted)]">Tap to select · then find match</span>
             </div>
 
-            {/* Vibe Cards Grid */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Vibe Tiles — Horizontal compact layout */}
+            <div className="flex flex-col gap-2">
 
               {/* Placement Talk */}
               <button
                 onClick={() => setSelectedType('career')}
-                className="relative p-5 rounded-2xl text-left transition-all duration-300"
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
                 style={{
-                  background: selectedType === 'career' ? 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(234,88,12,0.08))' : 'var(--surface)',
-                  border: selectedType === 'career' ? '2px solid rgba(245,158,11,0.5)' : '1px solid var(--glass-border)',
-                  boxShadow: selectedType === 'career' ? '0 0 20px rgba(245,158,11,0.15)' : 'none',
+                  background: selectedType === 'career' ? 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(234,88,12,0.06))' : 'var(--surface-card, #141414)',
+                  border: selectedType === 'career' ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border)',
                 }}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-11 h-11 rounded-2xl bg-amber-500/15 flex items-center justify-center text-lg">📋</div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/25">🔥 Hot</span>
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/25">{stats?.queueByType?.career || 5} in</span>
-                    {selectedType === 'career' && (
-                      <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>
-                    )}
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-base shrink-0">📋</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[13px] font-bold text-white">Placement Talk</h3>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400">🔥 Hot</span>
                   </div>
+                  <p className="text-[11px] text-[var(--muted)] truncate">Offers, anxiety, intern struggles — all of it.</p>
                 </div>
-                <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">Placement Talk</h3>
-                <p className="text-[11px] text-[var(--muted)] leading-relaxed mb-3">Offers, anxiety, intern struggles — all of it.</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-[var(--muted)]">♀ {stats?.queueByType?.career || 5} active</span>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400">Instant</span>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400">Instant</span>
+                  <span className="text-[9px] text-[var(--muted)]">{stats?.queueByType?.career || 5} active</span>
                 </div>
+                {selectedType === 'career' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
               </button>
 
               {/* College Gossip */}
               <button
                 onClick={() => setSelectedType('confession')}
-                className="relative p-5 rounded-2xl text-left transition-all duration-300"
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
                 style={{
-                  background: selectedType === 'confession' ? 'linear-gradient(135deg, rgba(236,72,153,0.12), rgba(239,68,68,0.08))' : 'var(--surface)',
-                  border: selectedType === 'confession' ? '2px solid rgba(236,72,153,0.5)' : '1px solid var(--glass-border)',
-                  boxShadow: selectedType === 'confession' ? '0 0 20px rgba(236,72,153,0.15)' : 'none',
+                  background: selectedType === 'confession' ? 'linear-gradient(135deg, rgba(236,72,153,0.10), rgba(239,68,68,0.06))' : 'var(--surface-card, #141414)',
+                  border: selectedType === 'confession' ? '1px solid rgba(236,72,153,0.4)' : '1px solid var(--border)',
                 }}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-11 h-11 rounded-2xl bg-pink-500/15 flex items-center justify-center text-lg">📢</div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/25">Trending</span>
-                    {selectedType === 'confession' && (
-                      <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>
-                    )}
+                <div className="w-10 h-10 rounded-xl bg-pink-500/15 flex items-center justify-center text-base shrink-0">📢</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[13px] font-bold text-white">College Gossip</h3>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-400">Trending</span>
                   </div>
+                  <p className="text-[11px] text-[var(--muted)] truncate">What&apos;s happening on campus? Spill it.</p>
                 </div>
-                <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">College Gossip</h3>
-                <p className="text-[11px] text-[var(--muted)] leading-relaxed mb-3">What&apos;s happening on campus? Spill it.</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-[var(--muted)]">♀ {stats?.queueByType?.confession || 8} active</span>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400">Instant</span>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400">Instant</span>
+                  <span className="text-[9px] text-[var(--muted)]">{stats?.queueByType?.confession || 8} active</span>
                 </div>
+                {selectedType === 'confession' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
               </button>
 
               {/* Dil Ki Baat */}
               <button
                 onClick={() => setSelectedType('crush')}
-                className="relative p-5 rounded-2xl text-left transition-all duration-300"
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
                 style={{
-                  background: selectedType === 'crush' ? 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(236,72,153,0.08))' : 'var(--surface)',
-                  border: selectedType === 'crush' ? '2px solid rgba(239,68,68,0.5)' : '1px solid var(--glass-border)',
-                  boxShadow: selectedType === 'crush' ? '0 0 20px rgba(239,68,68,0.15)' : 'none',
+                  background: selectedType === 'crush' ? 'linear-gradient(135deg, rgba(239,68,68,0.10), rgba(236,72,153,0.06))' : 'var(--surface-card, #141414)',
+                  border: selectedType === 'crush' ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--border)',
                 }}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-11 h-11 rounded-2xl bg-red-500/15 flex items-center justify-center text-lg">💗</div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">{stats?.queueByType?.crush || 2} waiting</span>
-                    {selectedType === 'crush' && (
-                      <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>
-                    )}
+                <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-base shrink-0">💗</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[13px] font-bold text-white">Dil Ki Baat</h3>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400">{stats?.queueByType?.crush || 2} waiting</span>
                   </div>
+                  <p className="text-[11px] text-[var(--muted)] truncate">Crush, feelings, advice — anonymous love corner.</p>
                 </div>
-                <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">Dil Ki Baat</h3>
-                <p className="text-[11px] text-[var(--muted)] leading-relaxed mb-3">Crush, feelings, advice — anonymous love corner.</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-[var(--muted)]">♀ {stats?.queueByType?.crush || 2} waiting</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--surface-light)] text-[var(--muted)]">~1 min</span>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)]">~1 min</span>
                 </div>
+                {selectedType === 'crush' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
               </button>
 
               {/* No Filter */}
               <button
                 onClick={() => setSelectedType('radar')}
-                className="relative p-5 rounded-2xl text-left transition-all duration-300"
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
                 style={{
-                  background: selectedType === 'radar' ? 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(59,130,246,0.08))' : 'var(--surface)',
-                  border: selectedType === 'radar' ? '2px solid rgba(16,185,129,0.5)' : '1px solid var(--glass-border)',
-                  boxShadow: selectedType === 'radar' ? '0 0 20px rgba(16,185,129,0.15)' : 'none',
+                  background: selectedType === 'radar' ? 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(59,130,246,0.06))' : 'var(--surface-card, #141414)',
+                  border: selectedType === 'radar' ? '1px solid rgba(16,185,129,0.4)' : '1px solid var(--border)',
                 }}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-11 h-11 rounded-2xl bg-cyan-500/15 flex items-center justify-center text-lg">🎭</div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/25">{stats?.queueByType?.radar || 3} in</span>
-                    {selectedType === 'radar' && (
-                      <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>
-                    )}
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center text-base shrink-0">🎭</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[13px] font-bold text-white">No Filter</h3>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">{stats?.queueByType?.radar || 3} in</span>
                   </div>
+                  <p className="text-[11px] text-[var(--muted)] truncate">Say what you actually think. No judgement.</p>
                 </div>
-                <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">No Filter</h3>
-                <p className="text-[11px] text-[var(--muted)] leading-relaxed mb-3">Say what you actually think. No judgement.</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-[var(--muted)]">♀ {stats?.queueByType?.radar || 3} active</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--surface-light)] text-[var(--muted)]">~2 min</span>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)]">~2 min</span>
                 </div>
+                {selectedType === 'radar' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
               </button>
 
               {/* 3 AM Thoughts */}
               <button
                 onClick={() => setSelectedType('night_owl')}
-                className="relative p-5 rounded-2xl text-left transition-all duration-300"
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
                 style={{
-                  background: selectedType === 'night_owl' ? 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(99,102,241,0.08))' : 'var(--surface)',
-                  border: selectedType === 'night_owl' ? '2px solid rgba(139,92,246,0.5)' : '1px solid var(--glass-border)',
-                  boxShadow: selectedType === 'night_owl' ? '0 0 20px rgba(139,92,246,0.15)' : 'none',
-                  opacity: new Date().getHours() >= 23 || new Date().getHours() < 4 ? 1 : 0.7,
+                  background: selectedType === 'night_owl' ? 'linear-gradient(135deg, rgba(139,92,246,0.10), rgba(99,102,241,0.06))' : 'var(--surface-card, #141414)',
+                  border: selectedType === 'night_owl' ? '1px solid rgba(139,92,246,0.4)' : '1px solid var(--border)',
+                  opacity: new Date().getHours() >= 23 || new Date().getHours() < 4 ? 1 : 0.6,
                 }}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-11 h-11 rounded-2xl bg-violet-500/15 flex items-center justify-center text-lg">🌙</div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)] border border-[var(--border)]">
+                <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-base shrink-0">🌙</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[13px] font-bold text-white">3 AM Thoughts</h3>
+                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)]">
                       {new Date().getHours() >= 23 || new Date().getHours() < 4 ? '● Live' : 'Opens 11PM'}
                     </span>
-                    {selectedType === 'night_owl' && (
-                      <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-xs">✓</span></div>
-                    )}
                   </div>
+                  <p className="text-[11px] text-[var(--muted)] truncate">Can&apos;t sleep? Neither can they. Late night only.</p>
                 </div>
-                <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">3 AM Thoughts</h3>
-                <p className="text-[11px] text-[var(--muted)] leading-relaxed mb-3">Can&apos;t sleep? Neither can they. Late night only.</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-[var(--muted)]">
-                    {new Date().getHours() >= 23 || new Date().getHours() < 4 ? `♀ ${stats?.queueByType?.night_owl || 0} active` : 'Closed now'}
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--surface-light)] text-[var(--muted)] font-semibold">11PM-4AM</span>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)] font-semibold">11PM-4AM</span>
                 </div>
+                {selectedType === 'night_owl' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
               </button>
             </div>
 
             {/* Find a Random Match CTA */}
             <button
               onClick={handleJoinQueue}
-              className="w-full py-4 rounded-2xl text-white font-bold text-base transition-all duration-300 hover:shadow-lg active:scale-[0.98]"
+              className="w-full py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:shadow-lg active:scale-[0.98]"
               style={{
                 background: 'linear-gradient(135deg, #7c3aed, #6d28d9, #a855f7)',
                 backgroundSize: '200% 200%',

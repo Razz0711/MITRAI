@@ -64,7 +64,7 @@ export default function AryaProfilePage() {
     <div className="max-w-lg mx-auto pb-32 -mt-2 md:-mt-16">
 
       {/* ── Header Banner ── */}
-      <div className="relative h-44 overflow-hidden" style={{
+      <div className="relative h-36 overflow-hidden" style={{
         background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 30%, #8b5cf6 60%, #a78bfa 100%)',
       }}>
         {/* Floating sparkles effect */}
@@ -157,7 +157,7 @@ export default function AryaProfilePage() {
 
       <div className="px-4 space-y-4">
         {/* ── About Section ── */}
-        <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'rgba(17,17,17,0.6)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] mb-2">About</p>
           <p className="text-sm text-[var(--foreground)] leading-relaxed">
             Hey! I&apos;m Arya 💜 Think of me as your campus bestie who&apos;s always here — whether you&apos;re stressed about exams, need someone to talk to at 3am, or just want to rant about college life. No judgements, always listening.

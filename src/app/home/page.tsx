@@ -358,7 +358,7 @@ export default function CampusFeedPage() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 space-y-4 mt-4" ref={feedRef}>
+      <div className="max-w-2xl mx-auto px-3 space-y-2 mt-3" ref={feedRef}>
         {/* ─── Compose Bar ─── */}
         <div className="card p-3 space-y-2.5">
           {/* Line 1: Input + Anon Toggle */}

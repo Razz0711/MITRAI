@@ -58,7 +58,7 @@ export default function TopBar() {
                       : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-light)]'
                   }`}
                 >
-                  <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
+                  <Icon size={16} strokeWidth={isActive ? 2 : 1.5} />
                   <span>{tab.label}</span>
                   {isActive && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]" />
@@ -92,10 +92,8 @@ export default function TopBar() {
                     : 'text-[var(--muted)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <div className={`relative p-1.5 rounded-xl transition-all duration-300 ${
-                  isActive ? 'bg-[var(--primary)]/15 scale-110' : ''
-                }`}>
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
+                <div className={`relative p-1.5 rounded-xl transition-all duration-300`}>
+                  <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
                   {isActive && (
                     <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--primary-light)]" />
                   )}

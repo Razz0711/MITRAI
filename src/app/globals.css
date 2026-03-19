@@ -8,23 +8,25 @@
    ════════════════════════════════════════════ */
 
 :root {
-  --background: #09090b;
-  --background-secondary: #0c0c10;
+  --background: #090909;
+  --background-secondary: #0d0d0d;
   --foreground: #fafafa;
   --primary: #7c3aed;
   --primary-light: #a78bfa;
-  --primary-glow: rgba(124, 58, 237, 0.35);
+  --primary-glow: rgba(124, 58, 237, 0.25);
   --secondary: #06b6d4;
   --secondary-light: #67e8f9;
   --accent: #f472b6;
   --accent-light: #f9a8d4;
-  --surface: rgba(24, 24, 27, 0.8);
-  --surface-solid: #18181b;
-  --surface-light: rgba(39, 39, 42, 0.7);
-  --surface-elevated: rgba(39, 39, 42, 0.95);
-  --border: rgba(63, 63, 70, 0.5);
-  --border-light: rgba(63, 63, 70, 0.3);
-  --muted: #a1a1aa;
+  --surface: rgba(17, 17, 17, 0.85);
+  --surface-solid: #111111;
+  --surface-card: #141414;
+  --surface-light: rgba(32, 32, 32, 0.7);
+  --surface-elevated: rgba(32, 32, 32, 0.95);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.05);
+  --muted: rgba(255, 255, 255, 0.35);
+  --muted-strong: rgba(255, 255, 255, 0.55);
   --success: #22c55e;
   --success-light: #4ade80;
   --warning: #eab308;
@@ -34,11 +36,11 @@
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
   --radius-2xl: 1.5rem;
-  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.15);
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3), 0 0 1px rgba(255, 255, 255, 0.05) inset;
-  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.08) inset;
-  --glass-bg: rgba(24, 24, 27, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.06);
+  --shadow-glow: 0 0 20px rgba(124, 58, 237, 0.12);
+  --shadow-card: none;
+  --shadow-elevated: 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  --glass-bg: rgba(14, 14, 14, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.05);
   --motion-fast: 160ms;
   --motion-normal: 240ms;
   --motion-slow: 360ms;
@@ -91,10 +93,11 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-sans), 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.55;
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
@@ -103,8 +106,9 @@ code, pre, .font-mono {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  letter-spacing: -0.025em;
+  letter-spacing: -0.4px;
   font-weight: 700;
+  color: #ffffff;
 }
 
 /* ════════════════════════════════════════════
@@ -113,34 +117,29 @@ h1, h2, h3, h4, h5, h6 {
    ════════════════════════════════════════════ */
 @media (max-width: 640px) {
   body {
-    font-size: 15.5px;
-    line-height: 1.65;
+    font-size: 15px;
+    line-height: 1.55;
   }
 
-  h1 { font-size: 1.75rem; }
-  h2 { font-size: 1.4rem; }
-  h3 { font-size: 1.15rem; }
-  h4 { font-size: 1.05rem; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.05rem; }
+  h4 { font-size: 0.95rem; }
 
-  /* Bigger touch targets for buttons and inputs */
+  /* Touch targets */
   .btn-primary,
   .btn-secondary,
   .btn-ghost {
-    padding: 0.75rem 1.25rem;
-    font-size: 0.9375rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
   }
 
   .input-field {
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9375rem;
   }
 
-  /* Cards breathe more on mobile */
-  .card, .card-glass {
-    padding: 1rem;
-  }
-
-  /* Bottom nav icons slightly larger */
+  /* Bottom nav touch targets */
   nav a, nav button {
     min-height: 44px;
     min-width: 44px;
