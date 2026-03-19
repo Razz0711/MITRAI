@@ -143,18 +143,7 @@ export default function AryaChatPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const userIsAtBottomRef = useRef(true);
 
-  /* ─── Body scroll lock (prevents page jump on keyboard open) ─── */
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-    };
-  }, []);
-
+  /* ─── visualViewport keyboard handler (no body scroll lock per spec) ─── */
   /* ─── visualViewport keyboard handler ─── */
   useEffect(() => {
     const viewport = window.visualViewport;

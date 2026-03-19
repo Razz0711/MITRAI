@@ -8,7 +8,7 @@
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import TopBar from './TopBar';
+import { DesktopHeader, MobileNavbar } from './TopBar';
 import Link from 'next/link';
 import { useTheme } from './ThemeProvider';
 import { Sun, Moon } from 'lucide-react';
@@ -31,16 +31,42 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Show full app shell (TopBar + BottomTabs) for logged-in users on app pages
   const showAppShell = !!user && !isAuthPage && !isAdminPage;
 
+  // Pages that manage their own full-screen layout (chat pages)
+  const isFullScreenPage =
+    /^\/arya\/chat/.test(pathname) ||
+    /^\/anon\/[^/]+/.test(pathname) ||
+    /^\/chat/.test(pathname) ||
+    /^\/call(\/|$)/.test(pathname) ||
+    /^\/rooms/.test(pathname);
+
   // ---- Logged-in app pages ----
   if (showAppShell) {
+    // Full-screen pages render without the shell wrapper (they handle their own layout)
+    if (isFullScreenPage) {
+      return (
+        <>
+          <GlobalNotificationPoller />
+          <IncomingCallBanner />
+          {children}
+        </>
+      );
+    }
+
+    // Normal pages: 100dvh flex column layout
     return (
       <>
-        <TopBar />
         <GlobalNotificationPoller />
         <IncomingCallBanner />
-        <main className="md:pt-16 pb-20 md:pb-4 min-h-screen" style={{ paddingTop: 'calc(max(8px, env(safe-area-inset-top)) + 0.5rem)' }}>
-          {children}
-        </main>
+        <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Desktop header at top */}
+          <DesktopHeader />
+          {/* Main scrollable area */}
+          <main style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
+            {children}
+          </main>
+          {/* Mobile navbar at bottom */}
+          <MobileNavbar />
+        </div>
       </>
     );
   }
