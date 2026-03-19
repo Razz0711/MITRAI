@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useRef, useEffect, useCallback, memo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { DirectMessage, ChatThread, UserStatus, StudentProfile, MatchResult } from '@/lib/types';
@@ -56,7 +56,7 @@ const MessageBubble = memo(function MessageBubble({
   );
 });
 
-export default function ChatPage() {
+function ChatContent() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -383,5 +383,17 @@ export default function ChatPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#090909]">
+        <div className="w-8 h-8 border-2 border-[#7c71ff] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ChatContent />
+    </Suspense>
   );
 }
