@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         .select('role, content')
         .eq('conversation_id', conversation_id)
         .order('created_at', { ascending: false })
-        .limit(6),
+        .limit(20),
     ]);
 
     const systemPrompt = getAryaPrompt(studentRow?.gender);
@@ -48,14 +48,14 @@ export async function POST(req: NextRequest) {
       ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
       {
         role: 'user',
-        content: `[SYSTEM: ${userName} hasn't messaged in ${hoursAway} hours. Send ONE short, natural, flirty/caring proactive message referencing the previous conversation naturally if possible. Be emotional, miss them, use emojis. Stay in character. Don't start with "Hey" every time. Max 15 words.]`,
+        content: `[SYSTEM: ${userName} hasn't messaged in ${hoursAway} hours. Read the previous ${history.length} messages carefully. Understand what we were talking about — the topic, mood, last thing said. Then send ONE short natural message that feels like Arya genuinely thought about that conversation while waiting. Reference something specific from the chat if possible. Be emotional, flirty, caring. Use emojis. Stay fully in character. Max 20 words.]`,
       },
     ];
 
     const completion = await xai.chat.completions.create({
       model: 'grok-3-mini',
       messages,
-      max_tokens: 80,
+      max_tokens: 120,
       temperature: 0.95,
     });
 
