@@ -71,7 +71,7 @@ export default function AryaProfilePage() {
 
       {/* ── Header Banner ── */}
       <div className="relative h-36 overflow-hidden" style={{
-        background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 30%, #8b5cf6 60%, #a78bfa 100%)',
+        background: 'linear-gradient(135deg, var(--primary-dark, #4c1d95) 0%, var(--primary) 50%, var(--primary-light) 100%)',
       }}>
         {/* Floating sparkles effect */}
         <div className="absolute inset-0 opacity-20">
@@ -154,10 +154,10 @@ export default function AryaProfilePage() {
           href="/arya/call"
           className="flex flex-col items-center gap-1.5 group"
         >
-          <div className="w-14 h-14 rounded-2xl bg-emerald-600/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-600/25 transition-colors">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--success)]/15 border border-[var(--success)]/25 flex items-center justify-center text-[var(--success)] group-hover:bg-[var(--success)]/25 transition-colors">
             <Phone size={22} />
           </div>
-          <span className="text-[10px] font-semibold text-emerald-400">Call</span>
+          <span className="text-[10px] font-semibold text-[var(--success)]">Call</span>
         </Link>
       </div>
 

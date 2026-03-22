@@ -451,7 +451,7 @@ export default function CirclesPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             {room.topic && <span className="text-[9px] px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 font-semibold">{room.topic}</span>}
                             <span className="text-[10px] text-[var(--muted)]">👥 {room.maxMembers} max</span>
-                            <span className="text-[10px] text-emerald-400">{timeAgo(room.createdAt)}</span>
+                            <span className="text-[10px] text-[var(--success)]">{timeAgo(room.createdAt)}</span>
                             <span className="ml-auto text-[10px] font-bold text-white px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500">Join</span>
                           </div>
                         </Link>
@@ -574,7 +574,7 @@ export default function CirclesPage() {
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-semibold text-[var(--foreground)]">{circle.name}</p>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--success)]/10 text-[var(--success)] border border-[var(--success)]/20">
                                     {deptInCircle} from your dept
                                   </span>
                                   <div className="flex-1 h-1 rounded-full bg-white/10 max-w-[80px]">
@@ -583,7 +583,7 @@ export default function CirclesPage() {
                                 </div>
                               </div>
                               {isJoined(circle.id) ? (
-                                <span className="text-[10px] font-bold text-emerald-400">Joined</span>
+                                <span className="text-[10px] font-bold text-[var(--success)]">Joined</span>
                               ) : (
                                 <button onClick={() => handleToggle(circle.id)} className="text-[10px] font-semibold text-[var(--muted)] hover:text-[var(--primary-light)]">Join →</button>
                               )}

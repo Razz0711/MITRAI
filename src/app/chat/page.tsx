@@ -34,7 +34,7 @@ const MessageBubble = memo(function MessageBubble({
         maxWidth: '75%',
         wordBreak: 'break-word',
         overflowWrap: 'break-word',
-        background: isMe ? '#7c71ff' : '#1e1e1e',
+        background: isMe ? 'var(--primary)' : '#1e1e1e',
         color: '#fff',
         fontSize: '14px',
         lineHeight: '1.45',
@@ -42,11 +42,11 @@ const MessageBubble = memo(function MessageBubble({
       }}>
         <p className="whitespace-pre-wrap">{msg.text}</p>
         <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-          <span style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)' }}>
+          <span style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.5)' }}>
             {formatTime(msg.createdAt)}
           </span>
           {isMe && (
-            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)' }}>
+            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>
               {msg.read ? '✓✓' : '✓'}
             </span>
           )}
@@ -234,7 +234,7 @@ function ChatContent() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
-  if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-[#090909]"><div className="w-8 h-8 border-2 border-[#7c71ff] border-t-transparent rounded-full animate-spin" /></div>;
+  if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-[#090909]"><div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" /></div>;
   if (!user || !studentId) return <div className="min-h-screen flex items-center justify-center bg-[#090909]"><p className="text-white/40">Please log in</p></div>;
 
   // If no chat is selected (and no friendId in URL to start one), render thread list.
@@ -252,7 +252,7 @@ function ChatContent() {
           {threads.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-8 mt-10">
               <p className="text-white/40 mb-4">No conversations yet</p>
-              <button onClick={() => router.push('/friends')} className="px-6 py-2 bg-[#7c71ff] text-white font-medium rounded-xl text-sm transition-transform active:scale-95">Find Friends</button>
+              <button onClick={() => router.push('/friends')} className="px-6 py-2 bg-[var(--primary)] text-white font-medium rounded-xl text-sm transition-transform active:scale-95">Find Friends</button>
             </div>
           ) : (
             threads.map(thread => {
@@ -277,7 +277,7 @@ function ChatContent() {
                     <div className={`w-12 h-12 rounded-full ${color} flex items-center justify-center text-white font-bold text-lg`}>
                       {initial}
                     </div>
-                    {isOnline && <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#090909] rounded-full" />}
+                    {isOnline && <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[var(--background)] rounded-full" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
@@ -396,7 +396,7 @@ function ChatContent() {
           onClick={sendMessage}
           disabled={!newMsg.trim() || sending}
           className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:scale-100"
-          style={{ background: '#7c71ff' }}
+          style={{ background: 'var(--primary)' }}
         >
           <Send size={18} className="text-white ml-0.5" />
         </button>
@@ -409,7 +409,7 @@ export default function ChatPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-[#090909]">
-        <div className="w-8 h-8 border-2 border-[#7c71ff] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
       </div>
     }>
       <ChatContent />

@@ -61,7 +61,7 @@ const MessageBubble = memo(function MessageBubble({
         <div
           className="px-3 py-2"
           style={{
-            background: isUser ? '#7c71ff' : '#222222',
+            background: isUser ? 'var(--primary)' : '#1e1e1e',
             color: '#ffffff',
             fontSize: '14px',
             lineHeight: '1.45',
@@ -90,7 +90,7 @@ const MessageBubble = memo(function MessageBubble({
 
           {/* Timestamp inside bubble */}
           <div className={`flex items-center gap-1 mt-1 ${isUser ? 'justify-end' : ''}`}>
-            <span style={{ fontSize: '10px', color: isUser ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.35)' }}>
+            <span style={{ fontSize: '10px', color: isUser ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.5)' }}>
               {formatTime(msg.created_at)}
             </span>
           </div>
@@ -551,7 +551,7 @@ export default function AryaChatPage() {
         {sending && (
           <div className="flex justify-start mb-1">
             <Image src="/arya-avatar.png" alt="Arya" width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-auto mb-1" />
-            <div className="px-4 py-3 rounded-2xl rounded-bl-sm" style={{ background: '#222222' }}>
+            <div className="px-4 py-3 rounded-2xl rounded-bl-sm" style={{ background: '#1e1e1e' }}>
               <div className="flex gap-1">
                 <span className="w-2 h-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-2 h-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -580,14 +580,14 @@ export default function AryaChatPage() {
           onKeyDown={handleKeyDown}
           placeholder="Message..."
           rows={1}
-          className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/30 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[#7c71ff]/50 transition-colors"
+          className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/30 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[var(--primary)]/50 transition-colors"
           style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
         />
         <button
           onClick={handleSend}
           disabled={!input.trim() || sending}
           className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-30"
-          style={{ background: '#7c71ff' }}
+          style={{ background: 'var(--primary)' }}
         >
           <Send size={16} className="text-white" />
         </button>

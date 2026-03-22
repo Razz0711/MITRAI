@@ -384,7 +384,7 @@ export default function CampusFeedPage() {
               title={composeAnon ? 'Posting anonymously' : 'Post with name'}
             >
               <span className="text-[9px] font-medium text-[var(--muted)]">Anon</span>
-              <div className={`relative w-9 h-5 rounded-full transition-all duration-300 ${composeAnon ? 'bg-purple-500' : 'bg-zinc-600'}`}>
+              <div className={`relative w-9 h-5 rounded-full transition-all duration-300 ${composeAnon ? 'bg-purple-500' : 'bg-white/15'}`}>
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${composeAnon ? 'left-[18px]' : 'left-0.5'}`} />
               </div>
             </button>

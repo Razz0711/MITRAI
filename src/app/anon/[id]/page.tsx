@@ -49,14 +49,14 @@ const AnonBubble = memo(function AnonBubble({
         style={{ maxWidth: '75%', wordBreak: 'break-word', overflowWrap: 'break-word' }}
       >
         {/* Alias label */}
-        <div className={`text-[10px] mb-0.5 ${isMe ? 'text-right text-[#7c71ff]' : 'text-left text-purple-400'}`}>
+        <div className={`text-[10px] mb-0.5 ${isMe ? 'text-right text-[var(--primary-light)]' : 'text-left text-[var(--primary-light)]'}`}>
           {msg.alias}
         </div>
         {/* Bubble */}
         <div
           className="px-3 py-2 whitespace-pre-wrap"
           style={{
-            background: isMe ? '#7c71ff' : '#1e1e1e',
+            background: isMe ? 'var(--primary)' : '#1e1e1e',
             color: '#fff',
             fontSize: '14px',
             lineHeight: '1.45',
@@ -65,7 +65,7 @@ const AnonBubble = memo(function AnonBubble({
         >
           {msg.text}
           <div className={`flex items-center mt-1 ${isMe ? 'justify-end' : ''}`}>
-            <span style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)' }}>
+            <span style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.5)' }}>
               {new Date(msg.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
@@ -237,7 +237,7 @@ export default function AnonChatRoomPage() {
           <ArrowLeft size={24} />
         </button>
         <div className="relative shrink-0">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg`} style={{ background: roomType?.color || '#7c71ff' }}>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg`} style={{ background: roomType?.color || 'var(--primary)' }}>
             {roomType?.label?.charAt(0) || 'R'}
           </div>
         </div>
@@ -316,7 +316,7 @@ export default function AnonChatRoomPage() {
             onClick={sendMessage}
             disabled={!newMsg.trim() || sending}
             className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all active:scale-90 disabled:opacity-30 disabled:scale-100"
-            style={{ background: '#7c71ff' }}
+            style={{ background: 'var(--primary)' }}
           >
             <Send size={18} className="text-white ml-0.5" />
           </button>

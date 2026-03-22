@@ -237,7 +237,7 @@ export default function RoomDetailPage() {
                         maxWidth: '75%',
                         wordBreak: 'break-word',
                         overflowWrap: 'break-word',
-                        background: isMe ? '#7c71ff' : '#1e1e1e',
+                        background: isMe ? 'var(--primary)' : '#1e1e1e',
                         color: '#fff',
                         fontSize: '14px',
                         lineHeight: '1.45',
@@ -245,7 +245,7 @@ export default function RoomDetailPage() {
                       }}>
                         {!isMe && <p className="text-xs font-semibold text-purple-400 mb-0.5">{msg.senderName}</p>}
                         <p className="whitespace-pre-wrap">{msg.text}</p>
-                        <p className="mt-1" style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)' }}>
+                        <p className="mt-1" style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.5)' }}>
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -270,14 +270,14 @@ export default function RoomDetailPage() {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Type a message..."
                 rows={1}
-                className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/30 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[#7c71ff]/50 transition-colors"
+                className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/30 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[var(--primary)]/50 transition-colors"
                 style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
               />
               <button
                 onClick={handleSend}
                 disabled={sending || !text.trim()}
                 className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-30"
-                style={{ background: '#7c71ff' }}
+                style={{ background: 'var(--primary)' }}
               >
                 <Send size={16} />
               </button>
@@ -317,7 +317,7 @@ export default function RoomDetailPage() {
                     {m.userName}
                     {m.userId === user?.id && <span className="text-xs text-[var(--muted)] ml-1">(you)</span>}
                   </p>
-                  {m.role === 'creator' && <span className="text-[10px] text-amber-500 ml-auto">Creator</span>}
+                  {m.role === 'creator' && <span className="text-[10px] text-[var(--warning)] ml-auto">Creator</span>}
                 </div>
               ))}
             </div>
@@ -347,7 +347,7 @@ export default function RoomDetailPage() {
                   )}
                 </p>
                 {m.role === 'creator' && (
-                  <span className="text-[10px] text-amber-500">Creator</span>
+                  <span className="text-[10px] text-[var(--warning)]">Creator</span>
                 )}
               </div>
             </div>

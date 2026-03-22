@@ -251,7 +251,7 @@ export default function MePage() {
               <p className="text-[10px] text-[var(--muted)]">{darkMode ? 'Dark mode is on' : 'Light mode is on'}</p>
             </div>
             {/* Toggle switch */}
-            <div className={`relative w-12 h-7 rounded-full transition-colors ${darkMode ? 'bg-violet-600' : 'bg-gray-400'}`}>
+            <div className={`relative w-12 h-7 rounded-full transition-colors ${darkMode ? 'bg-violet-600' : 'bg-[var(--surface-light,#d1d5db)]'}`}>
               <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </div>
           </button>
@@ -303,7 +303,7 @@ export default function MePage() {
         <button
           onClick={logout}
           className="w-full py-3.5 rounded-2xl text-center text-sm font-semibold text-red-400 hover:bg-red-500/5 transition-colors"
-          style={{ background: 'var(--surface)', border: '1px solid rgba(239,68,68,0.15)' }}
+          style={{ background: 'var(--surface)', border: '1px solid var(--error, rgba(239,68,68,0.15))' }}
         >
           Sign Out
         </button>

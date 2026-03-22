@@ -36,7 +36,7 @@ export default function FeedbackPage() {
           <div className="text-5xl mb-4">💜</div>
           <h2 className="text-lg font-bold text-[var(--foreground)] mb-2">Thank you!</h2>
           <p className="text-sm text-[var(--muted)] max-w-xs">Your feedback helps us make MitrrAi better for everyone at SVNIT.</p>
-          <button onClick={() => router.back()} className="mt-6 px-6 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' }}>
+          <button onClick={() => router.back()} className="mt-6 px-6 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg, var(--primary-light, #7c3aed), var(--primary, #6D28D9))' }}>
             Go Back
           </button>
         </div>
@@ -82,7 +82,7 @@ export default function FeedbackPage() {
         onClick={handleSubmit}
         disabled={!type || !message.trim()}
         className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40 transition-all"
-        style={{ background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' }}
+        style={{ background: 'linear-gradient(135deg, var(--primary-light, #7c3aed), var(--primary, #6D28D9))' }}
       >
         <Send size={14} />
         Submit Feedback

@@ -328,7 +328,7 @@ export default function AnonLobbyPage() {
               </span>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
-              <span className="text-xs font-semibold text-violet-300">
+              <span className="text-xs font-semibold text-[var(--primary-light)]">
                 {Object.keys(stats.queueByType || {}).length} room types active
               </span>
             </div>

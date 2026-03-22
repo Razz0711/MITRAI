@@ -229,7 +229,7 @@ export default function EditProfilePage() {
           onClick={handleSave}
           disabled={saving}
           className="px-5 py-2 rounded-xl text-sm font-bold text-white shadow-lg disabled:opacity-50 transition-all hover:brightness-110 active:scale-95"
-          style={{ background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)' }}
+          style={{ background: 'linear-gradient(135deg, var(--primary-light, #7c3aed), var(--primary, #6D28D9))' }}
         >
           {saving ? 'Saving...' : 'Save'}
         </button>
@@ -266,7 +266,7 @@ export default function EditProfilePage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="px-5 py-2 rounded-xl text-xs font-semibold text-violet-300 bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+            className="px-5 py-2 rounded-xl text-xs font-semibold text-[var(--primary-light)] bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
           >
             <Camera size={14} />
             {uploading ? 'Uploading...' : 'Upload Photo'}
@@ -341,8 +341,8 @@ export default function EditProfilePage() {
                     isSelected
                       ? 'bg-violet-500/15 text-violet-300 border-violet-500/40'
                       : isDisabled
-                        ? 'bg-white/3 text-[var(--muted)] border-[var(--glass-border)] opacity-40 cursor-not-allowed'
-                        : 'bg-white/3 text-[var(--muted)] border-[var(--glass-border)] hover:border-white/20 hover:text-[var(--foreground)]'
+                        ? 'bg-white/5 text-[var(--muted)] border-[var(--glass-border)] opacity-40 cursor-not-allowed'
+                        : 'bg-white/5 text-[var(--muted)] border-[var(--glass-border)] hover:border-white/20 hover:text-[var(--foreground)]'
                   }`}
                 >
                   <span className="text-sm">{chip.emoji}</span>
