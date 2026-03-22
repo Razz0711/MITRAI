@@ -271,7 +271,7 @@ export default function CirclesPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 listTab === 'joined'
                   ? 'bg-[var(--primary)]/15 text-[var(--primary-light)] border border-[var(--primary)]/30'
-                  : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  : 'text-[var(--muted-strong)] hover:text-[var(--foreground)]'
               }`}
             >
               Joined
@@ -281,7 +281,7 @@ export default function CirclesPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 listTab === 'discover'
                   ? 'bg-[var(--primary)]/15 text-[var(--primary-light)] border border-[var(--primary)]/30'
-                  : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  : 'text-[var(--muted-strong)] hover:text-[var(--foreground)]'
               }`}
             >
               Discover
@@ -292,7 +292,7 @@ export default function CirclesPage() {
           <div className="flex-1 overflow-y-auto">
             {filtered.length === 0 ? (
               <div className="p-6 text-center">
-                <p className="text-xs text-[var(--muted)]">
+                <p className="text-xs text-[var(--muted-strong)]">
                   {search ? `No matches for "${search}"` : listTab === 'joined' ? 'No circles joined yet' : 'All circles joined!'}
                 </p>
               </div>
@@ -326,7 +326,7 @@ export default function CirclesPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-[var(--muted)] truncate">
+                      <p className="text-[11px] text-[var(--muted-strong)] truncate">
                         {memberCounts[circle.id] || 0} members{deptInCircle > 0 ? ` · ${deptInCircle} from your dept` : ''}
                       </p>
                     </div>
@@ -344,7 +344,7 @@ export default function CirclesPage() {
               {/* Mobile back button */}
               <button
                 onClick={() => setSelectedCircle(null)}
-                className="md:hidden flex items-center gap-2 text-sm text-[var(--muted)] hover:text-[var(--foreground)] mb-4 transition-colors"
+                className="md:hidden flex items-center gap-2 text-sm text-[var(--muted-strong)] hover:text-[var(--foreground)] mb-4 transition-colors"
               >
                 <ArrowLeft size={16} />
                 Back to Circles
@@ -359,7 +359,7 @@ export default function CirclesPage() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-[var(--foreground)]">{activeCircle.name}</h2>
-                  <p className="text-xs text-[var(--muted)] mt-1">{activeCircle.description}</p>
+                  <p className="text-xs text-[var(--muted-strong)] mt-1">{activeCircle.description}</p>
                   <div className="flex items-center gap-3 mt-2">
                     {/* Member avatars */}
                     <div className="flex -space-x-2">
@@ -369,7 +369,7 @@ export default function CirclesPage() {
                         </div>
                       ))}
                     </div>
-                    <span className="text-xs text-[var(--muted)]">{memberCounts[activeCircle.id] || 0} members</span>
+                    <span className="text-xs text-[var(--muted-strong)]">{memberCounts[activeCircle.id] || 0} members</span>
                     {liveRooms.length > 0 && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/20">
                         ● {liveRooms.length} room{liveRooms.length > 1 ? 's' : ''} live
@@ -406,7 +406,7 @@ export default function CirclesPage() {
                     className={`text-xs font-semibold pb-2 border-b-2 transition-all capitalize ${
                       detailTab === t
                         ? 'border-[var(--primary)] text-[var(--primary-light)]'
-                        : 'border-transparent text-[var(--muted)] hover:text-[var(--foreground)]'
+                        : 'border-transparent text-[var(--muted-strong)] hover:text-[var(--foreground)]'
                     }`}
                   >
                     {t === 'rooms' ? 'Rooms' : 'Members'}
@@ -444,13 +444,13 @@ export default function CirclesPage() {
                             <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-lg">📚</div>
                             <div className="flex-1">
                               <h4 className="text-sm font-bold text-[var(--foreground)]">{room.name}{room.topic ? ` — ${room.topic}` : ''}</h4>
-                              <p className="text-[10px] text-[var(--muted)]">Started by {room.creatorName || 'someone'} · {timeAgo(room.createdAt)}</p>
+                              <p className="text-[11px] text-[var(--muted-strong)]">Started by {room.creatorName || 'someone'} · {timeAgo(room.createdAt)}</p>
                             </div>
-                            <span className="text-[9px] font-bold px-2 py-1 rounded-full bg-green-500/15 text-green-400 border border-green-500/20">● Live</span>
+                            <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-green-500/15 text-green-400 border border-green-500/20">● Live</span>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            {room.topic && <span className="text-[9px] px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 font-semibold">{room.topic}</span>}
-                            <span className="text-[10px] text-[var(--muted)]">👥 {room.maxMembers} max</span>
+                            {room.topic && <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-500/25 text-blue-300 font-semibold">{room.topic}</span>}
+                            <span className="text-[11px] text-[var(--muted-strong)]">👥 {room.maxMembers} max</span>
                             <span className="text-[10px] text-[var(--success)]">{timeAgo(room.createdAt)}</span>
                             <span className="ml-auto text-[10px] font-bold text-white px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500">Join</span>
                           </div>
@@ -458,7 +458,7 @@ export default function CirclesPage() {
                       ))
                     ) : (
                       <div className="p-4 rounded-2xl text-center" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
-                        <p className="text-xs text-[var(--muted)]">No live rooms right now</p>
+                        <p className="text-xs text-[var(--muted-strong)]">No live rooms right now</p>
                       </div>
                     )}
                   </div>
@@ -474,7 +474,7 @@ export default function CirclesPage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-[var(--foreground)]">Start a new room</p>
-                        <p className="text-[10px] text-[var(--muted)]">DSA · CP · Project · Discussion · Pomodoro</p>
+                        <p className="text-[11px] text-[var(--muted-strong)]">DSA · CP · Project · Discussion · Pomodoro</p>
                       </div>
                     </button>
                   ) : (
@@ -534,13 +534,13 @@ export default function CirclesPage() {
                                 <span className="font-bold">{room.creatorName || 'Someone'}</span> started a room — {room.name}
                               </p>
                             </div>
-                            <span className="text-[10px] text-[var(--muted)]">{timeAgo(room.createdAt)}</span>
+                            <span className="text-[11px] text-[var(--muted-strong)]">{timeAgo(room.createdAt)}</span>
                           </div>
                         ))}
                       </div>
                     ) : (
                       <div className="p-6 rounded-2xl text-center" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
-                        <p className="text-xs text-[var(--muted)]">No recent activity yet. Start a room or invite friends!</p>
+                        <p className="text-xs text-[var(--muted-strong)]">No recent activity yet. Start a room or invite friends!</p>
                       </div>
                     )}
                   </div>
@@ -557,7 +557,7 @@ export default function CirclesPage() {
                         <span className="text-lg">🏛️</span>
                         <div>
                           <p className="text-sm font-bold text-[var(--foreground)]">Your department in Circles</p>
-                          <p className="text-[10px] text-[var(--muted)]">How many {myDept} students are in each circle</p>
+                          <p className="text-[11px] text-[var(--muted-strong)]">How many {myDept} students are in each circle</p>
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -585,7 +585,7 @@ export default function CirclesPage() {
                               {isJoined(circle.id) ? (
                                 <span className="text-[10px] font-bold text-[var(--success)]">Joined</span>
                               ) : (
-                                <button onClick={() => handleToggle(circle.id)} className="text-[10px] font-semibold text-[var(--muted)] hover:text-[var(--primary-light)]">Join →</button>
+                                <button onClick={() => handleToggle(circle.id)} className="text-[10px] font-semibold text-[var(--primary-light)] hover:text-[var(--primary-light)]">Join →</button>
                               )}
                             </div>
                           );
@@ -612,7 +612,7 @@ export default function CirclesPage() {
                     </div>
                   ) : (
                     <div className="p-6 rounded-2xl text-center" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
-                      <p className="text-xs text-[var(--muted)]">No members to show</p>
+                      <p className="text-xs text-[var(--muted-strong)]">No members to show</p>
                     </div>
                   )}
                 </div>
@@ -623,7 +623,7 @@ export default function CirclesPage() {
               <div className="text-center">
                 <div className="w-16 h-16 mx-auto rounded-3xl bg-[var(--primary)]/10 flex items-center justify-center text-3xl mb-4">⭕</div>
                 <p className="text-sm font-semibold text-[var(--foreground)]">Select a circle</p>
-                <p className="text-xs text-[var(--muted)] mt-1">Choose a circle from the list to see details</p>
+                <p className="text-xs text-[var(--muted-strong)] mt-1">Choose a circle from the list to see details</p>
               </div>
             </div>
           )}

@@ -219,12 +219,12 @@ export default function OnboardingPage() {
               <button
                 onClick={handleBack}
                 disabled={isLoading}
-                className="px-2.5 py-1 rounded-lg text-xs font-medium text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-all disabled:opacity-40"
+                className="px-2.5 py-1 rounded-lg text-xs font-medium text-[var(--muted-strong)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-all disabled:opacity-40"
               >
                 ← Back
               </button>
             )}
-            <span className="text-sm text-[var(--muted)]">Setting up your profile</span>
+            <span className="text-sm text-[var(--muted-strong)]">Setting up your profile</span>
           </div>
           <span className="text-sm font-medium gradient-text">{progressPercentage}%</span>
         </div>
@@ -265,7 +265,7 @@ export default function OnboardingPage() {
                 </div>
                 {isMultiSelect && multiSelectChoices.length > 0 && (
                   <div className="flex items-center justify-between pt-2">
-                    <span className="text-[10px] text-[var(--muted)]">
+                    <span className="text-[11px] text-[var(--muted-strong)]">
                       Selected: {multiSelectChoices.join(', ')}
                     </span>
                     <button

@@ -109,7 +109,7 @@ export default function PhoneVerificationModal({
           <h2 className="text-xl font-bold text-[var(--foreground)] tracking-tight">
             {step === 1 ? 'Verify Your Identity' : 'Enter Security Code'}
           </h2>
-          <p className="text-xs text-[var(--muted)] mt-2 leading-relaxed px-2">
+          <p className="text-xs text-[var(--muted-strong)] mt-2 leading-relaxed px-2">
             {step === 1 
               ? 'To protect MitrRAI from spam and fake accounts, please link a valid phone number.' 
               : `We sent a 6-digit code to ${phone}.`}
@@ -127,7 +127,7 @@ export default function PhoneVerificationModal({
           {step === 1 ? (
             <form onSubmit={handleSendOtp} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-[var(--muted)]">Phone Number (with country code)</label>
+                <label className="text-xs font-semibold text-[var(--muted-strong)]">Phone Number (with country code)</label>
                 <input
                   type="tel"
                   placeholder="+91 99999 99999"
@@ -153,7 +153,7 @@ export default function PhoneVerificationModal({
           ) : (
             <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-[var(--muted)]">6-Digit OTP</label>
+                <label className="text-xs font-semibold text-[var(--muted-strong)]">6-Digit OTP</label>
                 <input
                   type="text"
                   placeholder="123 456"
@@ -181,7 +181,7 @@ export default function PhoneVerificationModal({
                 type="button"
                 onClick={() => setStep(1)}
                 disabled={loading}
-                className="text-xs font-medium text-[var(--muted)] hover:text-[var(--foreground)] mt-2 transition-colors"
+                className="text-xs font-medium text-[var(--muted-strong)] hover:text-[var(--foreground)] mt-2 transition-colors"
               >
                 Change Phone Number
               </button>
@@ -191,7 +191,7 @@ export default function PhoneVerificationModal({
         
         {/* Footer */}
         <div className="mt-auto px-6 py-4 bg-black/20 border-t border-[var(--border)]/50 text-center">
-          <p className="text-[10px] text-[var(--muted)]/60">
+          <p className="text-[10px] text-[var(--muted-strong)]">
             Powered securely by Google Firebase & Supabase. Your phone number is encrypted and never shared.
           </p>
         </div>

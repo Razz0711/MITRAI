@@ -92,7 +92,7 @@ export default function MePage() {
         <h1 className="text-xl font-bold text-[var(--foreground)]">Me</h1>
         <Link
           href="/me/edit"
-          className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+          className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--muted-strong)] hover:text-[var(--foreground)] transition-colors"
         >
           ✏️
         </Link>
@@ -131,7 +131,7 @@ export default function MePage() {
 
           <div className="flex-1 min-w-0">
             <h2 className="text-base font-bold truncate text-[var(--foreground)]">{fullName}</h2>
-            <p className="text-xs text-[var(--muted)] mt-0.5">
+            <p className="text-xs text-[var(--muted-strong)] mt-0.5">
               {department}{yearLevel ? ` · ${yearLevel}` : ''}
             </p>
             <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/20">
@@ -145,15 +145,15 @@ export default function MePage() {
         <div className="grid grid-cols-3 gap-1 rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)' }}>
           <div className="text-center py-3">
             <div className="text-lg font-bold text-[var(--foreground)]">{matchCount}</div>
-            <div className="text-[10px] text-[var(--muted)]">Matches</div>
+            <div className="text-[11px] text-[var(--muted-strong)]">Matches</div>
           </div>
           <div className="text-center py-3 border-l border-[var(--border)]">
             <div className="text-lg font-bold text-[var(--foreground)]">{circleCount}</div>
-            <div className="text-[10px] text-[var(--muted)]">Circles</div>
+            <div className="text-[11px] text-[var(--muted-strong)]">Circles</div>
           </div>
           <div className="text-center py-3 border-l border-[var(--border)]">
             <div className="text-lg font-bold text-[var(--foreground)]">{topMatch > 0 ? `${topMatch}%` : '—'}</div>
-            <div className="text-[10px] text-[var(--muted)]">Top match</div>
+            <div className="text-[11px] text-[var(--muted-strong)]">Top match</div>
           </div>
         </div>
       </div>
@@ -190,17 +190,17 @@ export default function MePage() {
 
       {/* ═══ ACCOUNT SECTION ═══ */}
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] px-1 mb-2">ACCOUNT</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--muted-strong)] px-1 mb-2">ACCOUNT</p>
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           {/* Pro Subscription */}
           <Link href="/subscription" className="flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors">
             <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-lg">⭐</div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-[var(--foreground)]">Pro Subscription</p>
-              <p className="text-[10px] text-[var(--muted)]">Unlock unlimited matches & Arya AI</p>
+              <p className="text-[11px] text-[var(--muted-strong)]">Unlock unlimited matches & Arya AI</p>
             </div>
             <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-violet-500/15 text-violet-400 border border-violet-500/25">Upgrade</span>
-            <span className="text-[var(--muted)] text-xs ml-1">›</span>
+            <span className="text-[var(--muted-strong)] text-xs ml-1">›</span>
           </Link>
 
           <div className="h-px bg-[var(--border)]" />
@@ -216,29 +216,29 @@ export default function MePage() {
             <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-lg">🎁</div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-[var(--foreground)]">Invite Friends</p>
-              <p className="text-[10px] text-[var(--muted)]">5 invites = 1 month Pro free</p>
+              <p className="text-[11px] text-[var(--muted-strong)]">5 invites = 1 month Pro free</p>
             </div>
             <div className="text-right shrink-0">
               <p className="text-sm font-bold text-emerald-400">0/5</p>
-              <p className="text-[9px] text-[var(--muted)]">joined</p>
+              <p className="text-[11px] text-[var(--muted-strong)]">joined</p>
             </div>
-            <span className="text-[var(--muted)] text-xs ml-1">›</span>
+            <span className="text-[var(--muted-strong)] text-xs ml-1">›</span>
           </button>
         </div>
       </div>
 
       {/* ═══ PREFERENCES SECTION ═══ */}
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] px-1 mb-2">PREFERENCES</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--muted-strong)] px-1 mb-2">PREFERENCES</p>
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           {/* Change Language */}
           <Link href="/me/language" className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-lg">🌐</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Change Language</p>
-              <p className="text-[10px] text-[var(--muted)]">English (default)</p>
+              <p className="text-[11px] text-[var(--muted-strong)]">English (default)</p>
             </div>
-            <span className="text-[var(--muted)] text-xs">›</span>
+            <span className="text-[var(--muted-strong)] text-xs">›</span>
           </Link>
 
           <div className="h-px bg-[var(--border)]" />
@@ -248,10 +248,10 @@ export default function MePage() {
             <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-lg">🌙</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Switch Theme</p>
-              <p className="text-[10px] text-[var(--muted)]">{darkMode ? 'Dark mode is on' : 'Light mode is on'}</p>
+              <p className="text-[11px] text-[var(--muted-strong)]">{darkMode ? 'Dark mode is on' : 'Light mode is on'}</p>
             </div>
             {/* Toggle switch */}
-            <div className={`relative w-12 h-7 rounded-full transition-colors ${darkMode ? 'bg-violet-600' : 'bg-[var(--surface-light,#d1d5db)]'}`}>
+            <div className={`relative w-12 h-7 rounded-full transition-colors ${darkMode ? 'bg-violet-600' : 'bg-white/20'}`}>
               <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
             </div>
           </button>
@@ -263,25 +263,25 @@ export default function MePage() {
             <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-lg">🔒</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Privacy</p>
-              <p className="text-[10px] text-[var(--muted)]">Control who sees you</p>
+              <p className="text-[11px] text-[var(--muted-strong)]">Control who sees you</p>
             </div>
-            <span className="text-[var(--muted)] text-xs">›</span>
+            <span className="text-[var(--muted-strong)] text-xs">›</span>
           </Link>
         </div>
       </div>
 
       {/* ═══ SUPPORT SECTION ═══ */}
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] px-1 mb-2">SUPPORT</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--muted-strong)] px-1 mb-2">SUPPORT</p>
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           {/* Feedback */}
           <Link href="/me/feedback" className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-pink-500/15 flex items-center justify-center text-lg">💬</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Feedback</p>
-              <p className="text-[10px] text-[var(--muted)]">Help us improve MitrrAi</p>
+              <p className="text-[11px] text-[var(--muted-strong)]">Help us improve MitrrAi</p>
             </div>
-            <span className="text-[var(--muted)] text-xs">›</span>
+            <span className="text-[var(--muted-strong)] text-xs">›</span>
           </Link>
 
           <div className="h-px bg-[var(--border)]" />
@@ -291,9 +291,9 @@ export default function MePage() {
             <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-lg">❓</div>
             <div className="flex-1">
               <p className="text-sm font-bold text-[var(--foreground)]">Help & FAQ</p>
-              <p className="text-[10px] text-[var(--muted)]">How to use MitrrAi</p>
+              <p className="text-[11px] text-[var(--muted-strong)]">How to use MitrrAi</p>
             </div>
-            <span className="text-[var(--muted)] text-xs">›</span>
+            <span className="text-[var(--muted-strong)] text-xs">›</span>
           </Link>
         </div>
       </div>
@@ -310,7 +310,7 @@ export default function MePage() {
       )}
 
       {/* ═══ FOOTER ═══ */}
-      <div className="flex items-center justify-center gap-3 text-[10px] text-[var(--muted)] pb-6">
+      <div className="flex items-center justify-center gap-3 text-[11px] text-[var(--muted-strong)] pb-6">
         <Link href="/terms" className="hover:text-[var(--foreground)] transition-colors">Terms</Link>
         <span>·</span>
         <Link href="/privacy" className="hover:text-[var(--foreground)] transition-colors">Privacy</Link>

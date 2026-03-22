@@ -227,7 +227,7 @@ export default function RoomDetailPage() {
           <>
              <div className="flex-1 overflow-y-auto p-4 space-y-1 min-h-0" style={{ overscrollBehavior: 'contain' }}>
               {messages.length === 0 ? (
-                <p className="text-center text-white/30 py-8">No messages yet. Start the conversation! 💬</p>
+                <p className="text-center text-white/65 py-8">No messages yet. Start the conversation! 💬</p>
               ) : (
                 messages.map((msg) => {
                   const isMe = msg.senderId === user?.id;
@@ -245,7 +245,7 @@ export default function RoomDetailPage() {
                       }}>
                         {!isMe && <p className="text-xs font-semibold text-purple-400 mb-0.5">{msg.senderName}</p>}
                         <p className="whitespace-pre-wrap">{msg.text}</p>
-                        <p className="mt-1" style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.5)' }}>
+                        <p className="mt-1" style={{ fontSize: '11px', color: isMe ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.65)' }}>
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -305,7 +305,7 @@ export default function RoomDetailPage() {
         <>
           <div className="fixed inset-0 z-40 bg-black/60 md:hidden" onClick={() => setShowMembersDrawer(false)} />
           <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden rounded-t-2xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <div className="w-10 h-1 rounded-full bg-[var(--muted)]/30 mx-auto mb-4" />
+            <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
             <h2 className="font-bold text-[var(--foreground)] mb-3">Members ({members.length}/{room.maxMembers})</h2>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {members.map((m) => (
@@ -315,9 +315,9 @@ export default function RoomDetailPage() {
                   </div>
                   <p className="text-[var(--foreground)]">
                     {m.userName}
-                    {m.userId === user?.id && <span className="text-xs text-[var(--muted)] ml-1">(you)</span>}
+                    {m.userId === user?.id && <span className="text-xs text-[var(--muted-strong)] ml-1">(you)</span>}
                   </p>
-                  {m.role === 'creator' && <span className="text-[10px] text-[var(--warning)] ml-auto">Creator</span>}
+                  {m.role === 'creator' && <span className="text-[11px] text-[var(--warning)] ml-auto">Creator</span>}
                 </div>
               ))}
             </div>
@@ -343,11 +343,11 @@ export default function RoomDetailPage() {
                 <p className="text-[var(--foreground)]">
                   {m.userName}
                   {m.userId === user?.id && (
-                    <span className="text-xs text-[var(--muted)] ml-1">(you)</span>
+                    <span className="text-xs text-[var(--muted-strong)] ml-1">(you)</span>
                   )}
                 </p>
                 {m.role === 'creator' && (
-                  <span className="text-[10px] text-[var(--warning)]">Creator</span>
+                  <span className="text-[11px] text-[var(--warning)]">Creator</span>
                 )}
               </div>
             </div>
@@ -358,8 +358,8 @@ export default function RoomDetailPage() {
           <>
             <hr className="border-[var(--border)]" />
             <div>
-              <h3 className="text-xs uppercase text-[var(--muted)] mb-1">About</h3>
-              <p className="text-sm text-[var(--muted)]">{room.description}</p>
+              <h3 className="text-xs uppercase text-[var(--muted-strong)] mb-1">About</h3>
+              <p className="text-sm text-[var(--muted-strong)]">{room.description}</p>
             </div>
           </>
         )}

@@ -63,11 +63,11 @@ export default function HelpPage() {
               <div className="flex-1">
                 <p className="text-sm font-semibold text-[var(--foreground)]">{faq.q}</p>
               </div>
-              <ChevronDown size={16} className={`text-[var(--muted)] transition-transform ${openIdx === i ? 'rotate-180' : ''}`} />
+              <ChevronDown size={16} className={`text-[var(--muted-strong)] transition-transform ${openIdx === i ? 'rotate-180' : ''}`} />
             </button>
             {openIdx === i && (
               <div className="px-4 pb-4 -mt-1">
-                <p className="text-xs text-[var(--muted)] leading-relaxed">{faq.a}</p>
+                <p className="text-xs text-[var(--muted-strong)] leading-relaxed">{faq.a}</p>
               </div>
             )}
           </div>
@@ -75,7 +75,7 @@ export default function HelpPage() {
       </div>
 
       <div className="mt-5 rounded-2xl p-4 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
-        <p className="text-xs text-[var(--muted)] mb-2">Still need help?</p>
+        <p className="text-xs text-[var(--muted-strong)] mb-2">Still need help?</p>
         <a href="mailto:mitrrai.support@svnit.ac.in" className="text-sm font-bold text-violet-400 hover:underline">
           mitrrai.support@svnit.ac.in
         </a>

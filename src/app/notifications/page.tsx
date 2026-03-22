@@ -83,7 +83,7 @@ export default function NotificationsPage() {
           {notifications.length > 0 && (
             <button
               onClick={() => setNotifications([])}
-              className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+              className="text-xs text-[var(--primary-light)] hover:text-[var(--foreground)] transition-colors"
             >
               Clear all
             </button>
@@ -100,22 +100,22 @@ export default function NotificationsPage() {
               <BellOff size={28} className="text-[var(--muted)]" />
             </div>
             <h3 className="text-lg font-bold text-[var(--foreground)]">All caught up!</h3>
-            <p className="text-sm text-[var(--muted)]">No new notifications. Post something on the feed to get started!</p>
+            <p className="text-sm text-[var(--muted-strong)]">No new notifications. Post something on the feed to get started!</p>
           </div>
         )}
 
         {notifications.map(n => (
           <div
             key={n.id}
-            className={`card p-3.5 flex items-start gap-3 transition-all ${n.read ? 'opacity-60' : ''}`}
+            className={`card p-3.5 flex items-start gap-3 transition-all`}
           >
             <div className="shrink-0 w-9 h-9 rounded-xl bg-[var(--surface)] flex items-center justify-center">
               {getIcon(n.type)}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-[var(--foreground)]">{n.title}</p>
-              <p className="text-xs text-[var(--muted)] mt-0.5">{n.message}</p>
-              <p className="text-[9px] text-[var(--muted)] mt-1">{timeAgo(n.createdAt)}</p>
+              <p className={`text-xs mt-0.5 ${n.read ? 'text-[var(--muted-strong)]' : 'text-[var(--muted-strong)]'}`}>{n.message}</p>
+              <p className="text-[11px] text-[var(--muted-strong)] mt-1">{timeAgo(n.createdAt)}</p>
             </div>
           </div>
         ))}

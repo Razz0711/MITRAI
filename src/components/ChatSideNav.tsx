@@ -46,12 +46,12 @@ export default function ChatSideNav() {
             className={`flex flex-col items-center gap-0.5 w-11 md:w-12 py-2 rounded-xl transition-all duration-200 group ${
               isActive
                 ? 'bg-[var(--primary)]/15 text-[var(--primary-light)]'
-                : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]'
+                : 'text-[var(--muted-strong)] hover:text-[var(--foreground)] hover:bg-[var(--surface)]'
             }`}
             title={item.label}
           >
             <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
-            <span className={`text-[9px] font-semibold leading-none ${isActive ? 'text-[var(--primary-light)]' : ''}`}>
+            <span className={`text-[11px] font-semibold leading-none ${isActive ? 'text-[var(--primary-light)]' : ''}`}>
               {item.label}
             </span>
           </Link>

@@ -49,7 +49,7 @@ const AnonBubble = memo(function AnonBubble({
         style={{ maxWidth: '75%', wordBreak: 'break-word', overflowWrap: 'break-word' }}
       >
         {/* Alias label */}
-        <div className={`text-[10px] mb-0.5 ${isMe ? 'text-right text-[var(--primary-light)]' : 'text-left text-[var(--primary-light)]'}`}>
+        <div className={`text-[11px] mb-0.5 ${isMe ? 'text-right text-[var(--primary-light)]' : 'text-left text-[var(--primary-light)]'}`}>
           {msg.alias}
         </div>
         {/* Bubble */}
@@ -65,7 +65,7 @@ const AnonBubble = memo(function AnonBubble({
         >
           {msg.text}
           <div className={`flex items-center mt-1 ${isMe ? 'justify-end' : ''}`}>
-            <span style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.5)' }}>
+            <span style={{ fontSize: '11px', color: isMe ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.65)' }}>
               {new Date(msg.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
@@ -254,13 +254,13 @@ export default function AnonChatRoomPage() {
         </div>
         <div className="flex items-center gap-1">
           {canReveal && (
-            <button onClick={() => setShowReveal(true)} className="text-[10px] px-2 py-1 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors">
+            <button onClick={() => setShowReveal(true)} className="text-[11px] px-2 py-1 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors">
               {data.myRevealConsent ? '✓ Reveal sent' : 'Reveal'}
             </button>
           )}
-          {isRevealed && <span className="text-[10px] px-2 py-1 rounded-lg bg-green-500/20 text-green-400">✓ Revealed</span>}
+          {isRevealed && <span className="text-[11px] px-2 py-1 rounded-lg bg-green-500/20 text-green-400">✓ Revealed</span>}
           <div className="relative" ref={menuRef}>
-            <button onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-xl text-white/40 hover:text-white transition-colors">
+            <button onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-xl text-white/65 hover:text-white transition-colors">
               <MoreVertical size={18} />
             </button>
             {showMenu && (
@@ -278,7 +278,7 @@ export default function AnonChatRoomPage() {
       <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-3 py-3" style={{ overscrollBehavior: 'contain' }}>
         {/* System message */}
         <div className="text-center py-3 mb-2">
-          <p className="text-[10px] text-white/30 inline-block px-3 py-1 rounded-full" style={{ background: '#141414' }}>
+          <p className="text-[11px] text-white/65 inline-block px-3 py-1 rounded-full" style={{ background: '#141414' }}>
             {roomType?.label} — Chat started. Be kind & respectful.
           </p>
         </div>
@@ -309,7 +309,7 @@ export default function AnonChatRoomPage() {
             maxLength={1000}
             rows={1}
             disabled={sending}
-            className="flex-1 resize-none bg-[#1e1e1e] text-white text-[15px] placeholder:text-white/40 rounded-[20px] px-4 py-2.5 outline-none tracking-tight transition-colors disabled:opacity-50"
+            className="flex-1 resize-none bg-[#1e1e1e] text-white text-[15px] placeholder:text-white/55 rounded-[20px] px-4 py-2.5 outline-none tracking-tight transition-colors disabled:opacity-50"
             style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
           />
           <button

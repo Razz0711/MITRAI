@@ -44,7 +44,7 @@ export function DesktopHeader() {
                 className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-300 ${
                   isActive
                     ? 'bg-[var(--primary)]/15 text-[var(--primary-light)] shadow-sm'
-                    : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-light)]'
+                    : 'text-[var(--muted-strong)] hover:text-[var(--foreground)] hover:bg-[var(--surface-light)]'
                 }`}
               >
                 <Icon size={16} strokeWidth={isActive ? 2 : 1.5} />
@@ -94,7 +94,7 @@ export function MobileNavbar() {
               className={`flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-2xl transition-all duration-300 ${
                 isActive
                   ? 'text-[var(--primary-light)]'
-                  : 'text-[var(--muted)] hover:text-[var(--foreground)]'
+                  : 'text-[var(--muted-strong)] hover:text-[var(--foreground)]'
               }`}
             >
               <div className="relative p-1.5 rounded-xl transition-all duration-300">
@@ -103,7 +103,7 @@ export function MobileNavbar() {
                   <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--primary-light)]" />
                 )}
               </div>
-              <span className={`text-[9px] font-semibold transition-all duration-300 ${isActive ? 'opacity-100' : 'opacity-60'}`}>
+              <span className={`text-[11px] font-semibold transition-all duration-300 ${isActive ? 'opacity-100' : ''}`}>
                 {tab.label}
               </span>
             </Link>

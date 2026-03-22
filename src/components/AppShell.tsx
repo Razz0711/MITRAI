@@ -110,7 +110,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             />
             <div className="flex flex-col">
               <span className="text-sm font-bold text-[var(--foreground)] leading-none">MitrRAI</span>
-              <span className="text-[9px] text-[var(--muted)] leading-none mt-0.5 hidden sm:block">SVNIT Surat</span>
+              <span className="text-[11px] text-[var(--muted-strong)] leading-none mt-0.5 hidden sm:block">SVNIT Surat</span>
             </div>
           </Link>
           <div className="flex items-center gap-2">
@@ -130,11 +130,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <main className="pt-14 min-h-screen">
         {children}
       </main>
-      <footer className="border-t border-[var(--glass-border)] py-5 px-4 text-center text-[10px] text-[var(--muted)] space-x-4">
+      <footer className="border-t border-[var(--glass-border)] py-5 px-4 text-center text-[11px] text-[var(--muted-strong)] space-x-4">
         <Link href="/terms" className="hover:text-[var(--foreground)] transition-colors">Terms of Service</Link>
-        <span className="opacity-30">·</span>
+        <span className="opacity-50">·</span>
         <Link href="/privacy" className="hover:text-[var(--foreground)] transition-colors">Privacy Policy</Link>
-        <span className="opacity-30">·</span>
+        <span className="opacity-50">·</span>
         <span>© {new Date().getFullYear()} MitrRAI — SVNIT</span>
       </footer>
     </>

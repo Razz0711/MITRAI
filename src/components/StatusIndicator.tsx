@@ -60,12 +60,12 @@ export function StatusDot({ status, size = 'sm', showLabel = false, currentSubje
       </div>
       {showLabel && (
         <div className="flex flex-col">
-          <span className="text-[10px] text-[var(--muted)]">{labels[status]}</span>
+          <span className="text-[11px] text-[var(--muted-strong)]">{labels[status]}</span>
           {status === 'in-session' && currentSubject && (
             <span className="text-[10px] text-amber-400">Studying: {currentSubject}</span>
           )}
           {status === 'offline' && lastSeen && (
-            <span className="text-[10px] text-gray-500">Last seen {getTimeSince(lastSeen)}</span>
+            <span className="text-[11px] text-[var(--muted-strong)]">Last seen {getTimeSince(lastSeen)}</span>
           )}
         </div>
       )}

@@ -351,7 +351,7 @@ export default function CampusFeedPage() {
             <Avatar src={studentPhoto} name={studentName || '?'} size={36} className="w-9 h-9 border-2 border-[var(--primary)]/30" fallbackClassName="w-9 h-9 border-2 border-[var(--primary)]/30" />
           </Link>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-[var(--muted)] leading-none">{getGreeting()}, {studentName.split(' ')[0] || 'there'}!</p>
+            <p className="text-[11px] text-[var(--muted-strong)] leading-none">{getGreeting()}, {studentName.split(' ')[0] || 'there'}!</p>
             <h1 className="text-base font-bold text-[var(--foreground)] leading-tight">Campus Feed</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -383,7 +383,7 @@ export default function CampusFeedPage() {
               className="shrink-0 flex items-center gap-1.5"
               title={composeAnon ? 'Posting anonymously' : 'Post with name'}
             >
-              <span className="text-[9px] font-medium text-[var(--muted)]">Anon</span>
+              <span className="text-[11px] font-medium text-[var(--muted-strong)]">Anon</span>
               <div className={`relative w-9 h-5 rounded-full transition-all duration-300 ${composeAnon ? 'bg-purple-500' : 'bg-white/15'}`}>
                 <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${composeAnon ? 'left-[18px]' : 'left-0.5'}`} />
               </div>
@@ -392,7 +392,7 @@ export default function CampusFeedPage() {
 
           {/* Line 2: Location + Category + Post */}
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)]">
+            <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-[var(--surface)] text-[var(--muted-strong)] border border-[var(--border)]">
               <MapPin size={10} />
               {userLocation}
             </span>
@@ -420,13 +420,13 @@ export default function CampusFeedPage() {
           </div>
 
           {composeText.length > 0 && (
-            <div className="text-right text-[9px] text-[var(--muted)]">{composeText.length}/280</div>
+            <div className="text-right text-[11px] text-[var(--muted-strong)]">{composeText.length}/280</div>
           )}
         </div>
 
         {/* ─── Feed Toolbar ─── */}
         <div className="flex items-center justify-between px-1">
-          <span className="text-xs text-[var(--muted)]">
+          <span className="text-xs text-[var(--muted-strong)]">
             <span className="font-semibold text-[var(--foreground)]">{todayCount}</span> posts today
           </span>
           <button
@@ -482,7 +482,7 @@ export default function CampusFeedPage() {
               <MessageCircle size={28} className="text-[var(--primary)]" />
             </div>
             <h3 className="text-lg font-bold text-[var(--foreground)]">No posts yet</h3>
-            <p className="text-sm text-[var(--muted)]">Be the first to post! Tag your activity and find people nearby.</p>
+            <p className="text-sm text-[var(--muted-strong)]">Be the first to post! Tag your activity and find people nearby.</p>
           </div>
         )}
 
@@ -505,7 +505,7 @@ export default function CampusFeedPage() {
         {/* ─── Active Posts ─── */}
         {grouped.active.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] px-1">| ACTIVE</h3>
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-strong)] px-1">| ACTIVE</h3>
             {grouped.active.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} categories={CATEGORIES} />)}
           </div>
         )}
@@ -513,7 +513,7 @@ export default function CampusFeedPage() {
         {/* ─── Older Posts ─── */}
         {grouped.older.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] opacity-60 px-1">| OLDER</h3>
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-strong)] px-1">| OLDER</h3>
             {grouped.older.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} isOlder categories={CATEGORIES} />)}
           </div>
         )}
@@ -523,7 +523,7 @@ export default function CampusFeedPage() {
           <div className="card p-6 text-center space-y-2">
             <p className="text-2xl">🔍</p>
             <p className="text-sm font-semibold text-[var(--foreground)]">No posts match your filters</p>
-            <p className="text-xs text-[var(--muted)]">Try removing the distance or location filter</p>
+            <p className="text-xs text-[var(--muted-strong)]">Try removing the distance or location filter</p>
           </div>
         )}
 
@@ -553,7 +553,7 @@ export default function CampusFeedPage() {
             <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto" />
             <div>
               <h3 className="text-lg font-bold text-[var(--foreground)]">Tag your post</h3>
-              <p className="text-xs text-[var(--muted)]">Select category — helps others find your post</p>
+              <p className="text-xs text-[var(--muted-strong)]">Select category — helps others find your post</p>
             </div>
 
             {/* Category grid */}
@@ -573,7 +573,7 @@ export default function CampusFeedPage() {
             {/* Subcategory chips */}
             {composeCat && composeCat !== 'sos' && (
               <div>
-                <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2">| WHAT SPECIFICALLY? ({CATEGORIES.find(c => c.id === composeCat)?.label.toUpperCase()})</h4>
+                <h4 className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-strong)] mb-2">| WHAT SPECIFICALLY? ({CATEGORIES.find(c => c.id === composeCat)?.label.toUpperCase()})</h4>
                 <div className="flex flex-wrap gap-1.5">
                   {CATEGORIES.find(c => c.id === composeCat)?.sub.map(s => (
                     <button
@@ -629,12 +629,12 @@ export default function CampusFeedPage() {
             <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto" />
             <div>
               <h3 className="text-lg font-bold text-[var(--foreground)]">Filter Feed</h3>
-              <p className="text-xs text-[var(--muted)]">Choose what you want to see</p>
+              <p className="text-xs text-[var(--muted-strong)]">Choose what you want to see</p>
             </div>
 
             {/* Category */}
             <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2">| CATEGORY</h4>
+              <h4 className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-strong)] mb-2">| CATEGORY</h4>
               <div className="flex flex-wrap gap-1.5">
                 {[{ id: 'all', label: 'All' }, ...CATEGORIES].map(cat => (
                   <button
@@ -650,7 +650,7 @@ export default function CampusFeedPage() {
 
             {/* Location */}
             <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2">| LOCATION</h4>
+              <h4 className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-strong)] mb-2">| LOCATION</h4>
               <div className="flex flex-wrap gap-1.5">
                 {LOCATIONS.map(loc => (
                   <button
@@ -666,7 +666,7 @@ export default function CampusFeedPage() {
 
             {/* Distance */}
             <div>
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted)] mb-2">| DISTANCE</h4>
+              <h4 className="text-[11px] font-bold uppercase tracking-widest text-[var(--muted-strong)] mb-2">| DISTANCE</h4>
               <div className="flex flex-wrap gap-1.5">
                 {DISTANCES.map(d => (
                   <button
@@ -695,7 +695,7 @@ export default function CampusFeedPage() {
           <div className="absolute inset-0 bg-black/60" />
           <div className="relative card p-5 space-y-4 max-w-sm w-full" onClick={e => e.stopPropagation()}>
             <h3 className="text-base font-bold text-[var(--foreground)]">Delete post?</h3>
-            <p className="text-sm text-[var(--muted)]">This can&apos;t be undone.</p>
+            <p className="text-sm text-[var(--muted-strong)]">This can&apos;t be undone.</p>
             <div className="flex gap-2.5">
               <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2 rounded-xl border border-[var(--border)] text-sm text-[var(--muted)]">Cancel</button>
               <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-bold">Delete</button>

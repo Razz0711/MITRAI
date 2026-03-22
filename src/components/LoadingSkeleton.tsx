@@ -98,7 +98,7 @@ export default function LoadingSkeleton({
     <div className="space-y-3 fade-in">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-2 h-2 rounded-full bg-[var(--primary)] animate-pulse" />
-        <span className="text-xs text-[var(--muted)]">{label}</span>
+        <span className="text-xs text-[var(--muted-strong)]">{label}</span>
       </div>
       {type === 'stats' ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

@@ -29,7 +29,7 @@ export default function LanguagePage() {
         <h1 className="text-lg font-bold text-[var(--foreground)]">Change Language</h1>
       </div>
 
-      <p className="text-xs text-[var(--muted)] mb-4 px-1">Choose your preferred language for the app interface.</p>
+      <p className="text-xs text-[var(--muted-strong)] mb-4 px-1">Choose your preferred language for the app interface.</p>
 
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
         {LANGUAGES.map((lang, i) => (
@@ -42,7 +42,7 @@ export default function LanguagePage() {
               <span className="text-2xl">{lang.flag}</span>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-[var(--foreground)]">{lang.label}</p>
-                <p className="text-[10px] text-[var(--muted)]">{lang.native}</p>
+                <p className="text-[11px] text-[var(--muted-strong)]">{lang.native}</p>
               </div>
               {selected === lang.id && (
                 <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
@@ -54,7 +54,7 @@ export default function LanguagePage() {
         ))}
       </div>
 
-      <p className="text-[10px] text-[var(--muted)] text-center mt-4 px-4">
+      <p className="text-[11px] text-[var(--muted-strong)] text-center mt-4 px-4">
         Currently only English is fully supported. More languages coming soon!
       </p>
     </div>

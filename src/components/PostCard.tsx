@@ -74,10 +74,10 @@ export default function PostCard({
         )}
         <div className="flex-1 min-w-0">
           <span className="text-sm font-semibold text-[var(--foreground)] truncate block">{post.userName || 'Anonymous'}</span>
-          <div className="flex items-center gap-1.5 text-[9px] text-[var(--muted)]">
+          <div className="flex items-center gap-1.5 text-[11px] text-[var(--muted-strong)]">
             {distance !== null && <span className="text-amber-400 font-medium">{formatDistance(distance)}</span>}
             <span>{timeAgo(post.createdAt)}</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-bold ${isSos ? 'bg-red-500/20 text-red-400' : freshness === 'fresh' ? 'bg-green-500/20 text-green-400' : freshness === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-[var(--surface)] text-[var(--muted)]'}`}>
+            <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${isSos ? 'bg-red-500/20 text-red-400' : freshness === 'fresh' ? 'bg-green-500/20 text-green-400' : freshness === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-white/8 text-[var(--muted-strong)]'}`}>
               {isSos ? 'SOS' : freshness}
             </span>
           </div>
@@ -125,7 +125,7 @@ export default function PostCard({
 
       {/* Engagement */}
       {post.reactions && (post.reactions.imin > 0 || post.reactions.connect > 0) && (
-        <p className="text-[9px] text-[var(--muted)]">
+        <p className="text-[11px] text-[var(--muted-strong)]">
           {post.reactions.imin > 0 && `${post.reactions.imin} joined`}
           {post.reactions.imin > 0 && post.reactions.connect > 0 && ' · '}
           {post.reactions.connect > 0 && `${post.reactions.connect} connected`}

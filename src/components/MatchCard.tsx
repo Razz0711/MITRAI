@@ -46,7 +46,7 @@ export default function MatchCard({
               <h3 className="text-sm font-semibold text-[var(--foreground)]">{student.name}</h3>
               {isBirthday && <span className="text-[10px] text-[var(--warning)]">Birthday soon</span>}
             </div>
-            <p className="text-[10px] text-[var(--muted)]">
+            <p className="text-[11px] text-[var(--muted-strong)]">
               {student.department || 'Branch not set'}
               {student.yearLevel ? ` - ${student.yearLevel}` : ''}
               {student.admissionNumber ? ` - ${student.admissionNumber}` : ''}
@@ -59,7 +59,7 @@ export default function MatchCard({
 
         <div className="text-right">
           <div className="text-lg font-bold gradient-text">{score.overall}%</div>
-          <p className="text-[10px] text-[var(--muted)]">Match</p>
+          <p className="text-[11px] text-[var(--muted-strong)]">Match</p>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ export default function MatchCard({
         </div>
 
         {complementaryFactors.length > 0 && (
-          <div className="rounded-xl border border-[var(--secondary)]/20 bg-[var(--secondary)]/10 p-3">
+          <div className="rounded-xl border border-[var(--secondary)]/40 bg-[var(--secondary)]/10 p-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--secondary)]">Match basis</p>
             <ul className="mt-1 space-y-1 text-xs text-[var(--foreground)]">
               {complementaryFactors.map((factor) => (
@@ -94,16 +94,16 @@ export default function MatchCard({
       <div className="rounded-xl bg-white/5 p-3 mb-4">
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
-            <span className="text-[var(--muted)]">Branch:</span> {student.department || 'Not shared'}
+            <span className="text-[var(--muted-strong)]">Branch:</span> {student.department || 'Not shared'}
           </div>
           <div>
-            <span className="text-[var(--muted)]">Year:</span> {student.yearLevel || 'Not shared'}
+            <span className="text-[var(--muted-strong)]">Year:</span> {student.yearLevel || 'Not shared'}
           </div>
           <div>
-            <span className="text-[var(--muted)]">Admission:</span> {student.admissionNumber || 'Not shared'}
+            <span className="text-[var(--muted-strong)]">Admission:</span> {student.admissionNumber || 'Not shared'}
           </div>
           <div>
-            <span className="text-[var(--muted)]">Campus:</span> SVNIT
+            <span className="text-[var(--muted-strong)]">Campus:</span> SVNIT
           </div>
         </div>
       </div>
@@ -143,7 +143,7 @@ function ScoreBar({ label, score, max }: { label: string; score: number; max: nu
       <div className="score-bar mb-2">
         <div className="score-fill" style={{ width: `${percentage}%` }} />
       </div>
-      <p className="text-[10px] text-[var(--muted)]">{label}</p>
+      <p className="text-[11px] text-[var(--muted-strong)]">{label}</p>
       <p className="text-xs font-semibold">{score}/{max}</p>
     </div>
   );

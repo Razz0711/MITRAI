@@ -12,7 +12,7 @@ export default function PrivacyPage() {
   const [showBio, setShowBio] = useState(true);
 
   const Toggle = ({ on, toggle }: { on: boolean; toggle: () => void }) => (
-    <button onClick={toggle} className={`relative w-12 h-7 rounded-full transition-colors ${on ? 'bg-violet-600' : 'bg-gray-600'}`}>
+    <button onClick={toggle} className={`relative w-12 h-7 rounded-full transition-colors ${on ? 'bg-violet-600' : 'bg-white/20'}`}>
       <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`} />
     </button>
   );
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
         <div className="flex items-center justify-between p-4">
           <div>
             <p className="text-sm font-semibold text-[var(--foreground)]">Show Online Status</p>
-            <p className="text-[10px] text-[var(--muted)]">Others can see when you&apos;re active</p>
+            <p className="text-[11px] text-[var(--muted-strong)]">Others can see when you&apos;re active</p>
           </div>
           <Toggle on={showOnline} toggle={() => setShowOnline(!showOnline)} />
         </div>
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
         <div className="flex items-center justify-between p-4">
           <div>
             <p className="text-sm font-semibold text-[var(--foreground)]">Show Profile Photo</p>
-            <p className="text-[10px] text-[var(--muted)]">Display your photo to matched users</p>
+            <p className="text-[11px] text-[var(--muted-strong)]">Display your photo to matched users</p>
           </div>
           <Toggle on={showProfile} toggle={() => setShowProfile(!showProfile)} />
         </div>
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
         <div className="flex items-center justify-between p-4">
           <div>
             <p className="text-sm font-semibold text-[var(--foreground)]">Show Interests</p>
-            <p className="text-[10px] text-[var(--muted)]">Let others see your selected interests</p>
+            <p className="text-[11px] text-[var(--muted-strong)]">Let others see your selected interests</p>
           </div>
           <Toggle on={showInterests} toggle={() => setShowInterests(!showInterests)} />
         </div>
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
         <div className="flex items-center justify-between p-4">
           <div>
             <p className="text-sm font-semibold text-[var(--foreground)]">Show Bio</p>
-            <p className="text-[10px] text-[var(--muted)]">Display your bio on your profile</p>
+            <p className="text-[11px] text-[var(--muted-strong)]">Display your bio on your profile</p>
           </div>
           <Toggle on={showBio} toggle={() => setShowBio(!showBio)} />
         </div>
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
 
       <div className="mt-5 rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
         <p className="text-xs text-[var(--foreground)] font-semibold mb-1">🔒 Your data is safe</p>
-        <p className="text-[10px] text-[var(--muted)] leading-relaxed">
+        <p className="text-[11px] text-[var(--muted-strong)] leading-relaxed">
           MitrrAi never shares your personal information with third parties. Your chats are private and encrypted. Only matched users can see your profile details.
         </p>
       </div>

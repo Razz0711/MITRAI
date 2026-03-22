@@ -30,7 +30,7 @@ const ChatBubble = memo(function ChatBubble({ msg }: { msg: ChatMessage }) {
         {msg.role === 'assistant' && (
           <div className="flex items-center gap-2 mb-1.5">
             <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-[#6d28d9] flex items-center justify-center text-[8px] text-white font-bold">M</div>
-            <span className="text-[10px] text-white/40">MitrRAI</span>
+            <span className="text-[11px] text-white/60">MitrRAI</span>
           </div>
         )}
         {msg.content}
@@ -138,7 +138,7 @@ export default function ChatInterface({
           placeholder={placeholder}
           disabled={isLoading}
           rows={1}
-          className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/30 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[#7c71ff]/50 transition-colors"
+          className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/50 rounded-2xl px-4 py-2.5 outline-none border border-white/15 focus:border-[#7c71ff]/50 transition-colors"
           style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
         />
         <button

@@ -42,11 +42,11 @@ const MessageBubble = memo(function MessageBubble({
       }}>
         <p className="whitespace-pre-wrap">{msg.text}</p>
         <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-          <span style={{ fontSize: '10px', color: isMe ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.5)' }}>
+          <span style={{ fontSize: '11px', color: isMe ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.65)' }}>
             {formatTime(msg.createdAt)}
           </span>
           {isMe && (
-            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>
+            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.65)' }}>
               {msg.read ? '✓✓' : '✓'}
             </span>
           )}
@@ -235,7 +235,7 @@ function ChatContent() {
   };
 
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-[#090909]"><div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" /></div>;
-  if (!user || !studentId) return <div className="min-h-screen flex items-center justify-center bg-[#090909]"><p className="text-white/40">Please log in</p></div>;
+  if (!user || !studentId) return <div className="min-h-screen flex items-center justify-center bg-[#090909]"><p className="text-white/60">Please log in</p></div>;
 
   // If no chat is selected (and no friendId in URL to start one), render thread list.
   // We rewrite this into a clean list view.
@@ -251,7 +251,7 @@ function ChatContent() {
         <div className="flex-1 overflow-y-auto">
           {threads.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-8 mt-10">
-              <p className="text-white/40 mb-4">No conversations yet</p>
+              <p className="text-white/60 mb-4">No conversations yet</p>
               <button onClick={() => router.push('/friends')} className="px-6 py-2 bg-[var(--primary)] text-white font-medium rounded-xl text-sm transition-transform active:scale-95">Find Friends</button>
             </div>
           ) : (
@@ -282,11 +282,11 @@ function ChatContent() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
                       <h3 className="text-[15px] font-bold text-white truncate">{otherName}</h3>
-                      <span className="text-[10px] text-white/40">{thread.lastMessageAt ? new Date(thread.lastMessageAt).toLocaleDateString() : ''}</span>
+                      <span className="text-[11px] text-white/60">{thread.lastMessageAt ? new Date(thread.lastMessageAt).toLocaleDateString() : ''}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-[13px] text-white/50 truncate pr-2">{thread.lastMessage || 'Start textin...'}</p>
-                      {unread > 0 && <span className="w-5 h-5 flex items-center justify-center bg-green-500 text-white font-bold text-[10px] rounded-full shrink-0">{unread}</span>}
+                      <p className="text-[13px] text-white/65 truncate pr-2">{thread.lastMessage || 'Start textin...'}</p>
+                      {unread > 0 && <span className="w-5 h-5 flex items-center justify-center bg-green-500 text-white font-bold text-[11px] rounded-full shrink-0">{unread}</span>}
                     </div>
                   </div>
                 </button>
@@ -343,11 +343,11 @@ function ChatContent() {
         <div className="flex-1 min-w-0">
           <h2 className="text-[16px] font-semibold text-white truncate leading-tight flex items-center gap-2">
             {otherName || 'Student'}
-            {score > 0 && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-bold border border-green-500/30">{score}% match</span>}
+            {score > 0 && <span className="text-[11px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-bold border border-green-500/30">{score}% match</span>}
           </h2>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-white/30'}`} />
-            <span className={`text-[11px] ${isOnline ? 'text-green-400' : 'text-white/40'}`}>
+            <span className={`text-[11px] ${isOnline ? 'text-green-400' : 'text-white/60'}`}>
               {isOnline ? 'Online' : 'Offline'}
             </span>
           </div>
@@ -360,13 +360,13 @@ function ChatContent() {
           <div className="flex flex-col items-center justify-center p-8 mt-10">
             <div className="w-16 h-16 bg-[#1e1e1e] rounded-2xl flex items-center justify-center mb-4 text-2xl">👋</div>
             <p className="text-white font-medium mb-1">Say hi to {otherName?.split(' ')[0] || 'your match'}!</p>
-            <p className="text-white/40 text-xs">Messages are end-to-end encrypted.</p>
+            <p className="text-white/60 text-xs">Messages are end-to-end encrypted.</p>
           </div>
         ) : (
           messagesByDate.map(group => (
             <div key={group.date}>
               <div className="flex items-center justify-center my-3">
-                <span className="px-3 py-1 bg-[#141414] rounded-full text-[10px] font-bold text-white/40 border border-white/[0.04]">
+                <span className="px-3 py-1 bg-[#141414] rounded-full text-[11px] font-bold text-white/60 border border-white/[0.04]">
                   {getDateLabel(group.msgs[0].createdAt)}
                 </span>
               </div>

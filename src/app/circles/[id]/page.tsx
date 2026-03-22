@@ -99,7 +99,7 @@ export default function CircleDetailPage() {
   if (!circle) {
     return (
       <div className="max-w-4xl mx-auto p-6 text-center">
-        <p className="text-[var(--muted)] text-lg mb-2">Circle not found.</p>
+        <p className="text-[var(--muted-strong)] text-lg mb-2">Circle not found.</p>
         <Link href="/circles" className="text-[var(--primary-light)] hover:underline">
           ← Back to Circles
         </Link>
@@ -123,9 +123,9 @@ export default function CircleDetailPage() {
             <h1 className="text-xl font-bold text-[var(--foreground)]">{circle.name}</h1>
           </div>
           {circle.description && (
-            <p className="text-sm text-[var(--muted)] ml-12">{circle.description}</p>
+            <p className="text-sm text-[var(--muted-strong)] ml-12">{circle.description}</p>
           )}
-          <div className="flex items-center gap-4 mt-2 ml-12 text-xs text-[var(--muted)]">
+          <div className="flex items-center gap-4 mt-2 ml-12 text-xs text-[var(--muted-strong)]">
             <span className="flex items-center gap-1">
               <Users size={12} /> {members.length} member{members.length !== 1 ? 's' : ''}
             </span>
@@ -158,7 +158,7 @@ export default function CircleDetailPage() {
         {rooms.length === 0 ? (
           <div className="card p-6 text-center">
             <p className="text-3xl mb-2">📚</p>
-            <p className="text-sm text-[var(--muted)]">No active rooms in this circle yet.</p>
+            <p className="text-sm text-[var(--muted-strong)]">No active rooms in this circle yet.</p>
             <Link
               href="/rooms"
               className="inline-block mt-3 text-xs text-[var(--primary-light)] hover:underline"
@@ -182,19 +182,19 @@ export default function CircleDetailPage() {
                     className={`text-[10px] px-2 py-0.5 rounded-full ${
                       room.status === 'active'
                         ? 'bg-[var(--success)]/15 text-[var(--success)]'
-                        : 'bg-[var(--surface-light)] text-[var(--muted)]'
+                        : 'bg-[var(--surface-light)] text-[var(--muted-strong)]'
                     }`}
                   >
                     {room.status}
                   </span>
                 </div>
                 {room.topic && (
-                  <p className="text-xs text-[var(--muted)] mb-1">📌 {room.topic}</p>
+                  <p className="text-xs text-[var(--muted-strong)] mb-1">📌 {room.topic}</p>
                 )}
                 {room.description && (
-                  <p className="text-xs text-[var(--muted)] line-clamp-2">{room.description}</p>
+                  <p className="text-xs text-[var(--muted-strong)] line-clamp-2">{room.description}</p>
                 )}
-                <p className="text-[10px] text-[var(--muted)] mt-2">
+                <p className="text-[11px] text-[var(--muted-strong)] mt-2">
                   Max {room.maxMembers} members
                 </p>
               </Link>
@@ -210,7 +210,7 @@ export default function CircleDetailPage() {
         </h2>
         {members.length === 0 ? (
           <div className="card p-6 text-center">
-            <p className="text-sm text-[var(--muted)]">No members yet. Be the first to join!</p>
+            <p className="text-sm text-[var(--muted-strong)]">No members yet. Be the first to join!</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -226,14 +226,14 @@ export default function CircleDetailPage() {
                   <p className="text-sm font-medium text-[var(--foreground)] truncate">
                     {m.name}
                     {m.userId === user?.id && (
-                      <span className="text-[10px] text-[var(--muted)] ml-1">(you)</span>
+                      <span className="text-[11px] text-[var(--muted-strong)] ml-1">(you)</span>
                     )}
                   </p>
                   {m.department && (
-                    <p className="text-[10px] text-[var(--muted)] truncate">{m.department}</p>
+                    <p className="text-[11px] text-[var(--muted-strong)] truncate">{m.department}</p>
                   )}
                 </div>
-                <span className="text-[10px] text-[var(--muted)] shrink-0">
+                <span className="text-[11px] text-[var(--muted-strong)] shrink-0">
                   {new Date(m.joinedAt).toLocaleDateString()}
                 </span>
               </div>

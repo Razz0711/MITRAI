@@ -260,7 +260,7 @@ export default function EditProfilePage() {
               <Edit2 size={14} />
             </div>
           </div>
-          <p className="text-xs text-[var(--muted)] mb-4">
+          <p className="text-xs text-[var(--muted-strong)] mb-4">
             Tap to change · Shown to your matches
           </p>
           <button
@@ -307,7 +307,7 @@ export default function EditProfilePage() {
         {/* ── BIO Section ── */}
         <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">Bio</h3>
-          <p className="text-[10px] text-[var(--muted)] mb-3">Tell your study buddies about you</p>
+          <p className="text-[11px] text-[var(--muted-strong)] mb-3">Tell your study buddies about you</p>
           <div className="relative">
             <textarea
               value={bio}
@@ -315,7 +315,7 @@ export default function EditProfilePage() {
               placeholder='e.g. "3rd year CSE, love DSA and late-night coding. Looking for hackathon teammates!"'
               className="w-full bg-white/5 rounded-xl border border-[var(--glass-border)] px-4 py-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] resize-none focus:outline-none focus:border-violet-500/40 min-h-[80px] transition-colors"
             />
-            <div className="absolute bottom-2 right-3 text-[10px] font-semibold text-[var(--muted)]">
+            <div className="absolute bottom-2 right-3 text-[11px] font-semibold text-[var(--muted-strong)]">
               {bio.length} / 100
             </div>
           </div>
@@ -324,7 +324,7 @@ export default function EditProfilePage() {
         {/* ── INTERESTS Section ── */}
         <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
           <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">Your interests</h3>
-          <p className="text-[10px] text-[var(--muted)] mb-4">
+          <p className="text-[11px] text-[var(--muted-strong)] mb-4">
             Used to suggest circles and improve your matches · Pick up to 5
           </p>
 
@@ -341,7 +341,7 @@ export default function EditProfilePage() {
                     isSelected
                       ? 'bg-violet-500/15 text-violet-300 border-violet-500/40'
                       : isDisabled
-                        ? 'bg-white/5 text-[var(--muted)] border-[var(--glass-border)] opacity-40 cursor-not-allowed'
+                        ? 'bg-white/5 text-[var(--muted)] border-[var(--glass-border)] opacity-55 cursor-not-allowed'
                         : 'bg-white/5 text-[var(--muted)] border-[var(--glass-border)] hover:border-white/20 hover:text-[var(--foreground)]'
                   }`}
                 >
@@ -352,7 +352,7 @@ export default function EditProfilePage() {
             })}
           </div>
 
-          <p className="text-[10px] text-[var(--muted)] text-center font-semibold">
+          <p className="text-[11px] text-[var(--muted-strong)] text-center font-semibold">
             {interests.length} / {MAX_INTERESTS} selected
           </p>
         </div>
@@ -360,7 +360,7 @@ export default function EditProfilePage() {
         {/* ── Locked Info Section ── */}
         <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'var(--surface)', border: '1px solid rgba(245,158,11,0.15)' }}>
           <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-lg shrink-0">🔒</div>
-          <p className="text-[11px] text-[var(--muted)] leading-relaxed flex-1">
+          <p className="text-[11px] text-[var(--muted-strong)] leading-relaxed flex-1">
             <strong className="text-amber-400 font-semibold">Branch, Year & Email</strong> are auto-filled from your SVNIT registration and cannot be changed.
           </p>
         </div>

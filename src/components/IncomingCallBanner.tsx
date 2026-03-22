@@ -131,7 +131,7 @@ export default function IncomingCallBanner() {
             <div className="flex items-center gap-4 mb-5">
               {/* Avatar */}
               <div className="relative">
-                <div className="w-14 h-14 rounded-full bg-green-500/20 border-2 border-green-500/40 flex items-center justify-center text-xl font-bold text-green-400 animate-pulse">
+                <div className="w-14 h-14 rounded-full bg-green-500/30 border-2 border-green-500/70 flex items-center justify-center text-xl font-bold text-green-400 animate-pulse">
                   {invite.callerName.charAt(0).toUpperCase()}
                 </div>
                 <span className="absolute -top-1 -right-1 text-lg">
@@ -143,7 +143,7 @@ export default function IncomingCallBanner() {
                 <p className="text-base font-semibold text-[var(--foreground)] truncate">
                   {invite.callerName}
                 </p>
-                <p className="text-xs text-[var(--muted)] mt-0.5">
+                <p className="text-xs text-[var(--muted-strong)] mt-0.5">
                   Incoming {invite.mode} call…
                 </p>
               </div>

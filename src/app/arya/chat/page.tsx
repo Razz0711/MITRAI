@@ -90,7 +90,7 @@ const MessageBubble = memo(function MessageBubble({
 
           {/* Timestamp inside bubble */}
           <div className={`flex items-center gap-1 mt-1 ${isUser ? 'justify-end' : ''}`}>
-            <span style={{ fontSize: '10px', color: isUser ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.5)' }}>
+            <span style={{ fontSize: '11px', color: isUser ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.65)' }}>
               {formatTime(msg.created_at)}
             </span>
           </div>
@@ -101,13 +101,13 @@ const MessageBubble = memo(function MessageBubble({
           <div className="flex items-center gap-1.5 mt-0.5 ml-1">
             <button
               onClick={() => onRate(msg.id, 1)}
-              className={`p-0.5 rounded transition-all ${msg.rating === 1 ? 'text-green-400' : 'text-white/25 hover:text-green-400'}`}
+              className={`p-0.5 rounded transition-all ${msg.rating === 1 ? 'text-green-400' : 'text-white/50 hover:text-green-400'}`}
             >
               <ThumbsUp size={12} fill={msg.rating === 1 ? 'currentColor' : 'none'} />
             </button>
             <button
               onClick={() => onRate(msg.id, -1)}
-              className={`p-0.5 rounded transition-all ${msg.rating === -1 ? 'text-red-400' : 'text-white/25 hover:text-red-400'}`}
+              className={`p-0.5 rounded transition-all ${msg.rating === -1 ? 'text-red-400' : 'text-white/50 hover:text-red-400'}`}
             >
               <ThumbsDown size={12} fill={msg.rating === -1 ? 'currentColor' : 'none'} />
             </button>
@@ -469,7 +469,7 @@ export default function AryaChatPage() {
           borderBottom: '1px solid rgba(255,255,255,0.06)',
         }}
       >
-        <button onClick={() => router.push('/arya')} className="p-1.5 rounded-lg text-white/50 hover:text-white transition-colors">
+        <button onClick={() => router.push('/arya')} className="p-1.5 rounded-lg text-white/70 hover:text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
         <Image src="/arya-avatar.png" alt="Arya" width={38} height={38} className="w-[38px] h-[38px] rounded-full object-cover ring-2 ring-purple-500/25" />
@@ -484,7 +484,7 @@ export default function AryaChatPage() {
         </button>
         {/* Menu */}
         <div className="relative">
-          <button onClick={() => setShowHeaderMenu(!showHeaderMenu)} className="p-2 rounded-xl text-white/40 hover:text-white transition-colors">
+          <button onClick={() => setShowHeaderMenu(!showHeaderMenu)} className="p-2 rounded-xl text-white/60 hover:text-white transition-colors">
             <MoreVertical size={18} />
           </button>
           {showHeaderMenu && (
@@ -525,7 +525,7 @@ export default function AryaChatPage() {
         {loading && (
           <div className="text-center py-12">
             <div className="w-8 h-8 mx-auto rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
-            <p className="text-xs text-white/30 mt-3">Loading messages...</p>
+            <p className="text-xs text-white/60 mt-3">Loading messages...</p>
           </div>
         )}
 
@@ -533,7 +533,7 @@ export default function AryaChatPage() {
           <div className="text-center py-16 space-y-3">
             <Image src="/arya-avatar.png" alt="Arya" width={56} height={56} className="w-14 h-14 rounded-full object-cover mx-auto" />
             <p className="text-sm font-semibold text-white">Start chatting with Arya</p>
-            <p className="text-xs text-white/35 max-w-xs mx-auto">Your campus bestie is always here — exams, stress, doubts, or just vibes 💜</p>
+            <p className="text-xs text-white/60 max-w-xs mx-auto">Your campus bestie is always here — exams, stress, doubts, or just vibes 💜</p>
           </div>
         )}
 
@@ -553,9 +553,9 @@ export default function AryaChatPage() {
             <Image src="/arya-avatar.png" alt="Arya" width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-auto mb-1" />
             <div className="px-4 py-3 rounded-2xl rounded-bl-sm" style={{ background: '#1e1e1e' }}>
               <div className="flex gap-1">
-                <span className="w-2 h-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 rounded-full bg-white/30 animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-2 h-2 rounded-full bg-white/55 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 rounded-full bg-white/55 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 rounded-full bg-white/55 animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
@@ -580,7 +580,7 @@ export default function AryaChatPage() {
           onKeyDown={handleKeyDown}
           placeholder="Message..."
           rows={1}
-          className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/30 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[var(--primary)]/50 transition-colors"
+          className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/55 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[var(--primary)]/50 transition-colors"
           style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
         />
         <button
@@ -603,7 +603,7 @@ export default function AryaChatPage() {
                 <Trash2 size={20} className="text-red-400" />
               </div>
               <h3 className="text-sm font-bold text-white">Clear chat?</h3>
-              <p className="text-xs text-white/35 mt-1">Messages will be cleared from your view. You can start fresh!</p>
+              <p className="text-xs text-white/60 mt-1">Messages will be cleared from your view. You can start fresh!</p>
             </div>
             <div className="flex gap-2">
               <button onClick={() => setClearConfirm(false)} className="flex-1 py-2.5 rounded-xl text-xs font-medium bg-white/5 text-white border border-white/8">Cancel</button>
@@ -630,28 +630,28 @@ export default function AryaChatPage() {
             )}
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">Arya</h2>
-          <p className="text-sm text-white/40 mb-8">
+          <p className="text-sm text-white/60 mb-8">
             {callStatus === 'connecting' ? 'Ringing...' : 'On call'}
           </p>
-          <p className="text-3xl font-light font-mono text-white/50 tracking-[0.2em]">{formatCallTime(callTimer)}</p>
+          <p className="text-3xl font-light font-mono text-white/70 tracking-[0.2em]">{formatCallTime(callTimer)}</p>
           <div className="absolute bottom-16 flex items-center gap-8">
             <div className="flex flex-col items-center gap-2">
               <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center">
                 <Mic size={22} className={`text-white/70 ${callStatus === 'listening' ? 'animate-pulse' : ''}`} />
               </div>
-              <p className="text-[10px] text-white/30">Mic</p>
+              <p className="text-[11px] text-white/60">Mic</p>
             </div>
             <div className="flex flex-col items-center gap-2">
               <button onClick={endCall} className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-xl shadow-red-500/30 active:scale-90 transition-transform">
                 <PhoneOff size={24} className="text-white" />
               </button>
-              <p className="text-[10px] text-white/30">End</p>
+              <p className="text-[11px] text-white/60">End</p>
             </div>
             <div className="flex flex-col items-center gap-2">
               <button onClick={toggleSpeaker} className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${speakerMuted ? 'bg-red-500/20' : 'bg-white/10 hover:bg-white/20'}`}>
                 {speakerMuted ? <VolumeX size={22} className="text-red-400" /> : <Volume2 size={22} className="text-white/70" />}
               </button>
-              <p className="text-[10px] text-white/30">{speakerMuted ? 'Muted' : 'Speaker'}</p>
+              <p className="text-[11px] text-white/60">{speakerMuted ? 'Muted' : 'Speaker'}</p>
             </div>
           </div>
         </div>

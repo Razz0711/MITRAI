@@ -32,7 +32,7 @@ export default function SubTabBar({ group }: { group: 'chat' | 'radar' }) {
     <div className="flex justify-center gap-2 overflow-x-auto no-scrollbar py-3 mb-4 max-w-4xl mx-auto px-4">
       <div className="inline-flex items-center gap-1.5 p-1 rounded-2xl" style={{
         background: 'var(--surface)',
-        border: '1px solid var(--glass-border)',
+        border: '1px solid var(--border)',
         backdropFilter: 'blur(8px)',
       }}>
         {tabs.map(tab => {
@@ -45,7 +45,7 @@ export default function SubTabBar({ group }: { group: 'chat' | 'radar' }) {
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-300 ${
                 isActive
                   ? 'text-white shadow-lg'
-                  : 'text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-light)]'
+                  : 'text-[var(--muted-strong)] hover:text-[var(--foreground)] hover:bg-[var(--surface-light)]'
               }`}
               style={isActive ? {
                 background: 'linear-gradient(135deg, var(--primary), #6d28d9)',

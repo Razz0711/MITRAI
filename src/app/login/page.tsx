@@ -314,7 +314,7 @@ function LoginPageInner() {
           <h1 className="text-xl font-bold text-[var(--foreground)]">
             {isSignup ? 'Join MitrrAi' : 'Welcome back'}
           </h1>
-          <p className="text-sm text-[var(--muted)] mt-1">
+          <p className="text-sm text-[var(--muted-strong)] mt-1">
             {isSignup ? 'Register with your SVNIT college email' : 'Sign in with your SVNIT college email'}
           </p>
         </div>
@@ -323,7 +323,7 @@ function LoginPageInner() {
         <form onSubmit={handleSubmit} className="space-y-3">
           {isSignup && (
             <div>
-              <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Full Name</label>
+              <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">Full Name</label>
               <input
                 type="text"
                 value={name}
@@ -336,7 +336,7 @@ function LoginPageInner() {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">SVNIT Email</label>
+            <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">SVNIT Email</label>
             <input
               type="email"
               value={email}
@@ -368,7 +368,7 @@ function LoginPageInner() {
           {isSignup && !parsedEmail && (
             <>
               <div>
-                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Admission Number</label>
+                <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">Admission Number</label>
                 <input
                   type="text"
                   value={admissionNumber}
@@ -379,7 +379,7 @@ function LoginPageInner() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Department</label>
+                <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">Department</label>
                 <select
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
@@ -393,7 +393,7 @@ function LoginPageInner() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Year</label>
+                <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">Year</label>
                 <select
                   value={yearLevel}
                   onChange={(e) => setYearLevel(e.target.value)}
@@ -410,7 +410,7 @@ function LoginPageInner() {
 
           {isSignup && (
             <div>
-              <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Date of Birth</label>
+              <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">Date of Birth</label>
               <input
                 type="date"
                 value={dob}
@@ -418,18 +418,18 @@ function LoginPageInner() {
                 className="input-field text-sm"
                 max={new Date().toISOString().split('T')[0]}
               />
-              <p className="text-[10px] text-[var(--muted)] mt-0.5">Only day & month shown publicly for birthday celebrations</p>
+              <p className="text-[11px] text-[var(--muted-strong)] mt-0.5">Only day & month shown publicly for birthday celebrations</p>
             </div>
           )}
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium text-[var(--muted)]">Password</label>
+              <label className="block text-xs font-medium text-[var(--muted-strong)]">Password</label>
               {!isSignup && (
                 <button
                   type="button"
                   onClick={() => router.push('/reset-password')}
-                  className="text-[10px] text-[var(--primary-light)] hover:underline"
+                  className="text-[11px] font-semibold text-[var(--primary-light)] hover:underline"
                 >
                   Forgot password?
                 </button>
@@ -464,7 +464,7 @@ function LoginPageInner() {
                   ✉️
                 </div>
                 <h2 className="text-lg font-bold">Verify Your Email</h2>
-                <p className="text-xs text-[var(--muted)] mt-1">
+                <p className="text-xs text-[var(--muted-strong)] mt-1">
                   Enter the 6-digit code sent to <strong className="text-[var(--primary-light)]">{email}</strong>
                 </p>
               </div>
@@ -497,7 +497,7 @@ function LoginPageInner() {
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => { setOtpStep(false); setOtpCode(''); setOtpVerified(false); setError(''); }}
-                    className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                    className="text-xs text-[var(--muted-strong)] hover:text-[var(--foreground)] transition-colors"
                   >
                     ← Go back
                   </button>
@@ -515,7 +515,7 @@ function LoginPageInner() {
         )}
 
         {/* Toggle */}
-        <p className="text-center text-xs text-[var(--muted)] mt-6">
+        <p className="text-center text-xs text-[var(--muted-strong)] mt-6">
           {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
             onClick={() => { setIsSignup(!isSignup); setError(''); }}
@@ -527,7 +527,7 @@ function LoginPageInner() {
 
         {/* Help — WhatsApp contact */}
         <div className="mt-8 pt-5 border-t border-[var(--border)] text-center">
-          <p className="text-[11px] text-[var(--muted)] mb-2">Having trouble signing in?</p>
+          <p className="text-[11px] text-[var(--muted-strong)] mb-2">Having trouble signing in?</p>
           <a
             href="https://wa.me/917061001946?text=Hi%2C%20I%20need%20help%20logging%20into%20MitrrAi.%20My%20email%3A%20"
             target="_blank"
