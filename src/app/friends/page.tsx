@@ -496,8 +496,9 @@ export default function FriendsPage() {
       {activeTab === 'ratings' && (
         <div className="space-y-4">
           <div>
-            <h3 className="text-xs font-semibold text-[var(--muted)] mb-2 uppercase tracking-wide">
-              Ratings Received ({ratingsReceived.length})
+            <h3 className="text-xs font-semibold text-[var(--muted)] mb-2 uppercase tracking-wide flex items-center justify-between">
+              <span>Ratings Received ({ratingsReceived.length})</span>
+              {avgRating > 0 && <span className="text-[var(--primary-light)] font-bold">{avgRating}/10 avg</span>}
             </h3>
             {ratingsReceived.length === 0 ? (
               <div className="text-center py-8 card">
