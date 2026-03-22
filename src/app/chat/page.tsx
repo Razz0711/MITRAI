@@ -93,7 +93,7 @@ function ChatContent() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [statuses, setStatuses] = useState<Record<string, UserStatus>>({});
-  const [_allStudents, _setAllStudents] = useState<StudentProfile[]>([]);
+  const [_allStudents, setAllStudents] = useState<StudentProfile[]>([]);
   const [matchScores, setMatchScores] = useState<Record<string, number>>({});
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
