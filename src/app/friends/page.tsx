@@ -31,6 +31,7 @@ export default function FriendsPage() {
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [ratingsReceived, setRatingsReceived] = useState<BuddyRating[]>([]);
   const [ratingsGiven, setRatingsGiven] = useState<BuddyRating[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [avgRating, setAvgRating] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'friends' | 'requests' | 'ratings'>('friends');
