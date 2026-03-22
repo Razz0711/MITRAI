@@ -8,15 +8,14 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import Avatar from '@/components/Avatar';
 import PostCard from '@/components/PostCard';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import {
-  Bell, Send, X, Filter, Trash2, Flag, MoreHorizontal,
-  MapPin, BookOpen, Dumbbell, Music, Utensils, MessageCircle,
-  Trophy, Heart, Coffee, AlertTriangle, Sparkles, Users, ChevronDown,
+  Bell, X, Filter,
+  MapPin, MessageCircle,
+  ChevronDown,
 } from 'lucide-react';
 
 /* ─── constants ─── */
@@ -60,15 +59,6 @@ interface FeedPost {
 }
 
 /* ─── helpers ─── */
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'now';
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  return `${Math.floor(hrs / 24)}d`;
-}
 
 function getFreshness(dateStr: string): 'fresh' | 'active' | 'older' {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -85,10 +75,6 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function formatDistance(meters: number): string {
-  if (meters < 1000) return `~${Math.round(meters)}m`;
-  return `~${(meters / 1000).toFixed(1)}km`;
-}
 
 function nearestPlace(lat: number, lng: number): string {
   let closest = 'Campus';
@@ -107,7 +93,7 @@ export default function CampusFeedPage() {
   // State
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<FeedPost[]>([]);
-  const [totalPosts, setTotalPosts] = useState(0);
+  const [_totalPosts, setTotalPosts] = useState(0);
   const [studentName, setStudentName] = useState('');
   const [studentPhoto, setStudentPhoto] = useState('');
 
@@ -319,7 +305,6 @@ export default function CampusFeedPage() {
     return posts.filter(p => new Date(p.createdAt).toDateString() === today).length;
   }, [posts]);
 
-  const initial = studentName ? studentName.charAt(0).toUpperCase() : '?';
   const catInfo = CATEGORIES.find(c => c.id === composeCat);
 
   if (!user) return null;

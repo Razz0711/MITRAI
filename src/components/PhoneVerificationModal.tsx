@@ -53,6 +53,7 @@ export default function PhoneVerificationModal({
       setConfirmationResult(confirmation);
       setStep(2);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error(err);
       setError(err?.message || 'Failed to send OTP. Check the phone number format.');
@@ -87,6 +88,7 @@ export default function PhoneVerificationModal({
       // Success! Unblock the app.
       onSuccess();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error(err);
       setError('Invalid OTP code. Please try again.');

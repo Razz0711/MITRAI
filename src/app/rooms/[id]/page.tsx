@@ -10,7 +10,7 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import CallRoom from '@/components/CallRoom';
-import { Phone, ArrowLeft, Send } from 'lucide-react';
+import { Phone, Send } from 'lucide-react';
 import { useChatStability } from '@/hooks/useChatStability';
 
 interface RoomMsg {

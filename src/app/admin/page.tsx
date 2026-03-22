@@ -214,7 +214,7 @@ export default function AdminDashboardPage() {
       if (data.success) {
         setAllUsers(data.data);
       }
-    } catch (e) {
+    } catch {
       setActionMsg('Failed to load full database');
     } finally {
       setLoadingUsers(false);
@@ -475,7 +475,7 @@ export default function AdminDashboardPage() {
               ))}
               {(allUsers || recentUsers).filter(u => !userQuery || u.name.toLowerCase().includes(userQuery.toLowerCase()) || u.email.toLowerCase().includes(userQuery.toLowerCase())).length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-[var(--muted)] text-xs">No users found matching "{userQuery}"</td>
+                  <td colSpan={5} className="py-8 text-center text-[var(--muted)] text-xs">No users found matching &quot;{userQuery}&quot;</td>
                 </tr>
               )}
             </tbody>

@@ -300,9 +300,8 @@ export default function AnonChatRoomPage() {
           </p>
         </div>
 
-        {messages.map((msg, index) => {
+        {messages.map((msg) => {
           const isMe = msg.senderId === user.id;
-          const isLast = index === messages.length - 1 || messages[index + 1].senderId !== msg.senderId;
           return <AnonBubble key={msg.id} msg={msg} isMe={isMe} />;
         })}
 

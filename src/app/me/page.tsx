@@ -19,13 +19,13 @@ export default function MePage() {
   const [loading, setLoading] = useState(true);
   const [matchCount, setMatchCount] = useState(0);
   const [circleCount, setCircleCount] = useState(0);
-  const [sessionCount, setSessionCount] = useState(0);
+  const [sessionCount, _setSessionCount] = useState(0);
   const [topMatch, setTopMatch] = useState(0);
   const [zoomPhoto, setZoomPhoto] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [comingSoon, setComingSoon] = useState(false);
 
-  const showComingSoon = () => { setComingSoon(true); setTimeout(() => setComingSoon(false), 2500); };
+  const _showComingSoon = () => { setComingSoon(true); setTimeout(() => setComingSoon(false), 2500); };
 
   const loadData = useCallback(async () => {
     if (!user) return;

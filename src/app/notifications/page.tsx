@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bell, BellOff, Trash2, Users, MessageCircle, MapPin, AlertTriangle, Heart } from 'lucide-react';
+import { ArrowLeft, Bell, BellOff, Users, MessageCircle, MapPin, AlertTriangle } from 'lucide-react';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 
 interface Notification {

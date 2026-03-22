@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
         tools: tools,
         temperature: 0.7,
       }, { signal: controller.signal });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (apiError: any) {
       clearTimeout(timeout);
       if (apiError?.name === 'AbortError' || apiError?.code === 'ETIMEDOUT') {
@@ -134,6 +135,7 @@ export async function POST(req: NextRequest) {
     if (responseMsg.tool_calls && responseMsg.tool_calls.length > 0) {
       const toolCall = responseMsg.tool_calls[0];
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((toolCall as any).function?.name === 'generate_selfie') {
         // --- CHECK IF USER ALREADY GOT A SELFIE ---
         const { data: existingSelfie } = await supabase
@@ -155,6 +157,7 @@ export async function POST(req: NextRequest) {
         // --- USER HAS NOT RECEIVED ONE. GENERATE IT. ---
         try {
           // Explicit cast to bypass strict SDK type for OpenAI wrappers
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const args = JSON.parse((toolCall as any).function.arguments);
           const suffix = args.prompt_suffix ? `, ${args.prompt_suffix}` : '';
           
@@ -208,6 +211,7 @@ export async function POST(req: NextRequest) {
       data: { response: "umm, text didn't send... what were we saying?" }
     });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Arya API Error:', error?.message || error);
     return NextResponse.json({

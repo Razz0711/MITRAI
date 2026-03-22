@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
-  Sparkles, Users, Ghost, Radio, BookOpen, GraduationCap,
+  Sparkles, Users, Ghost, BookOpen,
   MessageCircle, Zap, ArrowRight, Shield, Crown,
 } from 'lucide-react';
 

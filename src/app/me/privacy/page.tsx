@@ -30,7 +30,7 @@ export default function PrivacyPage() {
         <div className="flex items-center justify-between p-4">
           <div>
             <p className="text-sm font-semibold text-[var(--foreground)]">Show Online Status</p>
-            <p className="text-[10px] text-[var(--muted)]">Others can see when you're active</p>
+            <p className="text-[10px] text-[var(--muted)]">Others can see when you&apos;re active</p>
           </div>
           <Toggle on={showOnline} toggle={() => setShowOnline(!showOnline)} />
         </div>

@@ -3,7 +3,7 @@ import { getAuthUser } from '@/lib/api-auth';
 import { supabase } from '@/lib/supabase';
 
 // POST /api/auth/ping
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
     const user = await getAuthUser();
     if (!user) {

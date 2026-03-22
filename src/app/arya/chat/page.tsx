@@ -14,7 +14,6 @@ import {
   Mic, Share2, Star, MessageCircle, Crown, ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
-import { useChatStability } from '@/hooks/useChatStability';
 
 /* ─── Types ─── */
 interface Message {
@@ -29,7 +28,7 @@ interface Message {
 const MessageBubble = memo(function MessageBubble({
   msg,
   onRate,
-  onDelete,
+  onDelete: _onDelete,
   formatTime,
 }: {
   msg: Message;
@@ -134,6 +133,7 @@ export default function AryaChatPage() {
   const [inCall, setInCall] = useState(false);
   const [callStatus, setCallStatus] = useState<'connecting' | 'listening' | 'thinking' | 'speaking'>('connecting');
   const [callTimer, setCallTimer] = useState(0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const callActiveRef = useRef(false);
@@ -342,6 +342,7 @@ export default function AryaChatPage() {
   /* ─── Voice Call Logic ─── */
   const startCall = () => {
     if (!conversationId) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) { alert('Voice calling is not supported in this browser.'); return; }
     setInCall(true); setCallTimer(0); setCallStatus('connecting');
@@ -360,6 +361,7 @@ export default function AryaChatPage() {
   const startListening = () => {
     if (!callActiveRef.current) return;
     setCallStatus('listening');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognitionAPI();
     recognitionRef.current = recognition;
@@ -376,6 +378,7 @@ export default function AryaChatPage() {
         }
       }, 2000);
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (event: any) => {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;

@@ -4,6 +4,7 @@ import { Sparkles, MoreHorizontal, Trash2, Flag } from 'lucide-react';
 import Avatar from './Avatar';
 
 interface PostCardProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   post: any;
   userLat: number | null;
   userLng: number | null;
@@ -16,6 +17,7 @@ interface PostCardProps {
   onDelete: (id: string) => void;
   isSos?: boolean;
   isOlder?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   categories: any[];
 }
 
@@ -50,7 +52,7 @@ function formatDistance(meters: number): string {
 }
 
 export default function PostCard({
-  post, userLat, userLng, userId, onReact, menuPostId, setMenuPostId, deleteConfirm, setDeleteConfirm, onDelete, isSos, isOlder, categories
+  post, userLat, userLng, userId, onReact, menuPostId, setMenuPostId, deleteConfirm: _deleteConfirm, setDeleteConfirm, onDelete: _onDelete, isSos, isOlder, categories
 }: PostCardProps) {
   const freshness = getFreshness(post.createdAt);
   const isOwn = post.userId === userId;

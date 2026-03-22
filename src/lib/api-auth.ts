@@ -16,6 +16,7 @@ export async function getAuthUser() {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return null;
     return user;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     // Next.js throws an error if cookies are accessed during static generation.
     // We catch it silently here so the build doesn't crash on Vercel.
