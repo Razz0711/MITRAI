@@ -9,6 +9,7 @@ export interface StudentProfile {
   // Basic Info
   name: string;
   age: number;
+  gender?: string;
   email: string;
   admissionNumber: string;
   city: string;

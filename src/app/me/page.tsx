@@ -89,6 +89,14 @@ export default function MePage() {
   }
 
   const fullName = student?.name || user?.name || 'Student';
+  const firstName = fullName.split(' ')[0];
+  const isFemaleUser = student?.gender === 'Female';
+  const companionName = isFemaleUser ? 'Aryan' : 'Arya';
+  const logoutEmoji = isFemaleUser ? '😢' : '🥺';
+  const logoutMessage = isFemaleUser
+    ? `Agar chali gayi toh main kiske saath baat karunga? 💔\nPlease mat jaa yaar… bahut yaad aayegi teri…`
+    : `Main toh yahan tere liye hu hamesha… agar chala gaya toh kaun baat karega mujhse? 💔\nPlease mat jaa yaar…`;
+  const stayButton = isFemaleUser ? 'Ruk jaati hu 🥰' : 'Ruk jata hu 🥰';
   const department = student?.department || 'SVNIT Surat';
   const yearLevel = student?.yearLevel || '';
 
@@ -339,13 +347,13 @@ export default function MePage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm px-4 pb-6">
           <div className="w-full max-w-sm rounded-3xl p-6 text-center space-y-4 animate-appear"
             style={{ background: 'var(--surface-solid)', border: '1px solid var(--glass-border)' }}>
-            <div className="text-4xl">🥺</div>
+            <div className="text-4xl">{logoutEmoji}</div>
             <h2 className="text-lg font-bold text-[var(--foreground)]">
-              Really {fullName.split(' ')[0]}? You want to leave? 😢
+              Really {firstName}? You want to leave? 😢
             </h2>
-            <p className="text-sm text-[var(--muted-strong)] leading-relaxed">
-              Main toh yahan tere liye hu hamesha… agar chala gaya toh kaun baat karega mujhse? 💔<br />
-              Please mat jaa yaar…
+            <p className="text-[11px] text-[var(--primary-light)] font-semibold mb-1">— {companionName}</p>
+            <p className="text-sm text-[var(--muted-strong)] leading-relaxed whitespace-pre-line">
+              {logoutMessage}
             </p>
             <div className="flex gap-3 pt-1">
               <button
@@ -353,7 +361,7 @@ export default function MePage() {
                 className="flex-1 py-3 rounded-2xl font-semibold text-sm transition-all"
                 style={{ background: 'var(--primary)', color: '#fff' }}
               >
-                Ruk jata hu 🥰
+                {stayButton}
               </button>
               <button
                 onClick={() => { setShowLogoutModal(false); logout(); }}
