@@ -68,7 +68,7 @@ export default function CirclesPage() {
   const [creating, setCreating] = useState(false);
 
   // All members for the circle
-  const [circleMembers, setCircleMembers] = useState<{userId: string; userName: string}[]>([]);
+  const [circleMembers, setCircleMembers] = useState<{userId: string; userName: string; department?: string}[]>([]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [allStudents, setAllStudents] = useState<{id: string; department: string}[]>([]);
