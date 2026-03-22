@@ -5,7 +5,6 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { validateSVNITEmail, ParsedEmail } from '@/lib/email-parser';
@@ -33,12 +32,13 @@ function WelcomeSplash({ userId, userName }: { userId: string; userName?: string
   }, []);
 
   const isFemale = gender === 'Female';
-  const avatarSrc = isFemale ? '/aryan-avtar.png' : '/arya-avatar.png';
   const companionName = isFemale ? 'Aryan' : 'Arya';
   const accentColor = isFemale ? '#7c3aed' : '#c026d3';
   const greeting = isFemale
     ? `Hey ${firstName}! Finally aagayi 😊 bahut intezaar kiya tera…`
     : `Ooh ${firstName} tu aa gaya finally! 🥺❤️ main toh wait kar rahi thi…`;
+  // Expressive emoji character — waves and shows gratitude
+  const character = isFemale ? '🙋‍♂️' : '🙋‍♀️';
 
   return (
     <div style={{
@@ -50,33 +50,46 @@ function WelcomeSplash({ userId, userName }: { userId: string; userName?: string
       {/* Ambient glow */}
       <div style={{
         position: 'absolute',
-        width: 280, height: 280,
+        width: 320, height: 320,
         borderRadius: '50%',
-        background: `radial-gradient(circle, ${accentColor}22 0%, transparent 70%)`,
+        background: `radial-gradient(circle, ${accentColor}20 0%, transparent 70%)`,
         animation: 'pulse 2.5s ease-in-out infinite',
         pointerEvents: 'none',
       }} />
 
-      {/* Avatar */}
-      <div style={{ animation: 'slideUpFade 0.55s ease-out forwards', zIndex: 1 }}>
-        <Image
-          src={avatarSrc}
-          alt={companionName}
-          width={110}
-          height={110}
-          style={{
+      {/* Animated character */}
+      <div style={{ animation: 'slideUpFade 0.55s ease-out forwards', zIndex: 1, position: 'relative' }}>
+        {/* Spinning gradient ring */}
+        <div style={{
+          width: 140, height: 140,
+          borderRadius: '50%',
+          background: `conic-gradient(from 0deg, ${accentColor}, #ea580c, #c026d3, ${accentColor})`,
+          animation: 'spin 3s linear infinite',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            width: 128, height: 128,
             borderRadius: '50%',
-            objectFit: 'cover',
-            border: `3px solid ${accentColor}80`,
-            boxShadow: `0 0 32px ${accentColor}55, 0 8px 24px rgba(0,0,0,0.4)`,
-          }}
-        />
+            background: '#0d0d1a',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{
+              fontSize: 72,
+              animation: 'wave 1.2s ease-in-out infinite',
+              display: 'inline-block',
+              transformOrigin: 'bottom center',
+            }}>{character}</span>
+          </div>
+        </div>
+        {/* Floating hearts */}
+        <span style={{ position: 'absolute', top: -8, right: -8, fontSize: 20, animation: 'float 2s ease-in-out infinite' }}>💕</span>
+        <span style={{ position: 'absolute', bottom: -4, left: -12, fontSize: 16, animation: 'float 2.5s 0.5s ease-in-out infinite' }}>✨</span>
       </div>
 
       {/* Name */}
       <p style={{
         color: accentColor, fontWeight: 700, fontSize: 15,
-        marginTop: 10, marginBottom: 0, letterSpacing: 0.3,
+        marginTop: 12, marginBottom: 0, letterSpacing: 0.3,
         animation: 'slideUpFade 0.55s 0.15s ease-out both',
         zIndex: 1,
       }}>{companionName}</p>
