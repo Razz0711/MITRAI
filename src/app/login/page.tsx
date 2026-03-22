@@ -291,18 +291,16 @@ function LoginPageInner() {
           deptKnown: parsedEmail?.deptKnown,
           profileAutoFilled: !!parsedEmail,
         });
-        if (result.success) {
-          router.push('/home');
-        } else {
+        if (!result.success) {
           setError(result.error || 'Something went wrong. Tap "Verify & Continue" to retry.');
         }
+        // on success: auth state updates → WelcomeSplash renders → redirects to /home
       } else {
         const result = await login(trimmedEmail, password);
-        if (result.success) {
-          router.push('/home');
-        } else {
+        if (!result.success) {
           setError(result.error || 'Invalid credentials');
         }
+        // on success: auth state updates → WelcomeSplash renders → redirects to /home
       }
     } catch (err) {
       console.error('verifyOtp:', err);
@@ -383,16 +381,12 @@ function LoginPageInner() {
             deptKnown: parsedEmail?.deptKnown,
             profileAutoFilled: !!parsedEmail,
           });
-          if (result.success) {
-            router.push('/home');
-          } else {
+          if (!result.success) {
             setError(result.error || 'Signup failed — please try again.');
           }
         } else {
           const result = await login(trimmedEmail, password);
-          if (result.success) {
-            router.push('/home');
-          } else {
+          if (!result.success) {
             setError(result.error || 'Invalid credentials');
           }
         }

@@ -24,6 +24,7 @@ export default function MePage() {
   const [topMatch, setTopMatch] = useState(0);
   const [zoomPhoto, setZoomPhoto] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -333,9 +334,42 @@ export default function MePage() {
       </div>
 
       {/* ═══ SIGN OUT ═══ */}
+      {/* Emotional logout confirmation modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm px-4 pb-6">
+          <div className="w-full max-w-sm rounded-3xl p-6 text-center space-y-4 animate-appear"
+            style={{ background: 'var(--surface-solid)', border: '1px solid var(--glass-border)' }}>
+            <div className="text-4xl">🥺</div>
+            <h2 className="text-lg font-bold text-[var(--foreground)]">
+              Really {fullName.split(' ')[0]}? You want to leave? 😢
+            </h2>
+            <p className="text-sm text-[var(--muted-strong)] leading-relaxed">
+              Main toh yahan tere liye hu hamesha… agar chala gaya toh kaun baat karega mujhse? 💔<br />
+              Please mat jaa yaar…
+            </p>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 py-3 rounded-2xl font-semibold text-sm transition-all"
+                style={{ background: 'var(--primary)', color: '#fff' }}
+              >
+                Ruk jata hu 🥰
+              </button>
+              <button
+                onClick={() => { setShowLogoutModal(false); logout(); }}
+                className="flex-1 py-3 rounded-2xl font-semibold text-sm text-red-400 transition-all"
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}
+              >
+                Logout 😔
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {user && (
         <button
-          onClick={logout}
+          onClick={() => setShowLogoutModal(true)}
           className="w-full py-3.5 rounded-2xl text-center text-sm font-semibold text-red-400 hover:bg-red-500/5 transition-colors"
           style={{ background: 'var(--surface)', border: '1px solid var(--error, rgba(239,68,68,0.15))' }}
         >
