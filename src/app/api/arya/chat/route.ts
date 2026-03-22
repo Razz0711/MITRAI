@@ -10,6 +10,7 @@ import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { supabase } from '@/lib/store/core';
 import { ARYA_SYSTEM_PROMPT } from '@/lib/arya-prompt';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
+import { detectCrisis } from '@/lib/crisis-detection';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow more time for image generation if needed
@@ -43,6 +44,9 @@ export async function POST(req: NextRequest) {
   if (!conversation_id || !message) {
     return NextResponse.json({ success: false, error: 'conversation_id and message required' }, { status: 400 });
   }
+
+  // Detect crisis signals — supplements Arya's response with a safety note on the client
+  const isCrisis = detectCrisis(String(message));
 
   try {
     // 1. Load History
@@ -205,14 +209,14 @@ export async function POST(req: NextRequest) {
     if (responseMsg.content) {
       return NextResponse.json({
         success: true,
-        data: { response: responseMsg.content }
+        data: { response: responseMsg.content, crisisResource: isCrisis || undefined }
       });
     }
 
     // Fallback if neither tool nor text
     return NextResponse.json({
       success: true,
-      data: { response: "umm, text didn't send... what were we saying?" }
+      data: { response: "umm, text didn't send... what were we saying?", crisisResource: isCrisis || undefined }
     });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

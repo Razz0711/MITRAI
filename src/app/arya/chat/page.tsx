@@ -135,6 +135,7 @@ export default function AryaChatPage() {
   const [callStatus, setCallStatus] = useState<'connecting' | 'listening' | 'thinking' | 'speaking'>('connecting');
   const [callTimer, setCallTimer] = useState(0);
   const [speakerMuted, setSpeakerMuted] = useState(false);
+  const [showCrisisNote, setShowCrisisNote] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -236,7 +237,7 @@ export default function AryaChatPage() {
   };
 
   /* ─── Call Arya API with retry ─── */
-  const callAryaAPI = async (convId: string, text: string, retries = 1): Promise<{ success: boolean; response?: string }> => {
+  const callAryaAPI = async (convId: string, text: string, retries = 1): Promise<{ success: boolean; response?: string; crisisResource?: boolean }> => {
     try {
       const res = await fetch('/api/arya/chat', {
         method: 'POST',
@@ -244,7 +245,7 @@ export default function AryaChatPage() {
         body: JSON.stringify({ conversation_id: convId, message: text }),
       });
       const data = await res.json();
-      if (data.success && data.data?.response) return { success: true, response: data.data.response };
+      if (data.success && data.data?.response) return { success: true, response: data.data.response, crisisResource: !!data.data.crisisResource };
       if (retries > 0) { await new Promise(r => setTimeout(r, 1500)); return callAryaAPI(convId, text, retries - 1); }
       return { success: false };
     } catch {
@@ -272,6 +273,7 @@ export default function AryaChatPage() {
     const result = await callAryaAPI(conversationId, text, 1);
 
     if (result.success && result.response) {
+      if (result.crisisResource) setShowCrisisNote(true);
       const optimisticAryaId = `arya-temp-${Date.now()}`;
       setMessages(prev => {
         if (prev.some(m => m.content === result.response && m.role === 'assistant')) return prev;
@@ -546,6 +548,22 @@ export default function AryaChatPage() {
             formatTime={formatTime}
           />
         ))}
+
+        {/* Crisis safety note — shown after message, dismissible, never replaces Arya */}
+        {showCrisisNote && (
+          <div className="mx-2 my-2 p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-start gap-2.5">
+            <span className="text-lg shrink-0 mt-0.5">💛</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-amber-300 mb-0.5">A quick note</p>
+              <p className="text-xs text-amber-200/80 leading-relaxed">
+                If you're going through something heavy, iCall (India) is free and confidential —{' '}
+                <strong className="text-amber-300">9152987821</strong>
+                {' '}(Mon–Sat 8am–10pm). You're not alone. 🧡
+              </p>
+            </div>
+            <button onClick={() => setShowCrisisNote(false)} className="text-amber-400/60 hover:text-amber-300 text-xs shrink-0 mt-0.5">✕</button>
+          </div>
+        )}
 
         {/* Typing indicator */}
         {sending && (
