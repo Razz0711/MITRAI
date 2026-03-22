@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
@@ -313,12 +313,11 @@ export default function CampusFeedPage() {
     };
   };
 
-  const grouped = groupPosts(posts);
-  const todayCount = posts.filter(p => {
-    const d = new Date(p.createdAt);
-    const now = new Date();
-    return d.toDateString() === now.toDateString();
-  }).length;
+  const grouped = useMemo(() => groupPosts(posts), [posts, filterDist, userLat, userLng]); // eslint-disable-line react-hooks/exhaustive-deps
+  const todayCount = useMemo(() => {
+    const today = new Date().toDateString();
+    return posts.filter(p => new Date(p.createdAt).toDateString() === today).length;
+  }, [posts]);
 
   const initial = studentName ? studentName.charAt(0).toUpperCase() : '?';
   const catInfo = CATEGORIES.find(c => c.id === composeCat);

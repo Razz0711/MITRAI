@@ -1,14 +1,15 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+// In development, set CAPACITOR_SERVER_URL=http://192.168.x.x:3000 to point to local dev server
+// In production / CI, leave it unset so the app uses its bundled assets
+const DEV_SERVER_URL = process.env.CAPACITOR_SERVER_URL;
+
 const config: CapacitorConfig = {
   appId: 'com.mitrrai.study',
   appName: 'MitrrAi',
-  // Point to your live Vercel URL (remote URL approach)
-  // This means the app loads your live website inside a native shell
-  server: {
-    url: 'https://mitrrai.in',
-    cleartext: false,
-  },
+  ...(DEV_SERVER_URL
+    ? { server: { url: DEV_SERVER_URL, cleartext: true } }
+    : { server: { url: 'https://mitrrai.in', cleartext: false } }),
   plugins: {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

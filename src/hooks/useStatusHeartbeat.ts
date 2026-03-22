@@ -52,10 +52,11 @@ export function useStatusHeartbeat() {
     // Initial heartbeat — mark as online
     sendHeartbeat('online');
 
-    // Send heartbeat every 30 seconds
+    // Send heartbeat every 2 minutes — visibility/activity events handle the
+    // important transitions (online ↔ offline), so frequent polling isn't needed
     intervalRef.current = setInterval(() => {
       sendHeartbeat('online');
-    }, 30000);
+    }, 120_000);
 
     // On tab close/navigate away — mark offline
     const onBeforeUnload = () => {

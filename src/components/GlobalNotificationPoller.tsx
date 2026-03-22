@@ -7,81 +7,83 @@
 //    Works even when browser is FULLY CLOSED.
 //    Handled by usePushNotifications hook + service worker.
 //
-// 2. Polling fallback (for in-app badge updates)
-//    Polls every 60s to update unread count when tab is open.
+// 2. Supabase Realtime (for in-app badge updates)
+//    Subscribes to INSERT events on the notifications table.
+//    Zero polling — instant delivery when tab is open.
 // ============================================
 
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 import { Notification as NotifType } from '@/lib/types';
-
-const POLL_INTERVAL = 30_000; // 30 seconds
 
 export default function GlobalNotificationPoller() {
   const { user } = useAuth();
   const { permission, requestPermission, showNotification } = usePushNotifications();
-  const knownIds = useRef<Set<string>>(new Set());
+  const seenIds = useRef<Set<string>>(new Set());
   const initialised = useRef(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Request permission after a short delay on first render
+  // Request push permission after a short delay on first render
   useEffect(() => {
     if (!user || permission !== 'default') return;
     const t = setTimeout(() => requestPermission(), 3000);
     return () => clearTimeout(t);
   }, [user, permission, requestPermission]);
 
-  const poll = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await fetch(`/api/notifications?userId=${user.id}`);
-      const data = await res.json();
-      if (!data.success) return;
-
-      const notifs: NotifType[] = data.data || [];
-
-      // On first poll just seed the known IDs (don't spam on page load)
-      if (!initialised.current) {
-        knownIds.current = new Set(notifs.map(n => n.id));
+  // Seed known IDs on mount so we don't replay existing notifications
+  useEffect(() => {
+    if (!user || initialised.current) return;
+    fetch(`/api/notifications?userId=${user.id}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          const notifs: NotifType[] = data.data || [];
+          seenIds.current = new Set(notifs.map(n => n.id));
+        }
         initialised.current = true;
-        return;
-      }
+      })
+      .catch(() => { initialised.current = true; });
+  }, [user]);
 
-      // Find genuinely new unread notifications
-      const fresh = notifs.filter(n => !n.read && !knownIds.current.has(n.id));
-
-      if (fresh.length > 0 && permission === 'granted') {
-        // Show native push for the most recent one
-        const latest = fresh[0];
-        // Strip embedded metadata tags from display text
-        const cleanMessage = latest.message.replace(/\s*\{\{room:[^}]+\}\}/g, '');
-        showNotification(latest.title, cleanMessage, {
-          tag: `notif-${latest.id}`,
-          url: getUrlForNotif(latest),
-        });
-      }
-
-      // Update known IDs
-      for (const n of notifs) knownIds.current.add(n.id);
-    } catch {
-      // network error — silently ignore
-    }
-  }, [user, permission, showNotification]);
-
-  // Initial poll + interval
+  // Subscribe to Realtime INSERT events on the notifications table
   useEffect(() => {
     if (!user) return;
-    // Small delay so the page hydrates first
-    const firstPoll = setTimeout(poll, 2000);
-    intervalRef.current = setInterval(poll, POLL_INTERVAL);
+
+    const channel = supabaseBrowser
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const notif = payload.new as NotifType;
+          if (!notif?.id || seenIds.current.has(notif.id)) return;
+          seenIds.current.add(notif.id);
+
+          if (!initialised.current) return; // still seeding — skip
+
+          if (permission === 'granted' && !notif.read) {
+            const cleanMessage = notif.message?.replace(/\s*\{\{room:[^}]+\}\}/g, '') ?? '';
+            showNotification(notif.title, cleanMessage, {
+              tag: `notif-${notif.id}`,
+              url: getUrlForNotif(notif),
+            });
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      clearTimeout(firstPoll);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      supabaseBrowser.removeChannel(channel);
     };
-  }, [user, poll]);
+  }, [user, permission, showNotification]);
 
   // No UI — this is a background process
   return null;
@@ -98,7 +100,6 @@ function getUrlForNotif(n: NotifType): string {
   if (t === 'material_uploaded') return '/materials';
   if (t === 'birthday_wish') return '/home';
   if (t === 'radar_connect') {
-    // Extract embedded roomId for direct deeplink to anon chat room
     const roomMatch = n.message?.match(/\{\{room:([^}]+)\}\}/);
     if (roomMatch) return `/anon/${roomMatch[1]}`;
     if (n.message?.includes('anonymous')) return '/anon';
