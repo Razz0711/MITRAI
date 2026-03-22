@@ -96,7 +96,7 @@ export default function PostCard({
   const { user } = useAuth();
 
   const freshness = getFreshness(post.createdAt);
-  const isOwn = post.userId === userId;
+  const isOwn = post.isMyPost ?? (post.userId === userId);
   const distance = (userLat && userLng && post.lat && post.lng) ? haversineDistance(userLat, userLng, post.lat, post.lng) : null;
   const catInfo = categories.find(c => c.id === post.category);
   const accentColor = getCategoryAccent(post.category, isSos);

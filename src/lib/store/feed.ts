@@ -21,6 +21,7 @@ export interface CampusPost {
   userPhotoUrl?: string;
   reactions?: { imin: number; reply: number; connect: number };
   myReactions?: string[]; // which types current user reacted with
+  isMyPost?: boolean; // true if current user is the author (set before userId is stripped)
 }
 
 /** Fetch posts with optional filters */
@@ -109,6 +110,7 @@ export async function getFeedPosts(opts: {
 
   // Enrich posts
   for (const post of posts) {
+    post.isMyPost = userId ? post.userId === userId : false;
     if (post.isAnonymous) {
       post.userName = 'Anonymous';
       post.userId = ''; // Strip user_id for anonymous posts
