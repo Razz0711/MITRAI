@@ -9,8 +9,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import CallRoom from '@/components/CallRoom';
-import { Phone, Send, Users } from 'lucide-react';
+import { Send, Users, ArrowLeft } from 'lucide-react';
 import { useChatStability } from '@/hooks/useChatStability';
 
 interface RoomMsg {
@@ -50,7 +49,6 @@ export default function RoomDetailPage() {
   const [sending, setSending] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [joining, setJoining] = useState(false);
-  const [inCall, setInCall] = useState(false);
   const [showMembersDrawer, setShowMembersDrawer] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
@@ -161,209 +159,175 @@ export default function RoomDetailPage() {
     );
   }
 
-  // Full-screen call mode
-  if (inCall) {
-    return (
-      <div style={{ height: 'calc(100dvh - 60px)' }}>
-        <CallRoom
-          roomName={`room_${id}`}
-          displayName={user?.name || myName}
-          onLeave={() => setInCall(false)}
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-6 grid grid-cols-1 md:grid-cols-[1fr_250px] gap-4" style={{ height: 'calc(100dvh - 120px)' }}>
-      {/* Main Chat Area */}
-      <div className="flex flex-col bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden">
-        {/* Room Header */}
-        <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <Link href="/rooms" className="text-[var(--muted)] hover:text-[var(--foreground)]">←</Link>
-              <h1 className="text-lg font-bold text-[var(--foreground)]">{room.name}</h1>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                room.status === 'active'
-                  ? 'bg-[var(--success)]/15 text-[var(--success)]'
-                  : 'bg-[var(--surface-light)] text-[var(--muted)]'
-              }`}>{room.status}</span>
-            </div>
-            {room.topic && (
-              <p className="text-sm text-[var(--muted)] ml-6">{room.topic}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {isMember && (
-              <>
-                <button
-                  onClick={() => setInCall(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--success)]/15 text-[var(--success)] hover:bg-[var(--success)]/25 text-xs font-medium transition-colors"
-                  title="Start voice/video call"
-                >
-                  <Phone size={14} /> Call
-                </button>
-                <button
-                  onClick={handleLeave}
-                  className="text-xs text-[var(--error)] hover:underline"
-                >
-                  Leave
-                </button>
-              </>
-            )}
-            {/* Members button — mobile only */}
-            <button
-              onClick={() => setShowMembersDrawer(true)}
-              className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[var(--surface-light)] text-[var(--muted)] text-xs"
-            >
-              <Users size={13} /> {members.length}
-            </button>
-          </div>
+    <div
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        background: 'var(--background)',
+      }}
+    >
+      {/* ─── Header ─── */}
+      <div
+        className="shrink-0 flex items-center gap-2 px-3 py-2.5"
+        style={{
+          paddingTop: 'calc(env(safe-area-inset-top) + 0.625rem)',
+          background: 'var(--glass-bg)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid var(--glass-border)',
+        }}
+      >
+        <Link href="/rooms" className="p-1.5 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
+          <ArrowLeft size={20} />
+        </Link>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-[15px] font-bold text-[var(--foreground)] truncate leading-tight">{room.name}</h1>
+          {room.topic && <p className="text-[11px] text-[var(--muted-strong)] truncate">{room.topic}</p>}
         </div>
-
-        {/* Messages */}
-        {isMember ? (
-          <>
-             <div className="flex-1 overflow-y-auto p-4 space-y-1 min-h-0" style={{ overscrollBehavior: 'contain' }}>
-              {messages.length === 0 ? (
-                <p className="text-center text-white/65 py-8">No messages yet. Start the conversation! 💬</p>
-              ) : (
-                messages.map((msg) => {
-                  const isMe = msg.senderId === user?.id;
-                  return (
-                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1`}>
-                      <div className="px-3 py-2" style={{
-                        maxWidth: '75%',
-                        wordBreak: 'break-word',
-                        overflowWrap: 'break-word',
-                        background: isMe ? 'var(--primary)' : '#1e1e1e',
-                        color: '#fff',
-                        fontSize: '14px',
-                        lineHeight: '1.45',
-                        borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                      }}>
-                        {!isMe && <p className="text-xs font-semibold text-purple-400 mb-0.5">{msg.senderName}</p>}
-                        <p className="whitespace-pre-wrap">{msg.text}</p>
-                        <p className="mt-1" style={{ fontSize: '11px', color: isMe ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.65)' }}>
-                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <div className="p-3 border-t border-white/[0.06] flex items-end gap-2" style={{ background: '#111111' }}>
-              <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={e => {
-                  setText(e.target.value);
-                  const ta = e.target;
-                  ta.style.height = '40px';
-                  ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
-                }}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="Type a message..."
-                rows={1}
-                className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/30 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[var(--primary)]/50 transition-colors"
-                style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
-              />
-              <button
-                onClick={handleSend}
-                disabled={sending || !text.trim()}
-                className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-30"
-                style={{ background: 'var(--primary)' }}
-              >
-                <Send size={16} />
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-            <p className="text-4xl mb-4">🔒</p>
-            <p className="text-[var(--muted)] mb-4">
-              Join this room to chat with other students
-            </p>
-            <button
-              onClick={handleJoin}
-              disabled={joining}
-              className="px-6 py-2.5 bg-[var(--primary)] text-white rounded-lg font-medium hover:bg-[#6d28d9] disabled:opacity-50"
-            >
-              {joining ? 'Joining...' : `Join Room (${members.length}/${room.maxMembers})`}
-            </button>
-          </div>
+        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${
+          room.status === 'active' ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-[var(--muted)]'
+        }`}>● {room.status}</span>
+        {isMember && (
+          <button
+            onClick={handleLeave}
+            className="text-[11px] font-semibold text-red-400 px-2.5 py-1.5 rounded-lg bg-red-500/10 border border-red-500/15 shrink-0"
+          >
+            Leave
+          </button>
         )}
+        <button
+          onClick={() => setShowMembersDrawer(true)}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[var(--muted-strong)] text-[11px] font-medium shrink-0"
+          style={{ background: 'var(--surface-light)' }}
+        >
+          <Users size={13} /> {members.length}
+        </button>
       </div>
 
-      {/* Mobile Members Drawer */}
+      {/* ─── Messages ─── */}
+      {isMember ? (
+        <>
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1" style={{ overscrollBehavior: 'contain' }}>
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+                <div className="w-14 h-14 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center text-2xl">💬</div>
+                <p className="text-sm text-[var(--muted-strong)]">No messages yet. Start the conversation!</p>
+              </div>
+            ) : (
+              messages.map((msg) => {
+                const isMe = msg.senderId === user?.id;
+                return (
+                  <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1 animate-appear`}>
+                    <div className="px-3 py-2" style={{
+                      maxWidth: '75%',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      background: isMe ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
+                      color: '#fff',
+                      fontSize: '14px',
+                      lineHeight: '1.45',
+                      borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                    }}>
+                      {!isMe && <p className="text-[11px] font-semibold text-purple-400 mb-0.5">{msg.senderName}</p>}
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                      <p className="mt-1" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.55)' }}>
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* ─── Input bar ─── */}
+          <div
+            className="shrink-0 flex items-end gap-2 px-3 py-2"
+            style={{
+              background: 'var(--glass-bg)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              borderTop: '1px solid var(--glass-border)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
+            }}
+          >
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={e => {
+                setText(e.target.value);
+                const ta = e.target;
+                ta.style.height = '40px';
+                ta.style.height = Math.min(ta.scrollHeight, 160) + 'px';
+              }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder="Type a message..."
+              rows={1}
+              className="flex-1 resize-none text-white text-[15px] placeholder:text-white/35 rounded-[20px] px-4 py-2.5 outline-none transition-colors"
+              style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
+            />
+            <button
+              onClick={handleSend}
+              disabled={sending || !text.trim()}
+              className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-30"
+              style={{ background: 'var(--primary)' }}
+            >
+              <Send size={16} />
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center text-3xl">🔒</div>
+          <div>
+            <p className="text-[var(--foreground)] font-semibold mb-1">Join to chat</p>
+            <p className="text-sm text-[var(--muted-strong)]">{members.length}/{room.maxMembers} members</p>
+          </div>
+          <button
+            onClick={handleJoin}
+            disabled={joining}
+            className="px-6 py-2.5 rounded-xl font-semibold text-sm text-white disabled:opacity-50 transition-all active:scale-95 shadow-lg shadow-[var(--primary)]/20"
+            style={{ background: 'var(--primary)' }}
+          >
+            {joining ? 'Joining...' : 'Join Room'}
+          </button>
+        </div>
+      )}
+
+      {/* Members Drawer */}
       {showMembersDrawer && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/60 md:hidden" onClick={() => setShowMembersDrawer(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden rounded-t-2xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
-            <h2 className="font-bold text-[var(--foreground)] mb-3">Members ({members.length}/{room.maxMembers})</h2>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="fixed inset-0 z-40 bg-black/60" onClick={() => setShowMembersDrawer(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)]" style={{ background: 'var(--surface-solid)', borderTop: '1px solid var(--glass-border)' }}>
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-4" />
+            <h2 className="font-bold text-[var(--foreground)] mb-3 text-base">Members ({members.length}/{room.maxMembers})</h2>
+            <div className="space-y-2.5 max-h-64 overflow-y-auto">
               {members.map((m) => (
-                <div key={m.userId} className="flex items-center gap-2 text-sm">
-                  <div className="w-8 h-8 rounded-full bg-[var(--primary)]/15 flex items-center justify-center text-[var(--primary-light)] font-bold text-xs">
+                <div key={m.userId} className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[var(--primary)]/15 flex items-center justify-center text-[var(--primary-light)] font-bold text-sm shrink-0">
                     {m.userName?.charAt(0)?.toUpperCase() || '?'}
                   </div>
-                  <p className="text-[var(--foreground)]">
-                    {m.userName}
-                    {m.userId === user?.id && <span className="text-xs text-[var(--muted-strong)] ml-1">(you)</span>}
-                  </p>
-                  {m.role === 'creator' && <span className="text-[11px] text-[var(--warning)] ml-auto">Creator</span>}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[var(--foreground)] truncate">
+                      {m.userName}{m.userId === user?.id && <span className="text-xs text-[var(--muted-strong)] ml-1">(you)</span>}
+                    </p>
+                    {m.role === 'creator' && <p className="text-[10px] text-amber-400">Creator</p>}
+                  </div>
                 </div>
               ))}
             </div>
+            {room.description && (
+              <div className="mt-4 pt-4 border-t border-white/8">
+                <p className="text-[11px] uppercase text-[var(--muted-strong)] mb-1 font-bold tracking-wider">About</p>
+                <p className="text-sm text-[var(--muted-strong)]">{room.description}</p>
+              </div>
+            )}
           </div>
         </>
       )}
 
-      {/* Members Sidebar */}
-      <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 space-y-4 hidden md:block">
-        <h2 className="font-bold text-[var(--foreground)]">
-          Members ({members.length}/{room.maxMembers})
-        </h2>
-        <div className="space-y-2">
-          {members.map((m) => (
-            <div
-              key={m.userId}
-              className="flex items-center gap-2 text-sm"
-            >
-              <div className="w-8 h-8 rounded-full bg-[var(--primary)]/15 flex items-center justify-center text-[var(--primary-light)] font-bold text-xs">
-                {m.userName?.charAt(0)?.toUpperCase() || '?'}
-              </div>
-              <div>
-                <p className="text-[var(--foreground)]">
-                  {m.userName}
-                  {m.userId === user?.id && (
-                    <span className="text-xs text-[var(--muted-strong)] ml-1">(you)</span>
-                  )}
-                </p>
-                {m.role === 'creator' && (
-                  <span className="text-[11px] text-[var(--warning)]">Creator</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {room.description && (
-          <>
-            <hr className="border-[var(--border)]" />
-            <div>
-              <h3 className="text-xs uppercase text-[var(--muted-strong)] mb-1">About</h3>
-              <p className="text-sm text-[var(--muted-strong)]">{room.description}</p>
-            </div>
-          </>
-        )}
-      </div>
     </div>
   );
 }

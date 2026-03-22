@@ -392,15 +392,21 @@ export default function AryaChatPage() {
     const greeting = lastTopic
       ? `Haan yaar! Kya hua? ${lastTopic.length < 60 ? `${lastTopic.slice(0, 40)} ke baare mein baat karni hai?` : 'Bata, main sun rahi hun!'}`
       : `Haan yaar! Bol, kya scene hai? Main yahan hun!`;
+    aryaSpeakingRef.current = true;
     const utterance = new SpeechSynthesisUtterance(greeting);
-    utterance.lang = 'en-IN'; utterance.rate = 0.95; utterance.pitch = 1.15;
-    const voices = window.speechSynthesis.getVoices();
-    const femaleVoice = voices.find(v => v.lang.includes('en') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha')))
-      || voices.find(v => v.lang.includes('en-IN')) || voices.find(v => v.lang.includes('en'));
-    if (femaleVoice) utterance.voice = femaleVoice;
-    utterance.onend = () => { if (callActiveRef.current) startListening(); };
-    utterance.onerror = () => { if (callActiveRef.current) startListening(); };
-    window.speechSynthesis.speak(utterance);
+    const doSpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = ['Google UK English Female', 'Google US English', 'Microsoft Zira', 'Samantha', 'Karen'];
+      const best = preferred.reduce<SpeechSynthesisVoice | null>((f, n) => f || voices.find(v => v.name === n) || null, null)
+        ?? voices.find(v => v.lang.startsWith('en-IN')) ?? voices.find(v => v.lang.startsWith('en'));
+      if (best) utterance.voice = best;
+      utterance.rate = 0.92; utterance.pitch = 1.08; utterance.lang = best?.lang || 'en-IN';
+      utterance.onend = () => { aryaSpeakingRef.current = false; if (callActiveRef.current) startListening(); };
+      utterance.onerror = () => { aryaSpeakingRef.current = false; if (callActiveRef.current) startListening(); };
+      window.speechSynthesis.speak(utterance);
+    };
+    if (window.speechSynthesis.getVoices().length > 0) doSpeak();
+    else { window.speechSynthesis.onvoiceschanged = () => { doSpeak(); window.speechSynthesis.onvoiceschanged = null; }; }
   };
 
   const startCall = () => {
@@ -418,7 +424,9 @@ export default function AryaChatPage() {
   };
 
   const endCall = () => {
-    callActiveRef.current = false; setInCall(false); setCallStatus('ringing');
+    callActiveRef.current = false;
+    aryaSpeakingRef.current = false;
+    setInCall(false); setCallStatus('ringing');
     stopRinging();
     if (callTimerRef.current) clearInterval(callTimerRef.current);
     if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch { /* */ } recognitionRef.current = null; }
@@ -435,40 +443,62 @@ export default function AryaChatPage() {
     }
   };
 
+  // Whether Arya is currently speaking (gates recognition processing to avoid feeding back)
+  const aryaSpeakingRef = useRef(false);
+
   const startListening = () => {
     if (!callActiveRef.current) return;
+    // If recognition is already running (continuous mode), just update status
+    if (recognitionRef.current) { setCallStatus('listening'); return; }
+
     setCallStatus('listening');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognitionAPI();
     recognitionRef.current = recognition;
-    recognition.lang = 'en-IN'; recognition.interimResults = true; recognition.continuous = true; recognition.maxAlternatives = 1;
-    let finalTranscript = '';
+    recognition.lang = 'en-IN';
+    recognition.interimResults = true;
+    recognition.continuous = true;  // Keep running — this avoids the ting on every restart
+    recognition.maxAlternatives = 1;
+
+    let pendingTranscript = '';
     let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+
     const resetSilenceTimer = () => {
       if (silenceTimer) clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => {
-        if (finalTranscript.trim() && callActiveRef.current) {
-          try { recognition.stop(); } catch { /* */ }
-          handleVoiceResult(finalTranscript.trim());
-          finalTranscript = '';
+        const t = pendingTranscript.trim();
+        if (t && callActiveRef.current && !aryaSpeakingRef.current) {
+          pendingTranscript = '';
+          handleVoiceResult(t);
         }
-      }, 2000);
+      }, 1800);
     };
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (event: any) => {
+      if (aryaSpeakingRef.current) return; // Ignore results while Arya is talking
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+        if (event.results[i].isFinal) pendingTranscript += event.results[i][0].transcript + ' ';
       }
-      resetSilenceTimer();
+      if (pendingTranscript.trim()) resetSilenceTimer();
     };
+
+    // Restart only on actual error (not on normal stop) — avoids ting
+    recognition.onerror = (e: { error: string }) => {
+      if (!callActiveRef.current) return;
+      recognitionRef.current = null;
+      if (e.error !== 'aborted') setTimeout(() => startListening(), 800);
+    };
+
     recognition.onend = () => {
-      if (silenceTimer) clearTimeout(silenceTimer);
-      if (callActiveRef.current && finalTranscript.trim()) handleVoiceResult(finalTranscript.trim());
+      // Auto-restart if still in call (Chrome stops recognition after ~60s of silence)
+      if (callActiveRef.current) {
+        recognitionRef.current = null;
+        setTimeout(() => startListening(), 300);
+      }
     };
-    recognition.onerror = () => {
-      if (callActiveRef.current) setTimeout(() => startListening(), 500);
-    };
+
     recognition.start();
   };
 
@@ -483,16 +513,45 @@ export default function AryaChatPage() {
     setMessages(prev => [...prev, { id: `voice-arya-${Date.now()}`, role: 'assistant', content: responseText, created_at: new Date().toISOString() }]);
     persistMessage('assistant', responseText, true).catch(() => {});
     setCallStatus('speaking');
-    if (speakerMuted) { if (callActiveRef.current) setTimeout(() => startListening(), 400); return; }
+    aryaSpeakingRef.current = true;
+    if (speakerMuted) {
+      aryaSpeakingRef.current = false;
+      if (callActiveRef.current) setTimeout(() => startListening(), 400);
+      return;
+    }
     const utterance = new SpeechSynthesisUtterance(responseText);
-    utterance.lang = 'en-IN'; utterance.rate = 1.0; utterance.pitch = 1.1;
-    const voices = window.speechSynthesis.getVoices();
-    const femaleVoice = voices.find(v => v.lang.includes('en') && (v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('zira') || v.name.toLowerCase().includes('samantha')))
-      || voices.find(v => v.lang.includes('en-IN')) || voices.find(v => v.lang.includes('en'));
-    if (femaleVoice) utterance.voice = femaleVoice;
-    utterance.onend = () => { if (callActiveRef.current) setTimeout(() => startListening(), 400); };
-    utterance.onerror = () => { if (callActiveRef.current) setTimeout(() => startListening(), 400); };
-    window.speechSynthesis.speak(utterance);
+    // Pick the best available voice — prefer Google's neural voices (sound most natural on Android Chrome)
+    const loadVoiceAndSpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = [
+        'Google UK English Female',
+        'Google US English',
+        'Microsoft Zira',
+        'Samantha',
+        'Karen',
+        'Moira',
+      ];
+      const best = preferred.reduce<SpeechSynthesisVoice | null>((found, name) => {
+        if (found) return found;
+        return voices.find(v => v.name === name) || null;
+      }, null)
+        ?? voices.find(v => v.lang.startsWith('en-IN'))
+        ?? voices.find(v => v.lang.startsWith('en'));
+
+      if (best) utterance.voice = best;
+      // Slightly slower rate + warmer pitch = less robotic
+      utterance.rate = 0.92; utterance.pitch = 1.08; utterance.lang = best?.lang || 'en-IN';
+      utterance.onend = () => { aryaSpeakingRef.current = false; if (callActiveRef.current) setTimeout(() => startListening(), 300); };
+      utterance.onerror = () => { aryaSpeakingRef.current = false; if (callActiveRef.current) setTimeout(() => startListening(), 300); };
+      window.speechSynthesis.speak(utterance);
+    };
+
+    // Voices may not be loaded yet on first call
+    if (window.speechSynthesis.getVoices().length > 0) {
+      loadVoiceAndSpeak();
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => { loadVoiceAndSpeak(); window.speechSynthesis.onvoiceschanged = null; };
+    }
   };
 
   // Cleanup on unmount
@@ -541,7 +600,9 @@ export default function AryaChatPage() {
         <button onClick={() => router.push('/arya')} className="p-1.5 rounded-lg text-white/70 hover:text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <Image src="/arya-avatar.png" alt="Arya" width={38} height={38} className="w-[38px] h-[38px] rounded-full object-cover ring-2 ring-purple-500/25" />
+        <button onClick={() => router.push('/arya')} className="shrink-0">
+          <Image src="/arya-avatar.png" alt="Arya" width={38} height={38} className="w-[38px] h-[38px] rounded-full object-cover ring-2 ring-purple-500/25 active:scale-95 transition-transform" />
+        </button>
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-bold text-white leading-tight">Arya</p>
           <p className="text-[11px] text-green-400 flex items-center gap-1">
@@ -559,7 +620,7 @@ export default function AryaChatPage() {
           {showHeaderMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowHeaderMenu(false)} />
-              <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl py-2 shadow-2xl" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl py-2 shadow-2xl" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
                 {[
                   { icon: Share2, label: 'Share App', color: 'text-white', action: () => {
                     window.open(`https://wa.me/?text=${encodeURIComponent('Hey! Chat with Arya AI on MitrrAi \nhttps://mitrrai.vercel.app')}`, '_blank');
