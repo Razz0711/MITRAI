@@ -70,7 +70,7 @@ export default function CirclesPage() {
   // All members for the circle
   const [circleMembers, setCircleMembers] = useState<{userId: string; userName: string}[]>([]);
 
-  // Dept stats
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [allStudents, setAllStudents] = useState<{id: string; department: string}[]>([]);
 
   const roomPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -206,6 +206,7 @@ export default function CirclesPage() {
     setSelectedCircle(circle);
     setDetailTab('rooms');
     setShowCreate(false);
+    setCircleMembers([]); // clear stale members from previous circle
     loadMembers(circle.id);
   };
 
@@ -234,7 +235,6 @@ export default function CirclesPage() {
 
   // Dept stats — how many from your dept are in each circle
   const myDept = user?.department || '';
-  const deptStudentIds = new Set(allStudents.filter(s => s.department === myDept && s.id !== user?.id).map(s => s.id));
 
 
   return (
@@ -300,7 +300,6 @@ export default function CirclesPage() {
               filtered.map((circle) => {
                 const cs = getCircleStatus(circle);
                 const isActive = activeCircle?.id === circle.id;
-                const deptInCircle = memberships.filter(m => m.circleId === circle.id && m.userId != null && deptStudentIds.has(m.userId)).length;
                 return (
                   <button
                     key={circle.id}
@@ -327,7 +326,7 @@ export default function CirclesPage() {
                         )}
                       </div>
                       <p className="text-[11px] text-[var(--muted-strong)] truncate">
-                        {memberCounts[circle.id] || 0} members{deptInCircle > 0 ? ` · ${deptInCircle} from your dept` : ''}
+                        {memberCounts[circle.id] || 0} members
                       </p>
                     </div>
                   </button>
@@ -424,12 +423,14 @@ export default function CirclesPage() {
                         <span className="w-1 h-4 rounded-full bg-green-500" />
                         LIVE NOW
                       </h3>
-                      <button
-                        onClick={() => setShowCreate(true)}
-                        className="text-[10px] font-semibold text-[var(--primary-light)] hover:underline"
-                      >
-                        + New room
-                      </button>
+                      {isJoined(activeCircle.id) && (
+                        <button
+                          onClick={() => setShowCreate(true)}
+                          className="text-[10px] font-semibold text-[var(--primary-light)] hover:underline"
+                        >
+                          + New room
+                        </button>
+                      )}
                     </div>
 
                     {liveRooms.length > 0 ? (
@@ -463,8 +464,8 @@ export default function CirclesPage() {
                     )}
                   </div>
 
-                  {/* Start a new room */}
-                  {!showCreate ? (
+                  {/* Start a new room — only for members */}
+                  {isJoined(activeCircle.id) && (!showCreate ? (
                     <button
                       onClick={() => setShowCreate(true)}
                       className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--surface)] transition-all w-full text-left mb-5"
@@ -514,7 +515,7 @@ export default function CirclesPage() {
                         </button>
                       </div>
                     </div>
-                  )}
+                  ))}
 
                   {/* RECENT ACTIVITY */}
                   <div>
@@ -522,9 +523,9 @@ export default function CirclesPage() {
                       <span className="w-1 h-4 rounded-full bg-violet-500" />
                       RECENT ACTIVITY
                     </h3>
-                    {circleRooms.length > 0 ? (
+                    {circleRooms.filter(r => r.status !== 'active').length > 0 ? (
                       <div className="space-y-2">
-                        {circleRooms.slice(0, 5).map(room => (
+                        {circleRooms.filter(r => r.status !== 'active').slice(0, 5).map(room => (
                           <div key={room.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
                             <div className={`w-8 h-8 rounded-full ${avatarColor(room.creatorName || 'U')} flex items-center justify-center text-white text-xs font-bold`}>
                               {(room.creatorName || 'U').charAt(0).toUpperCase()}
@@ -550,49 +551,18 @@ export default function CirclesPage() {
               {/* ─── Members tab ─── */}
               {detailTab === 'members' && (
                 <div>
-                  {/* Dept stats */}
-                  {myDept && (
-                    <div className="rounded-2xl p-4 mb-5" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-lg">🏛️</span>
-                        <div>
-                          <p className="text-sm font-bold text-[var(--foreground)]">Your department in Circles</p>
-                          <p className="text-[11px] text-[var(--muted-strong)]">How many {myDept} students are in each circle</p>
-                        </div>
+                  {/* Dept breakdown for this circle */}
+                  {myDept && circleMembers.length > 0 && (() => {
+                    const deptCount = circleMembers.filter(m => m.department === myDept).length;
+                    return deptCount > 0 ? (
+                      <div className="rounded-2xl p-3 mb-4 flex items-center gap-3" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
+                        <span className="text-xl">🏛️</span>
+                        <p className="text-xs text-[var(--foreground)]">
+                          <span className="font-bold text-[var(--success)]">{deptCount}</span> member{deptCount !== 1 ? 's' : ''} from your department ({myDept}) are in this circle
+                        </p>
                       </div>
-                      <div className="space-y-2">
-                        {circles.map(circle => {
-                          // Count dept members in this circle (approximation from memberships)
-                          const deptInCircle = memberships.filter(m => m.circleId === circle.id && m.userId != null && deptStudentIds.has(m.userId)).length;
-                          const totalInCircle = memberCounts[circle.id] || 0;
-                          const barWidth = totalInCircle > 0 ? Math.max(10, (deptInCircle / totalInCircle) * 100) : 10;
-                          return (
-                            <div key={circle.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all">
-                              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0" style={{ backgroundColor: circle.color + '20' }}>
-                                {circle.emoji}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-semibold text-[var(--foreground)]">{circle.name}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--success)]/10 text-[var(--success)] border border-[var(--success)]/20">
-                                    {deptInCircle} from your dept
-                                  </span>
-                                  <div className="flex-1 h-1 rounded-full bg-white/10 max-w-[80px]">
-                                    <div className={`h-full rounded-full`} style={{ width: `${barWidth}%`, backgroundColor: circle.color }} />
-                                  </div>
-                                </div>
-                              </div>
-                              {isJoined(circle.id) ? (
-                                <span className="text-[10px] font-bold text-[var(--success)]">Joined</span>
-                              ) : (
-                                <button onClick={() => handleToggle(circle.id)} className="text-[10px] font-semibold text-[var(--primary-light)] hover:text-[var(--primary-light)]">Join →</button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                    ) : null;
+                  })()}
 
                   {/* Member list */}
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)] flex items-center gap-2 mb-3">
@@ -603,10 +573,16 @@ export default function CirclesPage() {
                     <div className="space-y-1">
                       {circleMembers.map(m => (
                         <div key={m.userId} className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--surface)] transition-all">
-                          <div className={`w-8 h-8 rounded-full ${avatarColor(m.userName || 'U')} flex items-center justify-center text-white text-xs font-bold`}>
+                          <div className={`w-8 h-8 rounded-full ${avatarColor(m.userName || 'U')} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                             {(m.userName || 'U').charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-sm text-[var(--foreground)]">{m.userName || 'Student'}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-[var(--foreground)] font-medium truncate">{m.userName || 'Student'}</p>
+                            {m.department && <p className="text-[10px] text-[var(--muted-strong)] truncate">{m.department}</p>}
+                          </div>
+                          {m.department === myDept && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--success)]/10 text-[var(--success)] border border-[var(--success)]/20 shrink-0">your dept</span>
+                          )}
                         </div>
                       ))}
                     </div>

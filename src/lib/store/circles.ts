@@ -54,14 +54,28 @@ export async function leaveCircle(userId: string, circleId: string): Promise<boo
   return true;
 }
 
-export async function getCircleMembers(circleId: string): Promise<CircleMembership[]> {
+export async function getCircleMembers(circleId: string): Promise<{ userId: string; userName: string; department?: string }[]> {
   const { data, error } = await supabase
     .from('circle_memberships')
-    .select('*')
+    .select('user_id')
     .eq('circle_id', circleId)
     .order('created_at', { ascending: false });
   if (error) { console.error('getCircleMembers error:', error); return []; }
-  return (data || []).map((r) => fromRow<CircleMembership>(r));
+
+  const userIds = (data || []).map((r) => r.user_id as string);
+  if (userIds.length === 0) return [];
+
+  const { data: students } = await supabase
+    .from('students')
+    .select('id, name, department')
+    .in('id', userIds);
+
+  const infoMap = new Map((students || []).map((s) => [s.id as string, { name: s.name as string, department: s.department as string | undefined }]));
+  return userIds.map((id) => ({
+    userId: id,
+    userName: infoMap.get(id)?.name || 'Student',
+    department: infoMap.get(id)?.department,
+  }));
 }
 
 /** Returns a map of circleId → member count for all circles */
