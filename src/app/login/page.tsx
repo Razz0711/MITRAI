@@ -59,27 +59,22 @@ function WelcomeSplash({ userId, userName }: { userId: string; userName?: string
 
       {/* Animated character */}
       <div style={{ animation: 'slideUpFade 0.55s ease-out forwards', zIndex: 1, position: 'relative' }}>
-        {/* Spinning gradient ring */}
+        {/* Glowing ring — static gradient, just pulses */}
         <div style={{
-          width: 140, height: 140,
+          width: 150, height: 150,
           borderRadius: '50%',
-          background: `conic-gradient(from 0deg, ${accentColor}, #ea580c, #c026d3, ${accentColor})`,
-          animation: 'spin 3s linear infinite',
+          background: `radial-gradient(circle at center, transparent 52%, ${accentColor}90 56%, ${accentColor}40 70%, transparent 80%)`,
+          boxShadow: `0 0 40px ${accentColor}60, 0 0 80px ${accentColor}30`,
+          animation: 'pulse 1.8s ease-in-out infinite',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <div style={{
-            width: 128, height: 128,
-            borderRadius: '50%',
-            background: '#0d0d1a',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span style={{
-              fontSize: 72,
-              animation: 'wave 1.2s ease-in-out infinite',
-              display: 'inline-block',
-              transformOrigin: 'bottom center',
-            }}>{character}</span>
-          </div>
+          <span style={{
+            fontSize: 80,
+            display: 'inline-block',
+            animation: 'dance 1.4s ease-in-out infinite',
+            transformOrigin: 'center bottom',
+            userSelect: 'none',
+          }}>{character}</span>
         </div>
         {/* Floating hearts */}
         <span style={{ position: 'absolute', top: -8, right: -8, fontSize: 20, animation: 'float 2s ease-in-out infinite' }}>💕</span>

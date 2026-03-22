@@ -609,6 +609,16 @@ h1, h2, h3, h4, h5, h6 {
   75%       { transform: rotate(15deg); }
 }
 
+@keyframes dance {
+  0%   { transform: translateY(0)    rotate(0deg)   scale(1); }
+  20%  { transform: translateY(-14px) rotate(-10deg) scale(1.08); }
+  35%  { transform: translateY(-6px)  rotate(8deg)  scale(1.05); }
+  50%  { transform: translateY(-16px) rotate(-6deg)  scale(1.1); }
+  65%  { transform: translateY(-4px)  rotate(9deg)  scale(1.06); }
+  80%  { transform: translateY(-12px) rotate(-4deg)  scale(1.08); }
+  100% { transform: translateY(0)    rotate(0deg)   scale(1); }
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0) scale(1); }
   50%       { transform: translateY(-8px) scale(1.1); }
