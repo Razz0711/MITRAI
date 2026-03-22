@@ -83,7 +83,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // ---- Auth pages (login, reset-password) ----
   if (isAuthPage) {
     return (
-      <main className="min-h-screen">
+      <main style={{ height: '100dvh', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {children}
       </main>
     );
