@@ -49,21 +49,15 @@ export async function POST(req: NextRequest) {
   const isCrisis = detectCrisis(String(message));
 
   try {
-    // 1. Fetch user gender to select persona (female → Aryan, male/default → Arya)
-    const { data: studentRow } = await supabase
-      .from('students')
-      .select('gender')
-      .eq('id', user.id)
-      .single();
+    // 1. Fetch gender + history in parallel to minimize latency
+    const [{ data: studentRow }, { data: history, error: historyError }] = await Promise.all([
+      supabase.from('students').select('gender').eq('id', user.id).single(),
+      supabase.from('arya_messages').select('role, content')
+        .eq('conversation_id', conversation_id)
+        .order('created_at', { ascending: true })
+        .limit(50),
+    ]);
     const systemPrompt = getAryaPrompt(studentRow?.gender);
-
-    // 2. Load History
-    const { data: history, error: historyError } = await supabase
-      .from('arya_messages')
-      .select('role, content')
-      .eq('conversation_id', conversation_id)
-      .order('created_at', { ascending: true })
-      .limit(50);
 
     if (historyError) {
       console.error('History fetch error:', historyError);

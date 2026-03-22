@@ -238,20 +238,25 @@ export default function AryaChatPage() {
     return null;
   };
 
-  /* ─── Call Arya API with retry ─── */
-  const callAryaAPI = async (convId: string, text: string, retries = 1): Promise<{ success: boolean; response?: string; crisisResource?: boolean }> => {
+  /* ─── Call Arya API with timeout + retry ─── */
+  const callAryaAPI = async (convId: string, text: string, retries = 2): Promise<{ success: boolean; response?: string; crisisResource?: boolean }> => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
     try {
       const res = await fetch('/api/arya/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversation_id: convId, message: text }),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       const data = await res.json();
       if (data.success && data.data?.response) return { success: true, response: data.data.response, crisisResource: !!data.data.crisisResource };
-      if (retries > 0) { await new Promise(r => setTimeout(r, 1500)); return callAryaAPI(convId, text, retries - 1); }
+      if (retries > 0) { await new Promise(r => setTimeout(r, 1000)); return callAryaAPI(convId, text, retries - 1); }
       return { success: false };
     } catch {
-      if (retries > 0) { await new Promise(r => setTimeout(r, 1500)); return callAryaAPI(convId, text, retries - 1); }
+      clearTimeout(timeout);
+      if (retries > 0) { await new Promise(r => setTimeout(r, 1000)); return callAryaAPI(convId, text, retries - 1); }
       return { success: false };
     }
   };
@@ -287,7 +292,7 @@ export default function AryaChatPage() {
     } else {
       setMessages(prev => [...prev, {
         id: `err-${Date.now()}`, role: 'assistant',
-        content: 'arre yaar, abhi thoda issue aa raha hai 🙏 thodi der mein try karna!',
+        content: 'arre sorry… network slow tha 🥺 dobara bhej na message… main sun rahi hu!',
         created_at: new Date().toISOString(),
       }]);
     }
