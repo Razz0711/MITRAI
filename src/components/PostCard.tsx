@@ -265,22 +265,24 @@ export default function PostCard({
         {/* Action row */}
         <div className="flex items-center gap-1 pt-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
 
-          {/* I'm in */}
-          <button
-            onClick={handleIminClick}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ${
-              isOwn && iminCount > 0
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                : iminActive
-                ? 'bg-[var(--primary)] text-white shadow-sm shadow-[var(--primary)]/30'
-                : 'text-[var(--muted-strong)] hover:bg-white/6 hover:text-[var(--foreground)]'
-            }`}
-          >
-            <Users size={12} />
-            {isOwn && iminCount > 0
-              ? `${iminCount} interested ${showInterested ? '▲' : '▼'}`
-              : iminCount > 0 ? iminCount : "I'm in"}
-          </button>
+          {/* I'm in — hidden for own post when nobody is interested yet */}
+          {(!isOwn || iminCount > 0) && (
+            <button
+              onClick={handleIminClick}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ${
+                isOwn && iminCount > 0
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                  : iminActive
+                  ? 'bg-[var(--primary)] text-white shadow-sm shadow-[var(--primary)]/30'
+                  : 'text-[var(--muted-strong)] hover:bg-white/6 hover:text-[var(--foreground)]'
+              }`}
+            >
+              <Users size={12} />
+              {isOwn && iminCount > 0
+                ? `${iminCount} interested ${showInterested ? '▲' : '▼'}`
+                : iminCount > 0 ? iminCount : "I'm in"}
+            </button>
+          )}
 
           {/* Reply */}
           <button
@@ -296,18 +298,20 @@ export default function PostCard({
             {showComments ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
           </button>
 
-          {/* Connect */}
-          <button
-            onClick={handleConnectClick}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ml-auto ${
-              connectActive
-                ? 'bg-green-500/20 text-green-400'
-                : 'text-[var(--muted-strong)] hover:bg-white/6 hover:text-[var(--foreground)]'
-            }`}
-          >
-            <Zap size={12} />
-            {post.isAnonymous ? 'Anonymous' : connectCount > 0 ? `${connectCount} connect` : 'Connect'}
-          </button>
+          {/* Connect — hidden for own post */}
+          {!isOwn && (
+            <button
+              onClick={handleConnectClick}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ml-auto ${
+                connectActive
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'text-[var(--muted-strong)] hover:bg-white/6 hover:text-[var(--foreground)]'
+              }`}
+            >
+              <Zap size={12} />
+              {post.isAnonymous ? 'Anonymous' : connectCount > 0 ? `${connectCount} connect` : 'Connect'}
+            </button>
+          )}
         </div>
 
         {/* ─── Interested Users Panel (post author only) ─── */}

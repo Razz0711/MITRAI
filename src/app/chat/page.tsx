@@ -328,6 +328,16 @@ function ChatContent() {
   };
 
   if (!selectedChatId) {
+    // Deduplicate threads by other-user-id (keep most recent per pair)
+    const deduped = threads.reduce<ChatThread[]>((acc, t) => {
+      const otherId = t.user1Id === studentId ? t.user2Id : t.user1Id;
+      const existing = acc.find(x => (x.user1Id === studentId ? x.user2Id : x.user1Id) === otherId);
+      if (!existing) { acc.push(t); }
+      else if (new Date(t.lastMessageAt || 0) > new Date(existing.lastMessageAt || 0)) {
+        acc[acc.indexOf(existing)] = t;
+      }
+      return acc;
+    }, []);
     const sortedPeopleGroups = getSortedPeople();
     return (
       <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--background)', overflow: 'hidden' }}>
@@ -335,7 +345,7 @@ function ChatContent() {
         <div className="shrink-0 flex items-center gap-3 px-4 py-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)', background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)' }}>
           <div className="flex-1">
             <h1 className="text-lg font-bold text-[var(--foreground)]">Your Chats</h1>
-            {threads.length > 0 && <p className="text-[11px] text-[var(--muted-strong)]">{threads.length} conversation{threads.length !== 1 ? 's' : ''}</p>}
+            {deduped.length > 0 && <p className="text-[11px] text-[var(--muted-strong)]">{deduped.length} conversation{deduped.length !== 1 ? 's' : ''}</p>}
           </div>
           <button onClick={openFindPeople} className="p-2 rounded-xl bg-[var(--primary)]/15 text-[var(--primary-light)] border border-[var(--primary)]/25 hover:bg-[var(--primary)]/25 transition-all active:scale-95">
             <UserPlus size={18} />
@@ -429,7 +439,7 @@ function ChatContent() {
 
         {/* Thread list */}
         <div className="flex-1 overflow-y-auto">
-          {threads.length === 0 && !showFindPeople ? (
+          {deduped.length === 0 && !showFindPeople ? (
             <div className="flex flex-col items-center justify-center p-8 mt-16 text-center space-y-4">
               <div className="w-20 h-20 rounded-3xl bg-[var(--primary)]/10 flex items-center justify-center text-4xl">💬</div>
               <div>
@@ -440,7 +450,7 @@ function ChatContent() {
             </div>
           ) : (
             <div className="divide-y divide-white/[0.04]">
-              {threads.map(thread => {
+              {deduped.map(thread => {
                 const otherId = thread.user1Id === studentId ? thread.user2Id : thread.user1Id;
                 const otherName = thread.user1Id === studentId ? thread.user2Name : thread.user1Name;
                 const unread = thread.user1Id === studentId ? thread.unreadCount1 : thread.unreadCount2;
