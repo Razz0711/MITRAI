@@ -10,13 +10,27 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { validateSVNITEmail, ParsedEmail } from '@/lib/email-parser';
 
-const DEPARTMENTS = [
-  'CSE', 'AI', 'Mechanical', 'Civil', 'Electrical', 'Electronics', 'Chemical',
-  'Integrated M.Sc. Mathematics', 'Integrated M.Sc. Physics', 'Integrated M.Sc. Chemistry',
-  'B.Tech Physics', 'Mathematics & Computing',
-];
-
-const YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
+// Crisp SVG logo — no blur, scales perfectly
+function MitrrAiLogo({ size = 56 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="mlg" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#7c3aed" />
+          <stop offset="45%" stopColor="#c026d3" />
+          <stop offset="100%" stopColor="#ea580c" />
+        </linearGradient>
+      </defs>
+      <rect width="56" height="56" rx="16" fill="url(#mlg)" />
+      {/* Infinity loop — two people connected */}
+      <path
+        d="M28,28 C26,23 22,19 17,19 C11,19 7,23 7,28 C7,33 11,37 17,37 C22,37 26,33 28,28 C30,23 34,19 39,19 C45,19 49,23 49,28 C49,33 45,37 39,37 C34,37 30,33 28,28 Z"
+        stroke="white" strokeWidth="2.8" fill="none" strokeLinecap="round" opacity="0.95"
+      />
+      <circle cx="28" cy="28" r="2.5" fill="white" />
+    </svg>
+  );
+}
 
 function LoginPageInner() {
   const router = useRouter();
@@ -27,6 +41,7 @@ function LoginPageInner() {
   const [admissionNumber, setAdmissionNumber] = useState('');
   const [department, setDepartment] = useState('');
   const [yearLevel, setYearLevel] = useState('');
+  const [gender, setGender] = useState('');
   const [dob, setDob] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -249,9 +264,7 @@ function LoginPageInner() {
 
     if (isSignup) {
       if (!name.trim()) { setError('Name is required'); return; }
-      if (!admissionNumber.trim() && !parsedEmail) { setError('Admission number is required'); return; }
-      if (!department && !parsedEmail) { setError('Please select your department'); return; }
-      if (!yearLevel && !parsedEmail) { setError('Please select your year'); return; }
+      if (!gender) { setError('Please select your gender'); return; }
       if (!dob) { setError('Please enter your date of birth'); return; }
       if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
     } else {
@@ -271,6 +284,7 @@ function LoginPageInner() {
             admissionNumber: admissionNumber.trim().toUpperCase(),
             department,
             yearLevel,
+            gender,
             dob,
             matchKey: parsedEmail?.matchKey,
             programType: parsedEmail?.programType,
@@ -310,7 +324,7 @@ function LoginPageInner() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Image src="/logo.jpg" alt="MitrrAi" width={56} height={56} className="h-14 w-auto mx-auto mb-3" priority />
+          <div className="flex justify-center mb-3"><MitrrAiLogo size={56} /></div>
           <h1 className="text-xl font-bold text-[var(--foreground)]">
             {isSignup ? 'Join MitrrAi' : 'Welcome back'}
           </h1>
@@ -341,7 +355,7 @@ function LoginPageInner() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="i22ma038@amhd.svnit.ac.in"
+              placeholder="college email"
               className="input-field text-sm"
               autoFocus={!isSignup}
             />
@@ -364,48 +378,28 @@ function LoginPageInner() {
             </div>
           )}
 
-          {/* Manual fields only if email not parsed */}
-          {isSignup && !parsedEmail && (
-            <>
-              <div>
-                <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">Admission Number</label>
-                <input
-                  type="text"
-                  value={admissionNumber}
-                  onChange={(e) => setAdmissionNumber(e.target.value)}
-                  placeholder="e.g. U22MA001"
-                  className="input-field text-sm"
-                />
+          {/* Gender picker */}
+          {isSignup && (
+            <div>
+              <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">Gender</label>
+              <div className="flex gap-3">
+                {(['Male', 'Female'] as const).map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setGender(g)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all"
+                    style={{
+                      background: gender === g ? 'var(--primary)' : 'transparent',
+                      borderColor: gender === g ? 'var(--primary)' : 'rgba(255,255,255,0.12)',
+                      color: gender === g ? '#fff' : 'var(--muted-strong)',
+                    }}
+                  >
+                    {g === 'Male' ? '♂ Male' : '♀ Female'}
+                  </button>
+                ))}
               </div>
-
-              <div>
-                <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">Department</label>
-                <select
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="input-field text-sm"
-                >
-                  <option value="">Select department</option>
-                  {DEPARTMENTS.map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">Year</label>
-                <select
-                  value={yearLevel}
-                  onChange={(e) => setYearLevel(e.target.value)}
-                  className="input-field text-sm"
-                >
-                  <option value="">Select year</option>
-                  {YEARS.map(y => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
-            </>
+            </div>
           )}
 
           {isSignup && (

@@ -35,6 +35,7 @@ interface SignupData {
   admissionNumber: string;
   department: string;
   yearLevel: string;
+  gender?: string;
   dob: string;
   // Batch-matching fields
   matchKey?: string;
