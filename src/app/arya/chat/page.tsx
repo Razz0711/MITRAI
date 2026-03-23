@@ -706,7 +706,7 @@ export default function AryaChatPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Always online
           </p>
         </div>
-        <button onClick={startCall} className="p-2 rounded-xl text-amber-400 hover:bg-amber-400/10 transition-all active:scale-90">
+        <button onClick={() => router.push('/arya/call')} className="p-2 rounded-xl text-amber-400 hover:bg-amber-400/10 transition-all active:scale-90">
           <Phone size={18} />
         </button>
         {/* Menu */}
