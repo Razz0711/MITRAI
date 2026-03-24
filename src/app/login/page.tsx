@@ -24,9 +24,9 @@ function WelcomeSplash({ userId, userName }: { userId: string; userName?: string
       .then(d => { if (d.data?.gender) setGender(d.data.gender); })
       .catch(() => {});
 
-    const t1 = setTimeout(() => setShowBubble(true), 700);
-    const t2 = setTimeout(() => setShowText(true), 1100);
-    const t3 = setTimeout(() => router.push('/home'), 3200);
+    const t1 = setTimeout(() => setShowBubble(true), 400);
+    const t2 = setTimeout(() => setShowText(true), 700);
+    const t3 = setTimeout(() => router.push('/home'), 1800);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

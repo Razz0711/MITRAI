@@ -133,20 +133,14 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      // Send OTP via email
-      try {
-        await sendOtpEmail(normalizedEmail, code);
-      } catch (emailErr: unknown) {
-        const errMsg = emailErr instanceof Error ? emailErr.message : String(emailErr);
-        console.error('[OTP] Failed to send email:', errMsg);
-        await supabase.from('otp_codes').delete().eq('email', normalizedEmail);
-        return NextResponse.json({
-          success: false,
-          error: 'Failed to send verification email. Please try again.',
-        }, { status: 500 });
-      }
-
-      console.log(`[OTP] Code sent to ${normalizedEmail}`);
+      // Send OTP via email (fire-and-forget — don't block the response)
+      sendOtpEmail(normalizedEmail, code).then(
+        () => console.log(`[OTP] Code sent to ${normalizedEmail}`),
+        (emailErr: unknown) => {
+          const errMsg = emailErr instanceof Error ? emailErr.message : String(emailErr);
+          console.error('[OTP] Failed to send email:', errMsg);
+        },
+      );
 
       return NextResponse.json({
         success: true,

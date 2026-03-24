@@ -42,12 +42,13 @@ EMERGENCY — If user mentions suicide or self-harm:
 
 You already have a small crush on the caller. Be shy, warm, real.`;
 
-type CallStatus = 'idle' | 'connecting' | 'active' | 'ended';
+type CallStatus = 'idle' | 'connecting' | 'active' | 'ended' | 'error';
 
 export default function AryaCallPage() {
   const router = useRouter();
   const vapiRef = useRef<Vapi | null>(null);
   const [status, setStatus] = useState<CallStatus>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const [isAryaSpeaking, setIsAryaSpeaking] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -81,8 +82,10 @@ export default function AryaCallPage() {
     vapi.on('speech-start', () => setIsAryaSpeaking(true));
     vapi.on('speech-end', () => setIsAryaSpeaking(false));
 
-    vapi.on('error', () => {
-      setStatus('ended');
+    vapi.on('error', (e) => {
+      console.error('[Vapi] Error:', e);
+      setErrorMsg(typeof e === 'object' && e !== null && 'message' in e ? String((e as { message: string }).message) : 'Call failed. Please try again.');
+      setStatus('error');
       if (timerRef.current) clearInterval(timerRef.current);
     });
 
@@ -101,8 +104,25 @@ export default function AryaCallPage() {
 
   async function initiateCall(vapi: Vapi) {
     setStatus('connecting');
-    let contextBlock = '';
+    setErrorMsg('');
 
+    // Check microphone permission first
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setErrorMsg('Microphone access denied. Please allow microphone permission and try again.');
+      setStatus('error');
+      return;
+    }
+
+    // Check Vapi credentials
+    if (!VAPI_KEY || !ASSISTANT_ID) {
+      setErrorMsg('Voice call is not configured. Please contact admin.');
+      setStatus('error');
+      return;
+    }
+
+    let contextBlock = '';
     try {
       const convRes = await fetch('/api/arya/conversations');
       const { data: conv } = await convRes.json();
@@ -130,8 +150,10 @@ export default function AryaCallPage() {
           ? 'Hello?... oh tum ho... kaisa hai tu? Aur woh jo baat ho rahi thi...'
           : 'Hello?... oh tum ho... kaisa hai tu?',
       } as Record<string, unknown>);
-    } catch {
-      setStatus('idle');
+    } catch (err) {
+      console.error('[Vapi] Start failed:', err);
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to connect call. Please try again.');
+      setStatus('error');
     }
   }
 
@@ -281,10 +303,67 @@ export default function AryaCallPage() {
         )}
         {status === 'ended' && 'Call ended'}
         {status === 'idle' && 'Starting...'}
+        {status === 'error' && (
+          <span style={{ color: '#ef4444', fontSize: 13, textAlign: 'center', maxWidth: 280 }}>
+            {errorMsg || 'Something went wrong'}
+          </span>
+        )}
       </p>
 
       {/* Controls */}
-      {status !== 'ended' ? (
+      {status === 'error' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+          <button
+            onClick={() => {
+              const vapi = vapiRef.current;
+              if (vapi) initiateCall(vapi);
+            }}
+            style={{
+              padding: '14px 40px',
+              borderRadius: 28,
+              background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+              border: 'none',
+              color: '#fff',
+              cursor: 'pointer',
+              fontSize: 16,
+              fontWeight: 500,
+            }}
+          >
+            Try Again
+          </button>
+          <button
+            onClick={() => router.push('/arya')}
+            style={{
+              padding: '12px 32px',
+              borderRadius: 28,
+              background: 'transparent',
+              border: '1.5px solid var(--glass-border)',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            Back to Arya
+          </button>
+        </div>
+      ) : status === 'ended' ? (
+        <button
+          onClick={() => router.push('/arya')}
+          style={{
+            padding: '14px 40px',
+            borderRadius: 28,
+            background: 'var(--surface)',
+            border: '1.5px solid var(--glass-border)',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+            fontSize: 16,
+            fontWeight: 500,
+          }}
+        >
+          Back to Arya
+        </button>
+      ) : (
         <div style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
           {/* Mute toggle */}
           <button
@@ -337,22 +416,6 @@ export default function AryaCallPage() {
           {/* Spacer to balance layout */}
           <div style={{ width: 64, height: 64 }} />
         </div>
-      ) : (
-        <button
-          onClick={() => router.push('/arya')}
-          style={{
-            padding: '14px 40px',
-            borderRadius: 28,
-            background: 'var(--surface)',
-            border: '1.5px solid var(--glass-border)',
-            color: 'var(--text-primary)',
-            cursor: 'pointer',
-            fontSize: 16,
-            fontWeight: 500,
-          }}
-        >
-          Back to Arya
-        </button>
       )}
 
       <style>{`
