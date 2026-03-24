@@ -122,7 +122,6 @@ export default function AryaCallPage() {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await vapi.start(ASSISTANT_ID, {
         model: {
           systemPrompt: ARYA_VOICE_PROMPT + contextBlock,
@@ -130,7 +129,7 @@ export default function AryaCallPage() {
         firstMessage: contextBlock
           ? 'Hello?... oh tum ho... kaisa hai tu? Aur woh jo baat ho rahi thi...'
           : 'Hello?... oh tum ho... kaisa hai tu?',
-      } as any);
+      } as Record<string, unknown>);
     } catch {
       setStatus('idle');
     }
