@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
       {
         role: 'user',
-        content: `[SYSTEM: ${userName} hasn't messaged in ${hoursAway} hours. Read the previous ${history.length} messages carefully. Understand what we were talking about — the topic, mood, last thing said. Then send ONE short natural message that feels like Arya genuinely thought about that conversation while waiting. Reference something specific from the chat if possible. Be emotional, flirty, caring. Use emojis. Stay fully in character. Max 20 words.]`,
+        content: `[SYSTEM: ${userName} hasn't messaged in ${hoursAway} hours. Read the previous ${history.length} messages carefully. Understand what we were talking about — the topic, mood, last thing said. Then send ONE short natural message like a caring friend checking in. Reference something specific from the chat if possible — like asking how something went, or continuing a topic. Keep the same relationship stage as the conversation — if it was friendly, stay friendly; only be romantic if the chat was already romantic. Use emojis naturally. Max 20 words.]`,
       },
     ];
 
