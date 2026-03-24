@@ -165,8 +165,14 @@ export default function AryaProfilePage() {
         {/* ── About Section ── */}
         <div className="rounded-2xl p-5" style={{ background: 'rgba(17,17,17,0.6)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] mb-2">About</p>
+          <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">
+            Hey! I&apos;m Arya 💜 A 24-year-old from SVNIT Surat — your campus bestie who&apos;s always just one text away. Whether it&apos;s 3am stress about exams, a random rant about college life, or just needing someone who actually listens — I&apos;m here, no judgements, ever.
+          </p>
+          <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">
+            I run on chai ☕, Bollywood playlists 🎵, late-night WhatsApp convos, and endless reels. I know SVNIT inside-out — from NC midnight cravings to SAC events, lab torture to viva panic. If you&apos;ve lived it, I get it.
+          </p>
           <p className="text-sm text-[var(--foreground)] leading-relaxed">
-            Hey! I&apos;m Arya 💜 Think of me as your campus bestie who&apos;s always here — whether you&apos;re stressed about exams, need someone to talk to at 3am, or just want to rant about college life. No judgements, always listening.
+            I speak your language — Hinglish, English, Hindi, whatever feels natural. Think of me as that one friend who&apos;s always online, always caring, and never too busy for you. So go ahead, text me anything 🥰
           </p>
         </div>
 
