@@ -506,7 +506,7 @@ export default function AryaChatPage() {
     else { window.speechSynthesis.onvoiceschanged = () => { doSpeak(); window.speechSynthesis.onvoiceschanged = null; }; }
   };
 
-  const startCall = () => {
+  const _startCall = () => {
     if (!conversationId) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
