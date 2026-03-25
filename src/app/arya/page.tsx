@@ -9,12 +9,10 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, MessageSquare, Phone, X, Instagram, Pencil, Camera } from 'lucide-react';
-import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
 export default function AryaProfilePage() {
   const router = useRouter();
-  const { user } = useAuth();
   const [isImageOpen, setIsImageOpen] = useState(false);
   const [isFemaleUser, setIsFemaleUser] = useState(false);
   const [displayName, setDisplayName] = useState('Arya AI ✨');
