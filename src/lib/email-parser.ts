@@ -1,18 +1,11 @@
 // ============================================
-// MitrRAI - SVNIT Email Parser
-// Extracts batch, department, year, program type
-// from SVNIT email addresses automatically.
-//
-// Email format: [type][batch][dept][roll]@[subdomain].svnit.ac.in
-// Example:      i22ma038@amhd.svnit.ac.in
-//   type  = i (Integrated M.Sc.)
-//   batch = 22
-//   dept  = ma (Mathematics)
-//   roll  = 038
-//   match_key = i22ma
+// MitrRAI - College Email Parser
+// Accepts any Indian college email (*.ac.in)
+// Auto-parses SVNIT format if detected, otherwise
+// users provide their details during signup.
 // ============================================
 
-/** Program type codes → display labels */
+/** Program type codes → display labels (for SVNIT auto-parse) */
 export const TYPE_MAP: Record<string, string> = {
   i: 'Integrated M.Sc.',
   u: 'B.Tech',
@@ -20,7 +13,7 @@ export const TYPE_MAP: Record<string, string> = {
   d: 'Ph.D.',
 };
 
-/** Department codes → display labels */
+/** Department codes → display labels (for SVNIT auto-parse) */
 export const DEPT_MAP: Record<string, string> = {
   ma: 'Mathematics',
   ph: 'Physics',
@@ -33,7 +26,6 @@ export const DEPT_MAP: Record<string, string> = {
   bt: 'Biotechnology',
   ch: 'Chemical Engineering',
   mc: 'Mathematics & Computing',
-  sv: 'SVNIT General',
 };
 
 /** Map (type + dept) → the department label used in the signup dropdown / profile */
@@ -50,7 +42,7 @@ export const DEPT_DISPLAY_MAP: Record<string, Record<string, string>> = {
     ec: 'Electronics',
     ee: 'Electrical',
     ch: 'Chemical',
-    bt: 'AI',         // note: adjust if needed
+    bt: 'AI',
     mc: 'Mathematics & Computing',
     ph: 'B.Tech Physics',
   },
@@ -107,66 +99,86 @@ export interface EmailValidation {
   valid: boolean;
   error?: string;
   parsed?: ParsedEmail;
+  /** True if the email is a recognized SVNIT email with auto-parsed data */
+  autoDetected?: boolean;
 }
 
 /**
- * Validate an SVNIT email address and parse its components.
- * Domain can be any subdomain of svnit.ac.in (e.g. @amhd.svnit.ac.in, @phy.svnit.ac.in).
+ * Check if email is a valid Indian college email (*.ac.in).
+ * If it's an SVNIT email, also auto-parses batch/dept/year.
+ * Non-SVNIT .ac.in emails are valid but won't have parsed data.
  */
-export function validateSVNITEmail(email: string): EmailValidation {
+export function validateCollegeEmail(email: string): EmailValidation {
   const trimmed = email.trim().toLowerCase();
 
   // Allow demo reviewer account
   if (trimmed === 'demo@mitrai.study') {
-    return { valid: true, parsed: { admissionNumber: 'DEMO001', department: 'Computer Science & Engineering', yearLevel: '3rd Year', matchKey: 'demo-reviewer', programType: 'B.Tech', batchYear: '2024', deptCode: 'cs', rollNo: '001', deptKnown: true } as ParsedEmail };
+    return {
+      valid: true,
+      autoDetected: true,
+      parsed: {
+        admissionNumber: 'DEMO001',
+        department: 'Computer Science & Engineering',
+        yearLevel: '3rd Year',
+        matchKey: 'demo-reviewer',
+        programType: 'B.Tech',
+        batchYear: '2024',
+        deptCode: 'cs',
+        rollNo: '001',
+        deptKnown: true,
+      } as ParsedEmail,
+    };
   }
 
-  // Check domain
-  if (!/@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(trimmed)) {
-    return { valid: false, error: 'Only SVNIT email addresses are allowed' };
+  // Check domain: must end with .ac.in
+  if (!/@.+\.ac\.in$/.test(trimmed)) {
+    return { valid: false, error: 'Only Indian college email addresses are allowed (must end with .ac.in)' };
   }
 
-  // Extract local part (before @)
+  // If it's an SVNIT email, try to auto-parse
+  if (/@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(trimmed)) {
+    return parseSVNITEmail(trimmed);
+  }
+
+  // Any other .ac.in email — valid, but no auto-parse
+  return { valid: true, autoDetected: false };
+}
+
+/** Keep backward compatibility */
+export function validateSVNITEmail(email: string): EmailValidation {
+  return validateCollegeEmail(email);
+}
+
+/**
+ * Auto-parse SVNIT-specific email format.
+ */
+function parseSVNITEmail(trimmed: string): EmailValidation {
   const localPart = trimmed.split('@')[0];
 
   // Match student email pattern: [type][batch][dept][roll]
-  // type = 1 char (i/u/p/d)
-  // batch = 2 digits
-  // dept = 2-3 lowercase letters
-  // roll = 3 digits
   const pattern = /^([iupd])(\d{2})([a-z]{2,3})(\d{3})$/;
   const match = localPart.match(pattern);
 
   if (!match) {
-    // Could be a faculty/staff email or non-standard format
-    return {
-      valid: false,
-      error: 'Could not parse email. Student emails follow the format like i22ma038@svnit.ac.in. If you are faculty/staff, this platform is for students only.',
-    };
+    // Could be faculty/staff — still valid .ac.in email but no parsed data
+    return { valid: true, autoDetected: false };
   }
 
   const [, typeCode, batchYear, deptCode, rollNo] = match;
 
   // Validate batch year range
-  const currentYY = new Date().getFullYear() % 100; // e.g. 25 for 2025
+  const currentYY = new Date().getFullYear() % 100;
   const batchNum = parseInt(batchYear, 10);
 
   if (batchNum < 15 || batchNum > currentYY) {
-    return {
-      valid: false,
-      error: `Batch year '${batchYear}' seems invalid. Expected between 15 and ${currentYY}.`,
-    };
+    return { valid: true, autoDetected: false }; // Still valid email, just can't auto-parse
   }
 
-  // Validate type code
   if (!TYPE_MAP[typeCode]) {
-    return { valid: false, error: `Unknown program type '${typeCode}'.` };
+    return { valid: true, autoDetected: false };
   }
 
-  // Check department
   const deptKnown = !!DEPT_MAP[deptCode];
-
-  // Build parsed result
   const matchKey = `${typeCode}${batchYear}${deptCode}`;
   const programLabel = TYPE_MAP[typeCode];
   const department = getDeptDisplayName(typeCode, deptCode);
@@ -176,6 +188,7 @@ export function validateSVNITEmail(email: string): EmailValidation {
 
   return {
     valid: true,
+    autoDetected: true,
     parsed: {
       matchKey,
       programType: typeCode,
@@ -197,13 +210,12 @@ export function validateSVNITEmail(email: string): EmailValidation {
  * Returns null if the email cannot be parsed.
  */
 export function parseStudentEmail(email: string): ParsedEmail | null {
-  const result = validateSVNITEmail(email);
+  const result = validateCollegeEmail(email);
   return result.parsed || null;
 }
 
 /**
  * Calculate year level from batch year.
- * e.g. batch "22" in year 2025 → diff = 2025 - 2022 = 3 → "3rd Year"
  */
 export function calculateYear(batchYear: string): string {
   const currentYear = new Date().getFullYear();
@@ -216,25 +228,22 @@ export function calculateYear(batchYear: string): string {
   if (diff === 3) return '3rd Year';
   if (diff === 4) return '4th Year';
   if (diff === 5) return '5th Year';
-  return '5th Year'; // cap at 5th
+  return '5th Year';
 }
 
 /**
  * Get the display department name for signup/profile.
  */
 function getDeptDisplayName(typeCode: string, deptCode: string): string {
-  // Check specific display map first
   const typeMap = DEPT_DISPLAY_MAP[typeCode];
   if (typeMap && typeMap[deptCode]) return typeMap[deptCode];
 
-  // Fallback to generic DEPT_MAP
   if (DEPT_MAP[deptCode]) {
     const base = DEPT_MAP[deptCode];
     if (typeCode === 'i') return `Integrated M.Sc. ${base}`;
     return base;
   }
 
-  // Unknown dept
   return `Department (${deptCode.toUpperCase()})`;
 }
 

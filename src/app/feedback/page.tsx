@@ -14,7 +14,7 @@ const TYPES = [
 ];
 
 const FAQS = [
-  { q: 'Is MitrrAi free to use?', a: 'MitrrAi is currently free for all SVNIT students. Some premium features may be introduced in the future.' },
+  { q: 'Is MitrrAi free to use?', a: 'MitrrAi is currently free for all Indian college students. Some premium features may be introduced in the future.' },
   { q: 'How does the matching work?', a: 'Our AI analyzes 5 dimensions — subjects, schedule, study style, goals, and personality — to find your ideal study buddy with a 100-point scoring system.' },
   { q: 'Can I suggest new features?', a: 'Absolutely! Use the Feature Idea option above to share your ideas. We love hearing from our users.' },
 ];
@@ -227,7 +227,7 @@ export default function FeedbackPage() {
             WhatsApp
           </a>
           <a
-            href="mailto:rajkumaratsvnit@gmail.com?subject=MitrrAi%20Query"
+            href="mailto:support@mitrrai.in?subject=MitrrAi%20Query"
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-xs font-semibold text-blue-400 hover:bg-blue-500/25 transition-all"
           >
             Email

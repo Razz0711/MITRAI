@@ -12,7 +12,7 @@ export default function PrivacyPage() {
         <h2 className="text-sm font-semibold text-[var(--foreground)]">1. Information We Collect</h2>
         <p className="text-xs text-[var(--muted)] leading-relaxed">When you use MitrrAi, we collect:</p>
         <ul className="list-disc list-inside text-xs text-[var(--muted)] leading-relaxed space-y-1">
-          <li><strong>Account Information:</strong> Name, SVNIT email, admission number, department, year, date of birth.</li>
+          <li><strong>Account Information:</strong> Name, college email, admission number, department, year, date of birth.</li>
           <li><strong>Academic Data:</strong> Subjects, study preferences, schedules, learning style, goals.</li>
           <li><strong>Usage Data:</strong> Messages, study sessions, attendance records, uploaded materials.</li>
           <li><strong>Automatically Collected:</strong> Browser type, IP address (for rate limiting only — not stored permanently).</li>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
         <h2 className="text-sm font-semibold text-[var(--foreground)]">4. Data Sharing</h2>
         <p className="text-xs text-[var(--muted)] leading-relaxed">We do <strong>not</strong> sell or share your personal data with third parties. Limited data is shared within the Platform:</p>
         <ul className="list-disc list-inside text-xs text-[var(--muted)] leading-relaxed space-y-1">
-          <li>Your name, department, and year are visible to other SVNIT students on the Platform.</li>
+          <li>Your name, department, and year are visible to other students on the Platform.</li>
           <li>Study preferences are used for matching but not publicly displayed in full.</li>
           <li>Birthday (day/month only) is shown if you opt in.</li>
           <li>xAI Grok AI processes study-related queries (no personal data sent).</li>

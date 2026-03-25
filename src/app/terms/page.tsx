@@ -11,16 +11,14 @@ export default function TermsPage() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">1. Acceptance of Terms</h2>
         <p className="text-xs text-[var(--muted)] leading-relaxed">
-          By accessing and using MitrrAi (&quot;the Platform&quot;), you agree to be bound by these Terms of Service. 
-          MitrrAi is an AI-powered study buddy matching platform exclusively for students of Sardar Vallabhbhai 
-          National Institute of Technology (SVNIT), Surat. If you do not agree with these terms, please do not use the Platform.
+          MitrrAi is an AI-powered campus companion for Indian college students. If you do not agree with these terms, please do not use the Platform.
         </p>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">2. Eligibility</h2>
         <p className="text-xs text-[var(--muted)] leading-relaxed">
-          You must be a currently enrolled student at SVNIT with a valid SVNIT email address (@svnit.ac.in) to use 
+          You must be a currently enrolled student at an Indian college or university with a valid college email address (.ac.in) to use 
           this Platform. Your account is personal and non-transferable.
         </p>
       </section>

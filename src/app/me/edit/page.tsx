@@ -361,7 +361,7 @@ export default function EditProfilePage() {
         <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'var(--surface)', border: '1px solid rgba(245,158,11,0.15)' }}>
           <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-lg shrink-0">🔒</div>
           <p className="text-[11px] text-[var(--muted-strong)] leading-relaxed flex-1">
-            <strong className="text-amber-400 font-semibold">Branch, Year & Email</strong> are auto-filled from your SVNIT registration and cannot be changed.
+            <strong className="text-amber-400 font-semibold">Branch, Year & Email</strong> are auto-filled from your registration and cannot be changed.
           </p>
         </div>
       </div>

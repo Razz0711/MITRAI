@@ -37,11 +37,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Name, email, password, and date of birth are required' }, { status: 400 });
       }
 
-      // Validate SVNIT email (allow demo reviewer account)
+      // Validate college email (allow demo reviewer account)
       const DEMO_EMAIL = 'demo@mitrai.study';
-      const svnitRegex = /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+\.)?svnit\.ac\.in$/;
-      if (email.trim().toLowerCase() !== DEMO_EMAIL && !svnitRegex.test(email)) {
-        return NextResponse.json({ success: false, error: 'Only SVNIT emails allowed' }, { status: 400 });
+      const collegeRegex = /@.+\.ac\.in$/;
+      if (email.trim().toLowerCase() !== DEMO_EMAIL && !collegeRegex.test(email)) {
+        return NextResponse.json({ success: false, error: 'Only Indian college emails (.ac.in) are allowed' }, { status: 400 });
       }
 
       if (password.length < 6) {
@@ -116,6 +116,9 @@ export async function POST(req: NextRequest) {
           else if (finalDept === 'Mathematics & Computing') currentStudy = 'B.Tech Mathematics & Computing';
         }
 
+        const emailDomain = email.trim().toLowerCase().split('@')[1] || '';
+        const collegeName = emailDomain.replace(/\.ac\.in$/, '').split('.').pop()?.toUpperCase() || '';
+
         await supabaseService.from('students').upsert({
           id: userId,
           name: name.trim(),
@@ -127,8 +130,8 @@ export async function POST(req: NextRequest) {
           dob: dob || '',
           show_birthday: true,
           current_study: currentStudy,
-          institution: 'SVNIT Surat',
-          city: 'Surat',
+          institution: collegeName || 'College',
+          city: '',
           country: 'India',
           timezone: 'IST',
           preferred_language: 'English',

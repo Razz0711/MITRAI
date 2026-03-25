@@ -37,7 +37,7 @@ export async function GET() {
         vapidPublicKeySet: !!vapidPub,
         vapidPublicKeyLength: vapidPub.length,
         vapidPrivateKeySet: !!vapidPriv,
-        vapidSubject: process.env.VAPID_SUBJECT || 'mailto:mitrai@svnit.ac.in',
+        vapidSubject: process.env.VAPID_SUBJECT || 'mailto:support@mitrrai.in',
       },
     });
   } catch (error) {

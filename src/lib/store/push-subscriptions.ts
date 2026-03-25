@@ -13,7 +13,7 @@ function ensureVapidConfigured(): boolean {
   if (_vapidConfigured) return true;
   const pubKey = (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '').replace(/=+$/, '').trim();
   const privKey = (process.env.VAPID_PRIVATE_KEY || '').replace(/=+$/, '').trim();
-  const subject = process.env.VAPID_SUBJECT || 'mailto:mitrai@svnit.ac.in';
+  const subject = process.env.VAPID_SUBJECT || 'mailto:support@mitrrai.in';
   if (pubKey && privKey) {
     try {
       webpush.setVapidDetails(subject, pubKey, privKey);

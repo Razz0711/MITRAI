@@ -47,7 +47,7 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--success)]" />
               </span>
-              <span className="text-xs font-semibold text-[var(--muted)]">Made for SVNIT Students</span>
+              <span className="text-xs font-semibold text-[var(--muted)]">Made for Indian College Students</span>
               <Sparkles size={12} className="text-[var(--accent)]" />
             </div>
 
@@ -57,11 +57,11 @@ export default function Home() {
               <span className="gradient-text">campus companion</span>
             </h1>
             <p className="text-base sm:text-lg text-[var(--muted)] font-medium mb-3 slide-up-stagger-2">
-              at SVNIT Surat
+              for Indian college students
             </p>
 
             <p className="text-sm text-[var(--muted)] mb-8 max-w-md mx-auto leading-relaxed slide-up-stagger-2">
-              Chat with Arya AI, meet strangers anonymously, post on campus feed, go live on radar — everything a SVNIT student needs, in one app.
+              Chat with Arya AI, meet strangers anonymously, post on campus feed, go live on radar — everything a college student needs, in one app.
             </p>
 
             {/* CTAs */}
@@ -82,7 +82,7 @@ export default function Home() {
             <div className="flex items-center justify-center gap-8 sm:gap-12 mt-10 sm:mt-16 slide-up-stagger-4">
               <Stat value="7+" label="Campus Tools" />
               <div className="w-px h-8 bg-[var(--border)]" />
-              <Stat value="SVNIT" label="Exclusive" />
+              <Stat value="All" label="Colleges" />
               <div className="w-px h-8 bg-[var(--border)]" />
               <Stat value="Free" label="To Start" />
             </div>
@@ -96,13 +96,13 @@ export default function Home() {
           <div className="text-center mb-10 sm:mb-14">
             <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary-light)] mb-3">How it works</span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">Three simple steps</h2>
-            <p className="text-sm text-[var(--muted)] max-w-md mx-auto">Sign up using your SVNIT email and start exploring</p>
+            <p className="text-sm text-[var(--muted)] max-w-md mx-auto">Sign up using your college email and start exploring</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <StepCard step={1} icon={<MessageCircle size={20} />} title="Create Account" description="Sign up with your SVNIT email. Quick AI onboarding learns your subjects, schedule, and goals." color="var(--primary)" />
+            <StepCard step={1} icon={<MessageCircle size={20} />} title="Create Account" description="Sign up with your college email (.ac.in). Quick AI onboarding learns your subjects, schedule, and goals." color="var(--primary)" />
             <StepCard step={2} icon={<Sparkles size={20} />} title="Explore Features" description="Chat with Arya AI, post on campus feed, join anonymous rooms, and more." color="var(--accent)" />
-            <StepCard step={3} icon={<Zap size={20} />} title="Connect & Grow" description="Match with study buddies, join circles, go live on radar, and become part of the SVNIT community." color="var(--success)" />
+            <StepCard step={3} icon={<Zap size={20} />} title="Connect & Grow" description="Match with study buddies, join circles, go live on radar, and become part of the campus community." color="var(--success)" />
           </div>
         </div>
       </section>
@@ -118,7 +118,7 @@ export default function Home() {
 
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             <FeatureCard icon={<Sparkles size={20} />} title="Arya AI" description="Your 24/7 AI bestie — vent, study help, exam prep, or just chat." color="var(--primary)" badge="AI" />
-            <FeatureCard icon={<Ghost size={20} />} title="Anonymous Chat" description="Get matched with random SVNIT students for anonymous conversations." color="var(--accent)" />
+            <FeatureCard icon={<Ghost size={20} />} title="Anonymous Chat" description="Get matched with random college students for anonymous conversations." color="var(--accent)" />
             <FeatureCard icon={<Zap size={20} />} title="Campus Feed" description="Post activities — Study, Sports, Food runs, SOS — find others doing the same." color="var(--secondary)" />
             <FeatureCard icon={<Users size={20} />} title="Circles & Rooms" description="Discord-style study communities. Create or join circles, spin up live rooms." color="var(--primary-light)" />
             <FeatureCard icon={<MessageCircle size={20} />} title="Direct Chat" description="1-on-1 messaging with study buddies. Real-time with typing indicators." color="var(--accent)" />
@@ -134,12 +134,12 @@ export default function Home() {
       <section id="social-proof" className="relative z-10 py-10 sm:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-8">
-            <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary-light)] mb-3">Built for SVNIT</span>
+            <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary-light)] mb-3">Built for Students</span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">By students, for students</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <TestimonialCard
-              quote="Finally an app that gets campus life at SVNIT"
+              quote="Finally an app that gets campus life"
               author="CS '26"
               color="var(--primary)"
             />

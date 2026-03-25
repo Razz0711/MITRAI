@@ -128,7 +128,7 @@ function ResetPasswordInner() {
           </h1>
           <p className="text-sm text-[var(--muted)] mt-1">
             {step === 'email'
-              ? 'Enter your SVNIT email to receive a reset code'
+              ? 'Enter your college email to receive a reset code'
               : step === 'otp'
                 ? <>Enter the 6-digit code sent to <strong className="text-[var(--primary-light)]">{email}</strong></>
                 : 'Choose a new password for your account'}
@@ -139,12 +139,12 @@ function ResetPasswordInner() {
         {step === 'email' && (
           <form onSubmit={handleSendCode} className="space-y-3">
             <div>
-              <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">SVNIT Email</label>
+              <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">College Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="yourname@svnit.ac.in"
+                placeholder="yourname@college.ac.in"
                 className="input-field text-sm"
                 autoFocus
                 required

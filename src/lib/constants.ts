@@ -37,7 +37,7 @@ export const STUDENT_PROFILE_DEFAULTS = {
   country: 'India',
   timezone: 'IST',
   preferredLanguage: 'English',
-  institution: 'SVNIT Surat',
+  institution: '',
   learningType: 'practical' as const,
   studyMethod: ['problems'] as string[],
   sessionLength: '1hr',

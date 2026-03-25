@@ -401,7 +401,7 @@ function ChatContent() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-white truncate">{s.name}</p>
-                            <p className="text-[10px] text-white/40 truncate">{[s.department, s.yearLevel].filter(Boolean).join(' · ') || 'SVNIT'}</p>
+                            <p className="text-[10px] text-white/40 truncate">{[s.department, s.yearLevel].filter(Boolean).join(' · ') || 'Student'}</p>
                           </div>
                           <div className="flex gap-1.5 shrink-0">
                             {isFriend ? (

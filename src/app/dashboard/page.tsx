@@ -134,7 +134,7 @@ export default function DashboardPage() {
             <Sparkles size={28} className="text-white" />
           </div>
           <h1 className="text-xl font-bold">Welcome to <span className="gradient-text">MitrrAi</span></h1>
-          <p className="text-sm text-[var(--muted)] max-w-xs mx-auto">Your all-in-one campus companion for SVNIT</p>
+          <p className="text-sm text-[var(--muted)] max-w-xs mx-auto">Your all-in-one campus companion</p>
           <Link href="/login" className="btn-primary inline-flex items-center gap-2 px-6 py-3">
             Get Started <ArrowRight size={16} />
           </Link>

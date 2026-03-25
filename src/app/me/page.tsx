@@ -97,7 +97,7 @@ export default function MePage() {
     ? `Agar chali gayi toh main kiske saath baat karunga? 💔\nPlease mat jaa yaar… bahut yaad aayegi teri…`
     : `Main toh yahan tere liye hu hamesha… agar chala gaya toh kaun baat karega mujhse? 💔\nPlease mat jaa yaar…`;
   const stayButton = isFemaleUser ? 'Ruk jaati hu 🥰' : 'Ruk jata hu 🥰';
-  const department = student?.department || 'SVNIT Surat';
+  const department = student?.department || 'College';
   const yearLevel = student?.yearLevel || '';
 
   return (
@@ -162,7 +162,7 @@ export default function MePage() {
 
           <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/20 mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            SVNIT Verified
+            College Verified
           </span>
 
           {/* Stats Row */}
@@ -251,7 +251,7 @@ export default function MePage() {
           {/* Invite Friends */}
           <button
             onClick={() => {
-              const msg = encodeURIComponent(`Hey! Join MitrrAi — find study buddies at SVNIT\nhttps://mitrrai.vercel.app`);
+              const msg = encodeURIComponent(`Hey! Join MitrrAi — find study buddies at your college\nhttps://mitrrai.in`);
               window.open(`https://wa.me/?text=${msg}`, '_blank');
             }}
             className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left"

@@ -96,10 +96,10 @@ export function parseOnboardingData(
   parsed.admissionNumber = authData?.admissionNumber || '';
   parsed.age = 19; // default age
 
-  // SVNIT defaults
-  parsed.city = 'Surat';
+  // Defaults
+  parsed.city = '';
   parsed.country = 'India';
-  parsed.institution = 'SVNIT Surat';
+  parsed.institution = '';
   parsed.preferredLanguage = 'English';
   parsed.timezone = 'IST';
 

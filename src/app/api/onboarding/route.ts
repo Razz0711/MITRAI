@@ -55,7 +55,7 @@ function getFallbackResponse(step: number, _message: string, data: Record<string
     5: `Which days and times work best for you?\n(e.g., Mon, Wed, Fri evenings 7-10 PM)`,
     6: `What's your main goal right now?\n(e.g., Score 9+ SGPA, GATE prep, complete project, etc.)`,
     7: `Last question! Do you prefer a strict study schedule or flexible one? And do you need someone to keep you accountable?`,
-    8: `All set, ${name}! Creating your profile now.\nI'll match you with the best study buddies from SVNIT.\n\nHead to the dashboard to see your matches!`,
+    8: `All set, ${name}! Creating your profile now.\nI'll match you with the best study buddies.\n\nHead to the dashboard to see your matches!`,
   };
 
   return responses[step] || responses[0];

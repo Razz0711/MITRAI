@@ -103,7 +103,7 @@ export default function MatchCard({
             <span className="text-[var(--muted-strong)]">Admission:</span> {student.admissionNumber || 'Not shared'}
           </div>
           <div>
-            <span className="text-[var(--muted-strong)]">Campus:</span> SVNIT
+            <span className="text-[var(--muted-strong)]">Campus:</span> Verified
           </div>
         </div>
       </div>

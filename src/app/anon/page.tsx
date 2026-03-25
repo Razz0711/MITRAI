@@ -327,7 +327,7 @@ export default function AnonLobbyPage() {
             <span className="gradient-text">Anonymous Chat</span>
           </h1>
           <p className="text-[var(--muted)] text-sm max-w-xs mx-auto">
-            Talk freely with fellow SVNITians. No names, no judgments.
+            Talk freely with fellow students. No names, no judgments.
           </p>
         </div>
 
@@ -422,8 +422,8 @@ export default function AnonLobbyPage() {
               </h2>
               <p className="text-[var(--muted)] text-sm mb-6">
                 {usedTrial
-                  ? 'Your 7-day free trial is over. Subscribe to keep chatting anonymously with fellow SVNITians!'
-                  : 'Chat anonymously with fellow SVNITians. Vent, confess, get advice — all without revealing your identity.'}
+                  ? 'Your 7-day free trial is over. Subscribe to keep chatting anonymously with fellow students!'
+                  : 'Chat anonymously with fellow students. Vent, confess, get advice — all without revealing your identity.'}
               </p>
 
               {/* Pricing tiers with Subscribe buttons */}
@@ -461,7 +461,7 @@ export default function AnonLobbyPage() {
                 <div className="flex items-center gap-2">• Fun aliases</div>
                 <div className="flex items-center gap-2">• Mutual reveal option</div>
                 <div className="flex items-center gap-2">• Report & block</div>
-                <div className="flex items-center gap-2">• SVNIT-only safe space</div>
+                <div className="flex items-center gap-2">• College-verified safe space</div>
               </div>
 
               {/* Divider */}
@@ -622,7 +622,7 @@ export default function AnonLobbyPage() {
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                   <span className="text-sm">
                     <strong className="text-green-400">Free for everyone</strong>
-                    <span className="text-[var(--muted)]"> — Open for all SVNIT students</span>
+                    <span className="text-[var(--muted)]"> — Open for all college students</span>
                   </span>
                 </div>
                 <span className="text-xs font-semibold text-green-400">
@@ -807,10 +807,10 @@ export default function AnonLobbyPage() {
             {/* Footer info */}
             <div className="flex items-center justify-between">
               <p className="text-[10px] text-[var(--muted)]">
-                Estimated wait: ~{queueEstimate || 1} min · Matching with a fellow SVNITian
+                Estimated wait: ~{queueEstimate || 1} min · Matching with a fellow student
               </p>
               <p className="text-[10px] text-[var(--muted)]">
-                Be respectful · SVNIT email on file
+                Be respectful · College email on file
               </p>
             </div>
 

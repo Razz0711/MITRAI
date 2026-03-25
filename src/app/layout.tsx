@@ -21,8 +21,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MitrrAi — SVNIT Study Buddy Matching",
-  description: "AI-powered study partner matching for SVNIT Surat students. Find compatible buddies across departments, subjects, and schedules.",
+  title: "MitrrAi — Campus Companion",
+  description: "AI-powered campus companion for Indian college students. Find study buddies, chat with Arya AI, and connect across departments.",
 };
 
 export default function RootLayout({

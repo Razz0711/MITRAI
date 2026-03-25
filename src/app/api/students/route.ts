@@ -33,7 +33,7 @@ function buildStudentProfile(source: Record<string, unknown>, id: string): Stude
     photoUrl: (source.photoUrl as string) || '',
     schedulePreferences: (source.schedulePreferences as string[]) || [],
     currentStudy: (source.currentStudy as string) || '',
-    institution: (source.institution as string) || 'SVNIT Surat',
+    institution: (source.institution as string) || '',
     department: (source.department as string) || '',
     yearLevel: (source.yearLevel as string) || '',
     targetExam: (source.targetExam as string) || '',

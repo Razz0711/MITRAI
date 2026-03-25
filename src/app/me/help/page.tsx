@@ -7,7 +7,7 @@ import { ArrowLeft, ChevronDown } from 'lucide-react';
 const FAQS = [
   {
     q: 'What is MitrrAi?',
-    a: 'MitrrAi is a smart campus companion for SVNIT students. It helps you find study buddies, connect with peers, join circles, and chat with Arya AI — all in one app.',
+    a: 'MitrrAi is a smart campus companion for Indian college students. It helps you find study buddies, connect with peers, join circles, and chat with Arya AI — all in one app.',
   },
   {
     q: 'How does matching work?',
@@ -15,11 +15,11 @@ const FAQS = [
   },
   {
     q: 'Who is Arya?',
-    a: 'Arya is your AI friend inside MitrrAi. She chats like a real Mumbai college student — friendly, supportive, and always up for a conversation.',
+    a: 'Arya is your AI friend. She chats like a real Indian college student — friendly, supportive, and always up for a conversation.',
   },
   {
     q: 'Is my data safe?',
-    a: 'Yes! Your chats are private. We never share personal data with third parties. Your SVNIT credentials are verified but kept secure.',
+    a: 'Yes! Your chats are private. We never share personal data with third parties. Your college credentials are verified but kept secure.',
   },
   {
     q: 'How do I change my profile photo?',
@@ -76,8 +76,8 @@ export default function HelpPage() {
 
       <div className="mt-5 rounded-2xl p-4 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
         <p className="text-xs text-[var(--muted-strong)] mb-2">Still need help?</p>
-        <a href="mailto:mitrrai.support@svnit.ac.in" className="text-sm font-bold text-violet-400 hover:underline">
-          mitrrai.support@svnit.ac.in
+        <a href="mailto:mitraistudy8@gmail.com" className="text-sm font-bold text-violet-400 hover:underline">
+          mitraistudy8@gmail.com
         </a>
       </div>
     </div>

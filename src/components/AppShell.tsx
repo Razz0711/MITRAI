@@ -110,7 +110,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             />
             <div className="flex flex-col">
               <span className="text-sm font-bold text-[var(--foreground)] leading-none">MitrRAI</span>
-              <span className="text-[11px] text-[var(--muted-strong)] leading-none mt-0.5 hidden sm:block">SVNIT Surat</span>
+              <span className="text-[11px] text-[var(--muted-strong)] leading-none mt-0.5 hidden sm:block">Campus Companion</span>
             </div>
           </Link>
           <div className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <span className="opacity-50">·</span>
         <Link href="/privacy" className="hover:text-[var(--foreground)] transition-colors">Privacy Policy</Link>
         <span className="opacity-50">·</span>
-        <span>© {new Date().getFullYear()} MitrRAI — SVNIT</span>
+        <span>© {new Date().getFullYear()} MitrRAI</span>
       </footer>
     </>
   );

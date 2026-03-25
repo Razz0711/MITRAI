@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
         broadcastNotification({
           type: NOTIFICATION_TYPES.ANON_WAITING,
           title: '🎭 Someone is waiting in Anon Chat!',
-          message: `A fellow SVNITian is waiting in ${roomType} room. Go online and chat now!`,
+          message: `A fellow student is waiting in ${roomType} room. Go online and chat now!`,
           excludeUserId: userId,
         }).catch((err) => console.error('Broadcast error:', err));
       }

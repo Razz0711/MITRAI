@@ -39,7 +39,7 @@ async function sendResetOtpEmail(to: string, code: string) {
         </div>
         <div style="background: linear-gradient(180deg, #1a1a2e 0%, #7c3aed 80%, #a855f7 100%); padding: 8px 24px 24px; text-align: center;">
           <h1 style="color: white; font-size: 22px; margin: 0;">Password Reset</h1>
-          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0;">MitrRAI — Your SVNIT Study Buddy</p>
+          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 4px 0 0;">MitrRAI — Your Campus Companion</p>
         </div>
         <div style="padding: 32px 24px; text-align: center;">
           <p style="color: #e0e0e0; font-size: 15px; margin: 0 0 8px;">Your password reset code is:</p>
@@ -50,7 +50,7 @@ async function sendResetOtpEmail(to: string, code: string) {
           <p style="color: #666; font-size: 12px; margin: 8px 0 0;">If you didn&apos;t request this, you can safely ignore this email.</p>
         </div>
         <div style="background: rgba(255,255,255,0.03); padding: 16px 24px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
-          <p style="color: #555; font-size: 11px; margin: 0;">MitrRAI &mdash; Find your perfect study partner at SVNIT</p>
+          <p style="color: #555; font-size: 11px; margin: 0;">MitrRAI &mdash; Find your perfect study partner</p>
         </div>
       </div>
     `,
@@ -72,9 +72,9 @@ export async function POST(req: NextRequest) {
 
       if (!rateLimit(`reset:${normalizedEmail}`, 3, 600_000)) return rateLimitExceeded();
 
-      const svnitRegex = /^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+\.)?svnit\.ac\.in$/;
-      if (!svnitRegex.test(normalizedEmail)) {
-        return NextResponse.json({ success: false, error: 'Only SVNIT emails allowed' }, { status: 400 });
+      const collegeRegex = /@.+\.ac\.in$/;
+      if (!collegeRegex.test(normalizedEmail)) {
+        return NextResponse.json({ success: false, error: 'Only Indian college emails (.ac.in) are allowed' }, { status: 400 });
       }
 
       // Check if user actually exists

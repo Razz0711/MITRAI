@@ -189,7 +189,7 @@ function LoginPageInner() {
   useEffect(() => {
     if (!isSignup) { setParsedEmail(null); setEmailParseError(''); return; }
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed || (!/^[^@]+@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(trimmed) && trimmed !== 'demo@mitrai.study')) {
+    if (!trimmed || (!/^[^@]+@.+\.ac\.in$/.test(trimmed) && trimmed !== 'demo@mitrai.study')) {
       setParsedEmail(null);
       setEmailParseError('');
       return;
@@ -215,12 +215,12 @@ function LoginPageInner() {
   }
 
   const DEMO_EMAIL = 'demo@mitrai.study';
-  const isSvnitEmail = (e: string) => e === DEMO_EMAIL || /^[^@]+@([a-z0-9-]+\.)?svnit\.ac\.in$/.test(e);
+  const isCollegeEmail = (e: string) => e === DEMO_EMAIL || /@.+\.ac\.in$/.test(e);
 
   const sendOtp = async () => {
     const trimmedEmail = email.trim().toLowerCase();
-    if (!isSvnitEmail(trimmedEmail)) {
-      setError('Only SVNIT email addresses are allowed (e.g. name@svnit.ac.in or name@amhd.svnit.ac.in)');
+    if (!isCollegeEmail(trimmedEmail)) {
+      setError('Only Indian college email addresses are allowed (must end with .ac.in)');
       return;
     }
     setOtpSending(true);
@@ -328,7 +328,7 @@ function LoginPageInner() {
     }
   };
 
-  // Try admin login for non-SVNIT emails (login mode only)
+  // Try admin login for non-college emails (login mode only)
   const tryAdminLogin = async (adminEmail: string, adminPassword: string): Promise<boolean> => {
     try {
       const res = await fetch('/api/admin/auth', {
@@ -351,15 +351,15 @@ function LoginPageInner() {
 
     const trimmedEmail = email.trim().toLowerCase();
 
-    if (!isSvnitEmail(trimmedEmail)) {
-      // If in login mode with a non-SVNIT email, try admin auth first
+    if (!isCollegeEmail(trimmedEmail)) {
+      // If in login mode with a non-college email, try admin auth first
       if (!isSignup && trimmedEmail && password) {
         setOtpSending(true);
         const isAdmin = await tryAdminLogin(trimmedEmail, password);
         setOtpSending(false);
         if (isAdmin) return;
       }
-      setError('Only SVNIT email addresses are allowed (e.g. name@svnit.ac.in or name@amhd.svnit.ac.in)');
+      setError('Only Indian college email addresses are allowed (must end with .ac.in)');
       return;
     }
 
@@ -428,7 +428,7 @@ function LoginPageInner() {
             {isSignup ? 'Join MitrrAi' : 'Welcome back'}
           </h1>
           <p className="text-sm text-[var(--muted-strong)] mt-1">
-            {isSignup ? 'Register with your SVNIT college email' : 'Sign in with your SVNIT college email'}
+            {isSignup ? 'Register with your college email' : 'Sign in with your college email'}
           </p>
         </div>
 
@@ -449,7 +449,7 @@ function LoginPageInner() {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">SVNIT Email</label>
+            <label className="block text-xs font-medium text-[var(--muted-strong)] mb-1.5">College Email</label>
             <input
               type="email"
               value={email}
