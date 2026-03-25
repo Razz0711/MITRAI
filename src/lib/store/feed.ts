@@ -24,16 +24,32 @@ export interface CampusPost {
   isMyPost?: boolean; // true if current user is the author (set before userId is stripped)
 }
 
+/** Internal post type with institution field for sorting */
+interface InternalPost extends CampusPost {
+  _institution: string;
+}
+
+/** Haversine distance in meters */
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 /** Fetch posts with optional filters */
 export async function getFeedPosts(opts: {
   category?: string;
   location?: string;
   limit?: number;
   offset?: number;
-  userId?: string; // current user, for myReactions
-  institution?: string; // prioritize posts from this college (not filter)
+  userId?: string;
+  institution?: string; // user's own college (from email)
+  userLat?: number;     // user's GPS latitude
+  userLng?: number;     // user's GPS longitude
 }): Promise<{ posts: CampusPost[]; total: number }> {
-  const { category, location, limit = 20, offset = 0, userId, institution } = opts;
+  const { category, location, limit = 20, offset = 0, userId, institution, userLat, userLng } = opts;
 
   let query = supabase
     .from('campus_posts')
@@ -52,7 +68,7 @@ export async function getFeedPosts(opts: {
   const { data, error, count } = await query;
   if (error) { console.error('getFeedPosts error:', error); return { posts: [], total: 0 }; }
 
-  let posts: CampusPost[] = (data || []).map(row => ({
+  const internalPosts: InternalPost[] = (data || []).map(row => ({
     id: row.id,
     userId: row.user_id,
     content: row.content,
@@ -63,13 +79,13 @@ export async function getFeedPosts(opts: {
     lng: row.lng,
     isAnonymous: row.is_anonymous,
     createdAt: row.created_at,
-    _institution: row.institution || '', // internal: used for priority sorting
-  } as CampusPost & { _institution: string }));
+    _institution: row.institution || '',
+  }));
 
-  if (posts.length === 0) return { posts: [], total: count || 0 };
+  if (internalPosts.length === 0) return { posts: [], total: count || 0 };
 
   // Fetch user info for non-anonymous posts
-  const nonAnonUserIds = Array.from(new Set(posts.filter(p => !p.isAnonymous).map(p => p.userId)));
+  const nonAnonUserIds = Array.from(new Set(internalPosts.filter(p => !p.isAnonymous).map(p => p.userId)));
   const userMap = new Map<string, { name: string; photoUrl: string | null }>();
   if (nonAnonUserIds.length > 0) {
     const { data: users } = await supabase
@@ -80,7 +96,7 @@ export async function getFeedPosts(opts: {
   }
 
   // Fetch reaction counts
-  const postIds = posts.map(p => p.id);
+  const postIds = internalPosts.map(p => p.id);
   const { data: reactions } = await supabase
     .from('post_reactions')
     .select('post_id, type')
@@ -112,11 +128,11 @@ export async function getFeedPosts(opts: {
   }
 
   // Enrich posts
-  for (const post of posts) {
+  for (const post of internalPosts) {
     post.isMyPost = userId ? post.userId === userId : false;
     if (post.isAnonymous) {
       post.userName = 'Anonymous';
-      post.userId = ''; // Strip user_id for anonymous posts
+      post.userId = '';
     } else {
       const user = userMap.get(post.userId);
       post.userName = user?.name || 'Unknown';
@@ -126,29 +142,40 @@ export async function getFeedPosts(opts: {
     post.myReactions = myReactionsMap.get(post.id) || [];
   }
 
-  // Sort: own institution first, then others by reaction count
-  if (institution) {
-    const ownPosts = posts.filter(p => {
-      // Match institution from the post's stored institution field
-      return (p as any)._institution === institution;
-    });
-    const otherPosts = posts.filter(p => {
-      return (p as any)._institution !== institution;
-    });
-    // Sort other posts by total reactions (descending)
+  // ─── Hybrid priority sort ───
+  // Priority = own institution OR within 5km of user's location
+  // Priority posts sorted by recency, others by reaction count
+  let sorted: InternalPost[];
+  if (institution || (userLat && userLng)) {
+    const NEARBY_RADIUS = 5000; // 5km
+    const isPriority = (p: InternalPost): boolean => {
+      // Own institution match
+      if (institution && p._institution === institution) return true;
+      // Nearby location match (within 5km)
+      if (userLat && userLng && p.lat && p.lng) {
+        return haversineDistance(userLat, userLng, p.lat, p.lng) <= NEARBY_RADIUS;
+      }
+      return false;
+    };
+
+    const priorityPosts = internalPosts.filter(isPriority);
+    const otherPosts = internalPosts.filter(p => !isPriority(p));
+
+    // Priority: by recency (already sorted from DB)
+    // Others: by total reactions descending
     otherPosts.sort((a, b) => {
       const aTotal = (a.reactions?.imin || 0) + (a.reactions?.reply || 0) + (a.reactions?.connect || 0);
       const bTotal = (b.reactions?.imin || 0) + (b.reactions?.reply || 0) + (b.reactions?.connect || 0);
       return bTotal - aTotal;
     });
-    posts = [...ownPosts, ...otherPosts];
+
+    sorted = [...priorityPosts, ...otherPosts];
+  } else {
+    sorted = internalPosts;
   }
 
-  // Clean up internal field
-  for (const post of posts) {
-    delete (post as any)._institution;
-  }
-
+  // Strip internal field and return as CampusPost[]
+  const posts: CampusPost[] = sorted.map(({ _institution, ...rest }) => rest);
   return { posts, total: count || 0 };
 }
 

@@ -23,13 +23,15 @@ function extractInstitution(email: string): string {
   return parts[parts.length - 1].toLowerCase();
 }
 
-// GET /api/feed?category=&location=&limit=20&offset=0
+// GET /api/feed?category=&location=&limit=20&offset=0&lat=&lng=
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
   const sp = req.nextUrl.searchParams;
   const institution = extractInstitution(authUser.email || '');
+  const userLat = sp.get('lat') ? parseFloat(sp.get('lat')!) : undefined;
+  const userLng = sp.get('lng') ? parseFloat(sp.get('lng')!) : undefined;
 
   try {
     const result = await getFeedPosts({
@@ -39,6 +41,8 @@ export async function GET(req: NextRequest) {
       offset: parseInt(sp.get('offset') || '0'),
       userId: authUser.id,
       institution: institution || undefined,
+      userLat,
+      userLng,
     });
 
     return NextResponse.json({ success: true, data: result });

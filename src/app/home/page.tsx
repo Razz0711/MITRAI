@@ -159,6 +159,8 @@ export default function CampusFeedPage() {
       const params = new URLSearchParams();
       if (filterCat !== 'all') params.set('category', filterCat);
       if (filterLoc !== 'anywhere') params.set('location', filterLoc);
+      if (userLat) params.set('lat', String(userLat));
+      if (userLng) params.set('lng', String(userLng));
       params.set('limit', '20');
       params.set('offset', '0');
       const res = await fetch(`/api/feed?${params}`);
@@ -171,7 +173,7 @@ export default function CampusFeedPage() {
       }
     } catch (e) { console.error('fetchFeed:', e); }
     setLoading(false);
-  }, [filterCat, filterLoc]);
+  }, [filterCat, filterLoc, userLat, userLng]);
 
   const loadMore = async () => {
     setLoadingMore(true);
@@ -180,6 +182,8 @@ export default function CampusFeedPage() {
       const params = new URLSearchParams();
       if (filterCat !== 'all') params.set('category', filterCat);
       if (filterLoc !== 'anywhere') params.set('location', filterLoc);
+      if (userLat) params.set('lat', String(userLat));
+      if (userLng) params.set('lng', String(userLng));
       params.set('limit', '20');
       params.set('offset', String(nextPage * 20));
       const res = await fetch(`/api/feed?${params}`);
