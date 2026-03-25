@@ -240,7 +240,7 @@ export default function MePage() {
             <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center"><Star size={18} className="text-amber-400" /></div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-[var(--foreground)]">Pro Subscription</p>
-              <p className="text-[11px] text-[var(--muted-strong)]">Unlock unlimited matches & Arya AI</p>
+              <p className="text-[11px] text-[var(--muted-strong)]">Unlock unlimited matches & {companionName} AI</p>
             </div>
             <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-violet-500/15 text-violet-400 border border-violet-500/25">Upgrade</span>
             <span className="text-[var(--muted-strong)] text-xs ml-1">›</span>

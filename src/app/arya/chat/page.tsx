@@ -878,7 +878,7 @@ export default function AryaChatPage() {
           <div className="relative mb-8">
             <div className="absolute rounded-full border border-purple-500/15" style={{ animation: 'ping 3s ease-in-out infinite', top: '-24px', left: '-24px', width: '176px', height: '176px' }} />
             <div className="absolute rounded-full border border-purple-500/8" style={{ animation: 'ping 3s ease-in-out infinite 1s', top: '-40px', left: '-40px', width: '208px', height: '208px' }} />
-            <Image src="/arya-avatar.png" alt="Arya" width={128} height={128} className="w-32 h-32 rounded-full object-cover ring-4 ring-purple-500/20 shadow-2xl" />
+            <Image src={companionAvatar} alt={companionName} width={128} height={128} className="w-32 h-32 rounded-full object-cover ring-4 ring-purple-500/20 shadow-2xl" />
             {callStatus === 'listening' && <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-green-500 ring-2 ring-black animate-pulse" />}
             {callStatus === 'thinking' && (
               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
@@ -888,7 +888,7 @@ export default function AryaChatPage() {
               </div>
             )}
           </div>
-          <h2 className="text-2xl font-bold text-white mb-1">Arya</h2>
+          <h2 className="text-2xl font-bold text-white mb-1">{companionName}</h2>
           <p className="text-sm text-white/60 mb-2">
             {callStatus === 'ringing' ? 'Calling...' : callStatus === 'connecting' ? 'Connecting...' : 'On call'}
           </p>

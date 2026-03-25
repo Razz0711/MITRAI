@@ -90,6 +90,13 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<QuickStat>({ matches: 0, friends: 0, messages: 0, posts: 0 });
   const [greeting, setGreeting] = useState('Hey');
   const [loadingStats, setLoadingStats] = useState(true);
+  const [isFemaleUser, setIsFemaleUser] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('mitrrai_user_gender') === 'Female') setIsFemaleUser(true);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const hr = new Date().getHours();
@@ -180,15 +187,15 @@ export default function DashboardPage() {
           <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-purple-500/10 blur-2xl" />
           <div className="flex items-center gap-3 relative">
             <div className="relative shrink-0">
-              <Image src="/arya-avatar.png" alt="Arya" width={48} height={48} className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-500/30" />
+              <Image src={isFemaleUser ? '/aryan-avatar.png' : '/arya-avatar.png'} alt={isFemaleUser ? 'Aryan' : 'Arya'} width={48} height={48} className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-500/30" />
               <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-[var(--background)]" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-bold text-[var(--foreground)]">Chat with Arya</p>
+                <p className="text-sm font-bold text-[var(--foreground)]">Chat with {isFemaleUser ? 'Aryan' : 'Arya'}</p>
                 <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/20 text-purple-400">AI</span>
               </div>
-              <p className="text-[11px] text-[var(--muted)] truncate">Your campus bestie — exams, stress, doubts, or just vibes 💜</p>
+              <p className="text-[11px] text-[var(--muted)] truncate">{isFemaleUser ? 'Your campus bhaiya' : 'Your campus bestie'} — exams, stress, doubts, or just vibes 💜</p>
             </div>
             <ChevronRight size={18} className="text-purple-400 shrink-0" />
           </div>

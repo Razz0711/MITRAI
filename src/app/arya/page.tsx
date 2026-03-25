@@ -240,7 +240,7 @@ export default function AryaProfilePage() {
           </button>
           <Image
             src={aryaAvatar}
-            alt="Arya"
+            alt={companionName}
             width={400}
             height={400}
             className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl"
