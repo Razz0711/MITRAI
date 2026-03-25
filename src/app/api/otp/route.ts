@@ -21,9 +21,9 @@ const transporter = nodemailer.createTransport({
     user: (process.env.SMTP_EMAIL || '').trim(),
     pass: (process.env.SMTP_APP_PASSWORD || '').trim(),
   },
-  connectionTimeout: 8000,  // 8s to establish connection
-  greetingTimeout: 8000,    // 8s for SMTP greeting
-  socketTimeout: 10000,     // 10s for socket inactivity
+  connectionTimeout: 5000,  // 5s to establish connection
+  greetingTimeout: 5000,    // 5s for SMTP greeting
+  socketTimeout: 8000,      // 8s for socket inactivity
 });
 
 async function sendOtpEmail(to: string, code: string) {
@@ -112,16 +112,11 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Generate 6-digit OTP (cryptographically secure)
+      // Generate OTP and store in DB
       const code = String(crypto.randomInt(100000, 999999));
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-
-      // Store in Supabase (upsert — replace any existing OTP for this email)
       const { error: upsertError } = await supabase.from('otp_codes').upsert({
-        email: normalizedEmail,
-        code,
-        expires_at: expiresAt,
-        attempts: 0,
+        email: normalizedEmail, code, expires_at: expiresAt, attempts: 0,
         created_at: new Date().toISOString(),
       }, { onConflict: 'email' });
 
@@ -133,14 +128,18 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      // Send OTP via email (fire-and-forget — don't block the response)
-      sendOtpEmail(normalizedEmail, code).then(
-        () => console.log(`[OTP] Code sent to ${normalizedEmail}`),
-        (emailErr: unknown) => {
-          const errMsg = emailErr instanceof Error ? emailErr.message : String(emailErr);
-          console.error('[OTP] Failed to send email:', errMsg);
-        },
-      );
+      // Send OTP via email — await it so serverless doesn't kill the function
+      try {
+        await sendOtpEmail(normalizedEmail, code);
+        console.log(`[OTP] Code sent to ${normalizedEmail}`);
+      } catch (emailErr: unknown) {
+        const errMsg = emailErr instanceof Error ? emailErr.message : String(emailErr);
+        console.error('[OTP] Failed to send email:', errMsg);
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to send verification email. Please try again.',
+        }, { status: 500 });
+      }
 
       return NextResponse.json({
         success: true,
