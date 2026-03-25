@@ -21,7 +21,7 @@ function WelcomeSplash({ userId, userName }: { userId: string; userName?: string
   useEffect(() => {
     fetch(`/api/students?id=${encodeURIComponent(userId)}`)
       .then(r => r.json())
-      .then(d => { if (d.data?.gender) setGender(d.data.gender); })
+      .then(d => { if (d.data?.gender) { setGender(d.data.gender); try { localStorage.setItem('mitrrai_user_gender', d.data.gender); } catch {} } })
       .catch(() => {});
 
     const t1 = setTimeout(() => setShowBubble(true), 400);
@@ -305,7 +305,8 @@ function LoginPageInner() {
           setError(result.error || 'Something went wrong. Tap "Verify & Continue" to retry.');
           setOtpVerifying(false);
         } else {
-          setOtpLoadingStep('done'); // keep spinner — WelcomeSplash will take over
+          setOtpLoadingStep('done');
+            try { localStorage.setItem('mitrrai_user_gender', gender); } catch {}
         }
       } else {
         const result = await login(trimmedEmail, password);
@@ -396,6 +397,8 @@ function LoginPageInner() {
           });
           if (!result.success) {
             setError(result.error || 'Signup failed — please try again.');
+          } else {
+            try { localStorage.setItem('mitrrai_user_gender', gender); } catch {}
           }
         } else {
           const result = await login(trimmedEmail, password);

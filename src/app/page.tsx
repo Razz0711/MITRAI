@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
   Sparkles, Users, Ghost, BookOpen,
-  MessageCircle, Zap, ArrowRight, Shield, Crown,
+  MessageCircle, Zap, ArrowRight, Crown,
 } from 'lucide-react';
 
 export default function Home() {
@@ -37,7 +37,7 @@ export default function Home() {
 
       {/* ─── Hero Section ─── */}
       <section className="relative z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-24 pb-20 sm:pt-32 sm:pb-28">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-10 sm:pt-28 sm:pb-20">
           <div className="text-center max-w-2xl mx-auto slide-up">
 
             {/* Badge */}
@@ -60,7 +60,7 @@ export default function Home() {
               at SVNIT Surat
             </p>
 
-            <p className="text-sm text-[var(--muted)] mb-10 max-w-md mx-auto leading-relaxed slide-up-stagger-2">
+            <p className="text-sm text-[var(--muted)] mb-8 max-w-md mx-auto leading-relaxed slide-up-stagger-2">
               Chat with Arya AI, meet strangers anonymously, post on campus feed, go live on radar — everything a SVNIT student needs, in one app.
             </p>
 
@@ -70,27 +70,30 @@ export default function Home() {
                 Join MitrrAi
                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/home" className="btn-secondary px-7 py-3 text-base font-medium">
+              <button
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                className="btn-secondary px-7 py-3 text-base font-medium"
+              >
                 Explore
-              </Link>
+              </button>
             </div>
 
             {/* Stats Row */}
-            <div className="flex items-center justify-center gap-8 sm:gap-12 mt-16 slide-up-stagger-4">
-              <Stat value="10+" label="Features" />
+            <div className="flex items-center justify-center gap-8 sm:gap-12 mt-10 sm:mt-16 slide-up-stagger-4">
+              <Stat value="7+" label="Campus Tools" />
               <div className="w-px h-8 bg-[var(--border)]" />
-              <Stat value="AI" label="Powered" />
+              <Stat value="SVNIT" label="Exclusive" />
               <div className="w-px h-8 bg-[var(--border)]" />
-              <Stat value="24/7" label="Arya AI" />
+              <Stat value="Free" label="To Start" />
             </div>
           </div>
         </div>
       </section>
 
       {/* ─── How It Works ─── */}
-      <section className="relative z-10 py-20">
+      <section id="how-it-works" className="relative z-10 py-12 sm:py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-10 sm:mb-14">
             <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary-light)] mb-3">How it works</span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">Three simple steps</h2>
             <p className="text-sm text-[var(--muted)] max-w-md mx-auto">Sign up using your SVNIT email and start exploring</p>
@@ -105,46 +108,57 @@ export default function Home() {
       </section>
 
       {/* ─── Features Grid ─── */}
-      <section className="relative z-10 py-20">
+      <section id="features" className="relative z-10 py-12 sm:py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-14">
+          <div className="text-center mb-10 sm:mb-14">
             <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)] mb-3">Features</span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">Everything you need on campus</h2>
             <p className="text-sm text-[var(--muted)] max-w-md mx-auto">From AI assistance to anonymous confessions — all in one place</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            <FeatureCard icon={<Sparkles size={20} />} title="Arya AI" description="Your 24/7 AI bestie — vent, get study help, exam prep, or just chat. Powered by Grok." color="var(--primary)" badge="AI" />
-            <FeatureCard icon={<Ghost size={20} />} title="Anonymous Chat" description="Get matched with random SVNIT students for anonymous conversations. Multiple room types." color="var(--accent)" />
-            <FeatureCard icon={<Zap size={20} />} title="Campus Feed" description="Post activities — Study, Sports, Food runs, SOS — and find others doing the same thing." color="var(--secondary)" />
-
-            <FeatureCard icon={<Users size={20} />} title="Circles & Rooms" description="Discord-style study communities. Create or join circles, spin up live study rooms." color="var(--primary-light)" />
-            <FeatureCard icon={<MessageCircle size={20} />} title="Direct Chat" description="1-on-1 messaging with your matched study buddies. Real-time with typing indicators." color="var(--accent)" />
-            <FeatureCard icon={<BookOpen size={20} />} title="Doubts & Confessions" description="Anonymous campus feed — post doubts, confessions, hot takes, spotted, and more." color="var(--secondary)" />
-            <FeatureCard icon={<Crown size={20} />} title="Pro Subscription" description="Unlock unlimited matches, AI study plans, priority matching, and ad-free experience." color="var(--warning)" badge="PRO" />
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+            <FeatureCard icon={<Sparkles size={20} />} title="Arya AI" description="Your 24/7 AI bestie — vent, study help, exam prep, or just chat." color="var(--primary)" badge="AI" />
+            <FeatureCard icon={<Ghost size={20} />} title="Anonymous Chat" description="Get matched with random SVNIT students for anonymous conversations." color="var(--accent)" />
+            <FeatureCard icon={<Zap size={20} />} title="Campus Feed" description="Post activities — Study, Sports, Food runs, SOS — find others doing the same." color="var(--secondary)" />
+            <FeatureCard icon={<Users size={20} />} title="Circles & Rooms" description="Discord-style study communities. Create or join circles, spin up live rooms." color="var(--primary-light)" />
+            <FeatureCard icon={<MessageCircle size={20} />} title="Direct Chat" description="1-on-1 messaging with study buddies. Real-time with typing indicators." color="var(--accent)" />
+            <FeatureCard icon={<BookOpen size={20} />} title="Doubts & Confessions" description="Anonymous campus feed — doubts, confessions, hot takes, and more." color="var(--secondary)" />
+            <div className="col-span-2 sm:col-span-1">
+              <FeatureCard icon={<Crown size={20} />} title="Pro Subscription" description="Unlimited matches, AI study plans, priority matching, and ad-free experience." color="var(--warning)" badge="PRO" />
+            </div>
           </div>
         </div>
       </section>
 
       {/* ─── Social Proof ─── */}
-      <section className="relative z-10 py-16">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="card-glass p-8 sm:p-12 text-center relative overflow-hidden">
-            {/* Gradient accent top border */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent" />
-            <Shield size={28} className="mx-auto mb-4 text-[var(--primary-light)]" />
-            <p className="text-lg sm:text-xl font-semibold mb-3 leading-snug">
-              &ldquo;Built by <span className="gradient-text">SVNIT students</span>, for SVNIT students&rdquo;
-            </p>
-            <p className="text-sm text-[var(--muted)]">
-              Secure, AI-powered, and designed to make campus life better for everyone
-            </p>
+      <section id="social-proof" className="relative z-10 py-10 sm:py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8">
+            <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary-light)] mb-3">Built for SVNIT</span>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3">By students, for students</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <TestimonialCard
+              quote="Finally an app that gets campus life at SVNIT"
+              author="CS '26"
+              color="var(--primary)"
+            />
+            <TestimonialCard
+              quote="Arya AI actually helps during exam prep season"
+              author="EE '25"
+              color="var(--accent)"
+            />
+            <TestimonialCard
+              quote="The anonymous chat is what we all needed"
+              author="ME '27"
+              color="var(--secondary)"
+            />
           </div>
         </div>
       </section>
 
       {/* ─── Final CTA ─── */}
-      <section className="relative z-10 py-20">
+      <section id="cta" className="relative z-10 py-12 sm:py-20">
         <div className="max-w-lg mx-auto px-4 text-center">
           <div className="relative inline-block mb-6">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white mx-auto"
@@ -162,22 +176,6 @@ export default function Home() {
           </Link>
         </div>
       </section>
-
-      {/* ─── Footer ─── */}
-      <footer className="relative z-10 py-8 border-t border-[var(--glass-border)]">
-        <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--muted)]">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white text-[8px] font-bold">M</div>
-            <span>&copy; 2026 MitrrAi — SVNIT Surat</span>
-          </div>
-          <div className="flex gap-5">
-            <a href="/privacy" className="hover:text-[var(--foreground)] transition-colors">Privacy</a>
-            <a href="/terms" className="hover:text-[var(--foreground)] transition-colors">Terms</a>
-            <a href="/feedback" className="hover:text-[var(--foreground)] transition-colors">Feedback</a>
-            <a href="https://github.com/Razz0711/MITRRAI" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--foreground)] transition-colors">GitHub</a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
@@ -214,7 +212,7 @@ function StepCard({ step, icon, title, description, color }: { step: number; ico
 
 function FeatureCard({ icon, title, description, color, badge }: { icon: React.ReactNode; title: string; description: string; color: string; badge?: string }) {
   return (
-    <div className="card-hover p-5 group relative overflow-hidden">
+    <div className="card-hover p-4 sm:p-5 group relative overflow-hidden">
       {/* Gradient accent line */}
       <div className="absolute top-0 left-0 w-full h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ background: `linear-gradient(90deg, ${color}, transparent)` }} />
@@ -234,6 +232,16 @@ function FeatureCard({ icon, title, description, color, badge }: { icon: React.R
       </div>
       <h3 className="text-sm font-bold mb-2 text-[var(--foreground)]">{title}</h3>
       <p className="text-xs text-[var(--muted)] leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+function TestimonialCard({ quote, author, color }: { quote: string; author: string; color: string }) {
+  return (
+    <div className="card-glass p-5 text-center relative overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
+      <p className="text-sm font-medium mb-3 leading-relaxed">&ldquo;{quote}&rdquo;</p>
+      <span className="text-xs text-[var(--muted)]">&mdash; {author}</span>
     </div>
   );
 }

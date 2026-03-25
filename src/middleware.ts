@@ -43,22 +43,29 @@ export async function middleware(request: NextRequest) {
   // CSRF protection: validate Origin header on mutating API requests
   if (isApiRoute && !isPublicApi && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
     const origin = request.headers.get('origin');
-    if (origin) {
-      const allowedHost = request.nextUrl.host; // e.g. "mitrrai-study.vercel.app" or "localhost:3000"
-      try {
-        const originHost = new URL(origin).host;
-        if (originHost !== allowedHost) {
-          return NextResponse.json(
-            { success: false, error: 'Forbidden: origin mismatch' },
-            { status: 403 }
-          );
-        }
-      } catch {
+    const allowedHost = request.nextUrl.host; // e.g. "mitrrai-study.vercel.app" or "localhost:3000"
+
+    if (!origin) {
+      // Reject requests with no Origin header to prevent CSRF bypass via curl/Postman
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: missing origin header' },
+        { status: 403 }
+      );
+    }
+
+    try {
+      const originHost = new URL(origin).host;
+      if (originHost !== allowedHost) {
         return NextResponse.json(
-          { success: false, error: 'Forbidden: invalid origin' },
+          { success: false, error: 'Forbidden: origin mismatch' },
           { status: 403 }
         );
       }
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden: invalid origin' },
+        { status: 403 }
+      );
     }
   }
 

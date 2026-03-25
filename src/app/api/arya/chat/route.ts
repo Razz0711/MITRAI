@@ -1,7 +1,7 @@
 // ============================================
 // MitrRAI - Arya Chat API (xAI Grok)
 // Loads full conversation history
-// Adds "generate_selfie" tool (1 per user)
+// Sends pre-uploaded selfies from catalog
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,9 +12,10 @@ import { getAryaPrompt } from '@/lib/arya-prompt';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 import { detectCrisis } from '@/lib/crisis-detection';
 import { getStickerIds } from '@/lib/arya-stickers';
+import { getSelfieCatalogForPrompt, getSelfieById, getUnseenSelfie } from '@/lib/arya-selfie-catalog';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60; // Allow more time for image generation if needed
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
@@ -59,7 +60,8 @@ export async function POST(req: NextRequest) {
         .limit(50),
     ]);
     const basePrompt = getAryaPrompt(studentRow?.gender);
-    const systemPrompt = basePrompt + `\n\n## REACTIONS & STICKERS\nYou can react to the user's message like a WhatsApp reaction. To do so, start your reply with "REACT:" followed by a single emoji (e.g. "REACT:❤️" or "REACT:😂"). Do this occasionally — only when the emotion is strong (funny, touching, surprising). After "REACT:emoji" continue your normal reply on the same line.\n\nYou can also send a sticker by including [STICKER:id] anywhere in your reply. Available sticker IDs: ${getStickerIds()}. Use stickers spontaneously when the mood fits — max once every 5 messages. You can send a sticker with text, or just a sticker alone.\n\nExample: "REACT:😂 haha yaar you're too funny! [STICKER:laugh]"`;
+    const selfieCatalog = getSelfieCatalogForPrompt();
+    const systemPrompt = basePrompt + `\n\n## REACTIONS & STICKERS\nYou can react to the user's message like a WhatsApp reaction. To do so, start your reply with "REACT:" followed by a single emoji (e.g. "REACT:❤️" or "REACT:😂"). Do this occasionally — only when the emotion is strong (funny, touching, surprising). After "REACT:emoji" continue your normal reply on the same line.\n\nYou can also send a sticker by including [STICKER:id] anywhere in your reply. Available sticker IDs: ${getStickerIds()}. Use stickers spontaneously when the mood fits — max once every 5 messages. You can send a sticker with text, or just a sticker alone.\n\nExample: "REACT:😂 haha yaar you're too funny! [STICKER:laugh]"\n\n## SELFIES\nYou have a collection of pre-taken selfies. When the user asks for a selfie, photo, or picture of you, use the send_selfie tool. Pick the selfie_id that best matches the conversation context, mood, or time of day.\n\nAvailable selfies:\n${selfieCatalog}\n\nPick wisely based on what the user is talking about! For example, if they mention food, pick "eating_snack". If it's late night, pick "cozy_night". If the conversation is happy/funny, pick "laughing_candid".`;
 
 
     if (historyError) {
@@ -96,16 +98,18 @@ export async function POST(req: NextRequest) {
       {
         type: "function",
         function: {
-          name: "generate_selfie",
-          description: "Generates exactly one photo/selfie of Arya and sends it to the user. Call this ONLY IF the user explicitly asks for a selfie, photo, or picture of you.",
+          name: "send_selfie",
+          description: "Sends a selfie/photo of Arya to the user. Call this ONLY when the user explicitly asks for a selfie, photo, or picture of you. Pick the best selfie_id based on conversation context.",
           parameters: {
             type: "object",
             properties: {
-              prompt_suffix: {
+              selfie_id: {
                 type: "string",
-                description: "Optional detail to add to the image prompt, e.g., 'wearing glasses', 'at a cafe'. Must remain appropriate.",
+                description: "The ID of the selfie to send. Choose the one that best fits the current conversation mood/context.",
+                enum: ["doing_right_now", "cute_pic", "funny_face", "outfit_mirror", "just_woke_up", "eating_food", "where_are_you", "miss_me", "chilling", "gym_pic", "car_selfie", "with_family", "night_chill", "coffee_date", "casual_starter", "smile_for_me", "sad_pouty", "good_night", "party_ready", "with_friends", "bored_lazy", "studying", "in_class", "library", "rainy_day", "hot_summer", "traveling", "with_pet", "shopping", "cooking"]
               }
             },
+            required: ["selfie_id"],
             additionalProperties: false,
           }
         }
@@ -149,62 +153,57 @@ export async function POST(req: NextRequest) {
       const toolCall = responseMsg.tool_calls[0];
       
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((toolCall as any).function?.name === 'generate_selfie') {
-        // --- CHECK IF USER ALREADY GOT A SELFIE ---
-        const { data: existingSelfie } = await supabase
-          .from('arya_selfies')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-
-        if (existingSelfie) {
-          // ALREADY HAS ONE! Block it and send a pre-written rejection text instead.
-          return NextResponse.json({
-            success: true,
-            data: { 
-              response: "Sorry yaar, I already sent you one selfie! Focus on studies now 🙈" 
-            }
-          });
-        }
-
-        // --- USER HAS NOT RECEIVED ONE. GENERATE IT. ---
+      if ((toolCall as any).function?.name === 'send_selfie') {
         try {
-          // Explicit cast to bypass strict SDK type for OpenAI wrappers
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const args = JSON.parse((toolCall as any).function.arguments);
-          const suffix = args.prompt_suffix ? `, ${args.prompt_suffix}` : '';
-          
-          // Image Prompt carefully designed to match Arya's persona
-          const systemImagePrompt = `A casual, natural smartphone selfie of a cute 24-year-old Indian college girl from Mumbai named Arya. She has expressive brown eyes, medium length dark hair, soft natural lighting. She is wearing casual comfortable college clothes. Genuine, sweet, slightly shy smile. High quality, photorealistic${suffix}`;
+          const requestedId = args.selfie_id;
 
-          const imageResponse = await xai.images.generate({
-            model: "grok-imagine-image",
-            prompt: systemImagePrompt,
-            size: "1024x1024",
-          });
+          // Fetch which selfies this user has already seen
+          const { data: seenRows } = await supabase
+            .from('arya_selfies')
+            .select('selfie_id')
+            .eq('user_id', user.id);
 
-          const imageUrl = imageResponse.data?.[0]?.url;
+          const seenIds = (seenRows || []).map((r: { selfie_id: string }) => r.selfie_id).filter(Boolean);
 
-          if (imageUrl) {
-            // Log it in DB to prevent future claims
-            await supabase.from('arya_selfies').insert({
-              user_id: user.id,
-              image_url: imageUrl
-            });
+          // Try to use the AI's pick; if already seen, pick an unseen one
+          let selfie = getSelfieById(requestedId);
+          if (!selfie || seenIds.includes(selfie.id)) {
+            selfie = getUnseenSelfie(seenIds);
+          }
 
-            // Return the image formatted as markdown so the chat UI renders it
+          // Build the public URL from Supabase Storage
+          const { data: publicUrlData } = supabase.storage
+            .from('arya-selfies')
+            .getPublicUrl(selfie.fileName);
+
+          const selfieUrl = publicUrlData?.publicUrl;
+          if (!selfieUrl) {
             return NextResponse.json({
               success: true,
-              data: { 
-                response: `![Arya Selfie](${imageUrl})`
-              }
+              data: { response: 'Uff, my camera is glitching out right now! Maybe later? 🥺' }
             });
           }
-        } catch (imgError) {
-          console.error("Image generation failed:", imgError);
+
+          // Log which selfie was sent (for rotation tracking)
+          await supabase.from('arya_selfies').insert({
+            user_id: user.id,
+            image_url: selfieUrl,
+            selfie_id: selfie.id,
+          });
+
           return NextResponse.json({
             success: true,
-            data: { response: "Uff, my camera is glitching out right now! Maybe later? 🥺" }
+            data: {
+              response: `![Arya Selfie](${selfieUrl})`
+            }
+          });
+        } catch (imgError) {
+          console.error('Selfie send failed:', imgError);
+          return NextResponse.json({
+            success: true,
+            data: { response: 'Uff, my camera is glitching out right now! Maybe later? 🥺' }
           });
         }
       }

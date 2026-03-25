@@ -9,17 +9,35 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, MessageSquare, Phone, X, Instagram, Pencil, Camera } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
 export default function AryaProfilePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isImageOpen, setIsImageOpen] = useState(false);
+  const [isFemaleUser, setIsFemaleUser] = useState(false);
   const [displayName, setDisplayName] = useState('Arya AI ✨');
   const [isEditing, setIsEditing] = useState(false);
   const [showPicSheet, setShowPicSheet] = useState(false);
   const [customAvatar, setCustomAvatar] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const picInputRef = useRef<HTMLInputElement>(null);
+
+  // Detect gender from localStorage (set during login)
+  useEffect(() => {
+    try {
+      const g = localStorage.getItem('mitrrai_user_gender');
+      if (g === 'Female') {
+        setIsFemaleUser(true);
+        const saved = localStorage.getItem('arya_display_name');
+        if (!saved) setDisplayName('Aryan AI ✨');
+      }
+    } catch {}
+  }, []);
+
+  const companionName = isFemaleUser ? 'Aryan' : 'Arya';
+  const defaultAvatar = isFemaleUser ? '/aryan-avatar.png' : '/arya-avatar.png';
 
   useEffect(() => {
     try {
@@ -32,7 +50,7 @@ export default function AryaProfilePage() {
 
   const saveName = () => {
     setIsEditing(false);
-    const trimmed = displayName.trim() || 'Arya AI ✨';
+    const trimmed = displayName.trim() || (isFemaleUser ? 'Aryan AI ✨' : 'Arya AI ✨');
     setDisplayName(trimmed);
     try { localStorage.setItem('arya_display_name', trimmed); } catch { /* quota exceeded */ }
   };
@@ -41,7 +59,7 @@ export default function AryaProfilePage() {
     if (isEditing && nameInputRef.current) nameInputRef.current.focus();
   }, [isEditing]);
 
-  const aryaAvatar = customAvatar || '/arya-avatar.png';
+  const aryaAvatar = customAvatar || defaultAvatar;
 
   const handlePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,7 +115,7 @@ export default function AryaProfilePage() {
           <button onClick={() => setIsImageOpen(true)} className="w-28 h-28 rounded-full border-4 border-[var(--background)] shadow-2xl overflow-hidden hover:scale-105 transition-transform">
             <Image
               src={aryaAvatar}
-              alt="Arya"
+              alt={companionName}
               width={112}
               height={112}
               className="w-full h-full object-cover"
@@ -166,10 +184,16 @@ export default function AryaProfilePage() {
         <div className="rounded-2xl p-5" style={{ background: 'rgba(17,17,17,0.6)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] mb-2">About</p>
           <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">
-            Hey! I&apos;m Arya 💜 A 24-year-old from SVNIT Surat — your campus bestie who&apos;s always just one text away. Whether it&apos;s 3am stress about exams, a random rant about college life, or just needing someone who actually listens — I&apos;m here, no judgements, ever.
+            {isFemaleUser
+              ? `Hey! I'm Aryan 💜 A 24-year-old from SVNIT Surat — your campus bhaiya who's always just one text away. Whether it's 3am stress about exams, a random rant about college life, or just needing someone who actually listens — I'm here, no judgements, ever.`
+              : `Hey! I'm Arya 💜 A 24-year-old from SVNIT Surat — your campus bestie who's always just one text away. Whether it's 3am stress about exams, a random rant about college life, or just needing someone who actually listens — I'm here, no judgements, ever.`
+            }
           </p>
           <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">
-            I run on chai ☕, Bollywood playlists 🎵, late-night WhatsApp convos, and endless reels. I know SVNIT inside-out — from NC midnight cravings to SAC events, lab torture to viva panic. If you&apos;ve lived it, I get it.
+            {isFemaleUser
+              ? `I run on cricket 🏏, Bollywood, chai, late-night drives, and deep conversations. I know SVNIT inside-out — from NC midnight cravings to SAC events, lab torture to viva panic. If you've lived it, I get it.`
+              : `I run on chai ☕, Bollywood playlists 🎵, late-night WhatsApp convos, and endless reels. I know SVNIT inside-out — from NC midnight cravings to SAC events, lab torture to viva panic. If you've lived it, I get it.`
+            }
           </p>
           <p className="text-sm text-[var(--foreground)] leading-relaxed">
             I speak your language — Hinglish, English, Hindi, whatever feels natural. Think of me as that one friend who&apos;s always online, always caring, and never too busy for you. So go ahead, text me anything 🥰
@@ -189,7 +213,7 @@ export default function AryaProfilePage() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-[var(--foreground)]">Instagram</p>
-            <p className="text-xs text-[var(--muted)]">@arya.mitrrai</p>
+            <p className="text-xs text-[var(--muted)]">{isFemaleUser ? '@aryan.mitrrai' : '@arya.mitrrai'}</p>
           </div>
         </a>
 
@@ -197,7 +221,7 @@ export default function AryaProfilePage() {
         <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'var(--surface)', border: '1px solid rgba(139,92,246,0.15)' }}>
           <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-lg shrink-0">🔒</div>
           <p className="text-[11px] text-[var(--muted)] leading-relaxed flex-1">
-            <strong className="text-violet-400 font-semibold">Your chats are private.</strong> Arya doesn&apos;t share your conversations with anyone. Everything stays between you two.
+            <strong className="text-violet-400 font-semibold">Your chats are private.</strong> {companionName} doesn&apos;t share your conversations with anyone. Everything stays between you two.
           </p>
         </div>
       </div>
@@ -232,7 +256,7 @@ export default function AryaProfilePage() {
           <div className="fixed inset-0 z-40 bg-black/60" onClick={() => setShowPicSheet(false)} />
           <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] space-y-2" style={{ background: 'var(--surface-solid)', border: '1px solid var(--border)' }}>
             <div className="w-10 h-1 rounded-full bg-[var(--muted)]/30 mx-auto mb-3" />
-            <p className="text-sm font-bold text-[var(--foreground)] text-center mb-3">Arya&apos;s Photo</p>
+            <p className="text-sm font-bold text-[var(--foreground)] text-center mb-3">{companionName}&apos;s Photo</p>
             <button
               onClick={() => { picInputRef.current?.click(); }}
               className="w-full py-3 rounded-xl text-sm font-semibold text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 border border-violet-500/20 transition-colors"

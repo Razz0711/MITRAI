@@ -1,1 +1,0 @@
--- DELETED — professor ratings feature removed

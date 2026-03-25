@@ -45,11 +45,13 @@ const MessageBubble = memo(function MessageBubble({
   onRate,
   onDelete: _onDelete,
   formatTime,
+  companionAvatar,
 }: {
   msg: Message;
   onRate: (id: string, r: number) => void;
   onDelete: (id: string) => void;
   formatTime: (d: string) => string;
+  companionAvatar: string;
 }) {
   const isUser = msg.role === 'user';
 
@@ -63,7 +65,7 @@ const MessageBubble = memo(function MessageBubble({
       {/* Arya avatar for received */}
       {!isUser && (
         <Image
-          src="/arya-avatar.png" alt="Arya" width={28} height={28}
+          src={companionAvatar} alt="Companion" width={28} height={28}
           className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-auto mb-5"
         />
       )}
@@ -163,6 +165,17 @@ export default function AryaChatPage() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
+  const [isFemaleUser, setIsFemaleUser] = useState(false);
+
+  // Gender detection from localStorage (set during login)
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('mitrrai_user_gender') === 'Female') setIsFemaleUser(true);
+    } catch {}
+  }, []);
+
+  const companionName = isFemaleUser ? 'Aryan' : 'Arya';
+  const companionAvatar = isFemaleUser ? '/aryan-avatar.png' : '/arya-avatar.png';
 
   // Voice call states
   const [inCall, setInCall] = useState(false);
@@ -384,7 +397,9 @@ export default function AryaChatPage() {
     } else {
       setMessages(prev => [...prev, {
         id: `err-${Date.now()}`, role: 'assistant',
-        content: 'arre sorry… network slow tha 🥺 dobara bhej na message… main sun rahi hu!',
+        content: isFemaleUser
+          ? 'arre sorry… network slow tha 🥺 dobara bhej na message… main sun raha hu!'
+          : 'arre sorry… network slow tha 🥺 dobara bhej na message… main sun rahi hu!',
         created_at: new Date().toISOString(),
       }]);
     }
@@ -698,10 +713,10 @@ export default function AryaChatPage() {
           <ArrowLeft size={20} />
         </button>
         <button onClick={() => router.push('/arya')} className="shrink-0">
-          <Image src="/arya-avatar.png" alt="Arya" width={38} height={38} className="w-[38px] h-[38px] rounded-full object-cover ring-2 ring-purple-500/25 active:scale-95 transition-transform" />
+          <Image src={companionAvatar} alt={companionName} width={38} height={38} className="w-[38px] h-[38px] rounded-full object-cover ring-2 ring-purple-500/25 active:scale-95 transition-transform" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-[15px] font-bold text-white leading-tight">Arya</p>
+          <p className="text-[15px] font-bold text-white leading-tight">{companionName}</p>
           <p className="text-[11px] text-green-400 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Always online
           </p>
@@ -720,7 +735,7 @@ export default function AryaChatPage() {
               <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl py-2 shadow-2xl" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
                 {[
                   { icon: Share2, label: 'Share App', color: 'text-white', action: () => {
-                    window.open(`https://wa.me/?text=${encodeURIComponent('Hey! Chat with Arya AI on MitrrAi \nhttps://mitrrai.vercel.app')}`, '_blank');
+                    window.open(`https://wa.me/?text=${encodeURIComponent(`Hey! Chat with ${companionName} AI on MitrrAi \nhttps://mitrrai.vercel.app`)}`, '_blank');
                     setShowHeaderMenu(false);
                   }},
                   { icon: Star, label: 'Rate Us', color: 'text-white', action: () => { router.push('/feedback'); setShowHeaderMenu(false); }},
@@ -758,9 +773,9 @@ export default function AryaChatPage() {
 
         {!loading && messages.length === 0 && (
           <div className="text-center py-16 space-y-3">
-            <Image src="/arya-avatar.png" alt="Arya" width={56} height={56} className="w-14 h-14 rounded-full object-cover mx-auto" />
-            <p className="text-sm font-semibold text-white">Start chatting with Arya</p>
-            <p className="text-xs text-white/60 max-w-xs mx-auto">Your campus bestie is always here — exams, stress, doubts, or just vibes 💜</p>
+            <Image src={companionAvatar} alt={companionName} width={56} height={56} className="w-14 h-14 rounded-full object-cover mx-auto" />
+            <p className="text-sm font-semibold text-white">Start chatting with {companionName}</p>
+            <p className="text-xs text-white/60 max-w-xs mx-auto">{isFemaleUser ? 'Your campus bhaiya is always here' : 'Your campus bestie is always here'} — exams, stress, doubts, or just vibes 💜</p>
           </div>
         )}
 
@@ -771,6 +786,7 @@ export default function AryaChatPage() {
             onRate={handleRateMessage}
             onDelete={handleDeleteMessage}
             formatTime={formatTime}
+            companionAvatar={companionAvatar}
           />
         ))}
 
@@ -793,7 +809,7 @@ export default function AryaChatPage() {
         {/* Typing indicator */}
         {sending && (
           <div className="flex justify-start mb-1">
-            <Image src="/arya-avatar.png" alt="Arya" width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-auto mb-1" />
+            <Image src={companionAvatar} alt={companionName} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-auto mb-1" />
             <div className="px-4 py-3 rounded-2xl rounded-bl-sm" style={{ background: '#1e1e1e' }}>
               <div className="flex gap-1">
                 <span className="w-2 h-2 rounded-full bg-white/55 animate-bounce" style={{ animationDelay: '0ms' }} />

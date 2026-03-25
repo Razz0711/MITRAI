@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:UsersRAJOneDriveDocumentsDesktopMitrAI -type f -name *.ts -o -name *.tsx -o -name *.js -o -name *.jsx)",
+      "Bash(grep -v '^\\\\.$|^\\\\.\\\\.$')",
+      "Bash(find /c/Users/RAJ/OneDrive/Documents/Desktop/MitrAI -maxdepth 2 -not -path */node_modules* -not -path */.next* -not -path */.git*)",
+      "Bash(ls fix*.js fix2.js clean*.py update_login.py gen_icons.py)",
+      "Bash(rm src/lib/store/ratings.ts src/app/api/ratings/route.ts src/app/ratings/page.tsx)",
+      "Bash(rmdir src/app/ratings src/app/api/ratings)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
