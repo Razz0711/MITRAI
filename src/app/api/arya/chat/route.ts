@@ -12,7 +12,7 @@ import { getAryaPrompt } from '@/lib/arya-prompt';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 import { detectCrisis } from '@/lib/crisis-detection';
 import { getStickerIds } from '@/lib/arya-stickers';
-import { getSelfieCatalogForPrompt, getSelfieById, getUnseenSelfie } from '@/lib/arya-selfie-catalog';
+import { getSelfieCatalogForPrompt, getSelfieIds, getSelfieById, getUnseenSelfie } from '@/lib/arya-selfie-catalog';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -60,7 +60,9 @@ export async function POST(req: NextRequest) {
         .limit(50),
     ]);
     const basePrompt = getAryaPrompt(studentRow?.gender);
-    const selfieCatalog = getSelfieCatalogForPrompt();
+    const isFemale = studentRow?.gender === 'Female';
+    const companionName = isFemale ? 'Aryan' : 'Arya';
+    const selfieCatalog = getSelfieCatalogForPrompt(isFemale);
     const systemPrompt = basePrompt + `\n\n## REACTIONS & STICKERS\nYou can react to the user's message like a WhatsApp reaction. To do so, start your reply with "REACT:" followed by a single emoji (e.g. "REACT:❤️" or "REACT:😂"). Do this occasionally — only when the emotion is strong (funny, touching, surprising). After "REACT:emoji" continue your normal reply on the same line.\n\nYou can also send a sticker by including [STICKER:id] anywhere in your reply. Available sticker IDs: ${getStickerIds()}. Use stickers spontaneously when the mood fits — max once every 5 messages. You can send a sticker with text, or just a sticker alone.\n\nExample: "REACT:😂 haha yaar you're too funny! [STICKER:laugh]"\n\n## SELFIES\nYou have a collection of pre-taken selfies. When the user asks for a selfie, photo, or picture of you, use the send_selfie tool. Pick the selfie_id that best matches the conversation context, mood, or time of day.\n\nAvailable selfies:\n${selfieCatalog}\n\nPick wisely based on what the user is talking about! For example, if they mention food, pick "eating_snack". If it's late night, pick "cozy_night". If the conversation is happy/funny, pick "laughing_candid".`;
 
 
@@ -77,7 +79,7 @@ export async function POST(req: NextRequest) {
       history.forEach(msg => {
         // Discard existing image urls from DB context so the model doesn't get confused by raw markdown
         let safeContent = msg.content;
-        if (safeContent.includes('![Arya Selfie](')) {
+        if (safeContent.includes('![') && safeContent.includes('Selfie](')) {
           safeContent = "*Sent an image*"; 
         }
 
@@ -99,14 +101,14 @@ export async function POST(req: NextRequest) {
         type: "function",
         function: {
           name: "send_selfie",
-          description: "Sends a selfie/photo of Arya to the user. Call this ONLY when the user explicitly asks for a selfie, photo, or picture of you. Pick the best selfie_id based on conversation context.",
+          description: `Sends a selfie/photo of ${companionName} to the user. Call this ONLY when the user explicitly asks for a selfie, photo, or picture of you. Pick the best selfie_id based on conversation context.`,
           parameters: {
             type: "object",
             properties: {
               selfie_id: {
                 type: "string",
                 description: "The ID of the selfie to send. Choose the one that best fits the current conversation mood/context.",
-                enum: ["doing_right_now", "cute_pic", "funny_face", "outfit_mirror", "just_woke_up", "eating_food", "where_are_you", "miss_me", "chilling", "gym_pic", "car_selfie", "with_family", "night_chill", "coffee_date", "casual_starter", "smile_for_me", "sad_pouty", "good_night", "party_ready", "with_friends", "bored_lazy", "studying", "in_class", "library", "rainy_day", "hot_summer", "traveling", "with_pet", "shopping", "cooking"]
+                enum: getSelfieIds(isFemale)
               }
             },
             required: ["selfie_id"],
@@ -168,9 +170,9 @@ export async function POST(req: NextRequest) {
           const seenIds = (seenRows || []).map((r: { selfie_id: string }) => r.selfie_id).filter(Boolean);
 
           // Try to use the AI's pick; if already seen, pick an unseen one
-          let selfie = getSelfieById(requestedId);
+          let selfie = getSelfieById(requestedId, isFemale);
           if (!selfie || seenIds.includes(selfie.id)) {
-            selfie = getUnseenSelfie(seenIds);
+            selfie = getUnseenSelfie(seenIds, isFemale);
           }
 
           // Build the public URL from Supabase Storage
@@ -196,7 +198,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({
             success: true,
             data: {
-              response: `![Arya Selfie](${selfieUrl})`
+              response: `![${companionName} Selfie](${selfieUrl})`
             }
           });
         } catch (imgError) {
