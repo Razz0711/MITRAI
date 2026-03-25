@@ -11,20 +11,21 @@ import crypto from 'crypto';
 import { supabase } from '@/lib/supabase';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 
-// Create reusable transporter with connection pooling and timeouts
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  pool: true,
-  maxConnections: 3,
-  maxMessages: 50,
-  auth: {
-    user: (process.env.SMTP_EMAIL || '').trim(),
-    pass: (process.env.SMTP_APP_PASSWORD || '').trim(),
-  },
-  connectionTimeout: 5000,  // 5s to establish connection
-  greetingTimeout: 5000,    // 5s for SMTP greeting
-  socketTimeout: 8000,      // 8s for socket inactivity
-});
+// Create transporter — no pooling (serverless functions are ephemeral)
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: (process.env.SMTP_EMAIL || '').trim(),
+      pass: (process.env.SMTP_APP_PASSWORD || '').trim(),
+    },
+    connectionTimeout: 4000,
+    greetingTimeout: 4000,
+    socketTimeout: 6000,
+  });
+}
 
 async function sendOtpEmail(to: string, code: string) {
   const fromEmail = (process.env.SMTP_EMAIL || '').trim();
@@ -56,7 +57,8 @@ async function sendOtpEmail(to: string, code: string) {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  const t = createTransporter();
+  await t.sendMail(mailOptions);
 }
 
 // POST /api/otp
