@@ -31,8 +31,9 @@ export async function getFeedPosts(opts: {
   limit?: number;
   offset?: number;
   userId?: string; // current user, for myReactions
+  institution?: string; // prioritize posts from this college (not filter)
 }): Promise<{ posts: CampusPost[]; total: number }> {
-  const { category, location, limit = 20, offset = 0, userId } = opts;
+  const { category, location, limit = 20, offset = 0, userId, institution } = opts;
 
   let query = supabase
     .from('campus_posts')
@@ -46,11 +47,12 @@ export async function getFeedPosts(opts: {
   if (location && location !== 'anywhere') {
     query = query.eq('location', location);
   }
+  // Note: we do NOT filter by institution — we fetch all and sort later
 
   const { data, error, count } = await query;
   if (error) { console.error('getFeedPosts error:', error); return { posts: [], total: 0 }; }
 
-  const posts: CampusPost[] = (data || []).map(row => ({
+  let posts: CampusPost[] = (data || []).map(row => ({
     id: row.id,
     userId: row.user_id,
     content: row.content,
@@ -61,7 +63,8 @@ export async function getFeedPosts(opts: {
     lng: row.lng,
     isAnonymous: row.is_anonymous,
     createdAt: row.created_at,
-  }));
+    _institution: row.institution || '', // internal: used for priority sorting
+  } as CampusPost & { _institution: string }));
 
   if (posts.length === 0) return { posts: [], total: count || 0 };
 
@@ -123,6 +126,29 @@ export async function getFeedPosts(opts: {
     post.myReactions = myReactionsMap.get(post.id) || [];
   }
 
+  // Sort: own institution first, then others by reaction count
+  if (institution) {
+    const ownPosts = posts.filter(p => {
+      // Match institution from the post's stored institution field
+      return (p as any)._institution === institution;
+    });
+    const otherPosts = posts.filter(p => {
+      return (p as any)._institution !== institution;
+    });
+    // Sort other posts by total reactions (descending)
+    otherPosts.sort((a, b) => {
+      const aTotal = (a.reactions?.imin || 0) + (a.reactions?.reply || 0) + (a.reactions?.connect || 0);
+      const bTotal = (b.reactions?.imin || 0) + (b.reactions?.reply || 0) + (b.reactions?.connect || 0);
+      return bTotal - aTotal;
+    });
+    posts = [...ownPosts, ...otherPosts];
+  }
+
+  // Clean up internal field
+  for (const post of posts) {
+    delete (post as any)._institution;
+  }
+
   return { posts, total: count || 0 };
 }
 
@@ -136,6 +162,7 @@ export async function createPost(opts: {
   lat?: number;
   lng?: number;
   isAnonymous?: boolean;
+  institution?: string;
 }): Promise<{ success: boolean; post?: CampusPost; error?: string }> {
   if (!opts.content.trim()) return { success: false, error: 'Content required' };
   if (opts.content.length > 280) return { success: false, error: 'Max 280 characters' };
@@ -151,6 +178,7 @@ export async function createPost(opts: {
       lat: opts.lat || null,
       lng: opts.lng || null,
       is_anonymous: opts.isAnonymous || false,
+      institution: opts.institution || null,
     })
     .select()
     .single();

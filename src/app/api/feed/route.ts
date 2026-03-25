@@ -1,6 +1,6 @@
-// ============================================
 // MitrRAI - Campus Feed API
-// GET: fetch posts with filters
+// GET: fetch posts — own campus first, then trending from other colleges
+// POST: create a new post (auto-tagged with institution)
 // POST: create a new post
 // ============================================
 
@@ -11,12 +11,25 @@ import { getFeedPosts, createPost } from '@/lib/store/feed';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Extract root institution code from an email address.
+ * e.g. "student@cse.svnit.ac.in" → "svnit"
+ *      "abc@iitb.ac.in"          → "iitb"
+ */
+function extractInstitution(email: string): string {
+  const domain = email.split('@')[1] || '';
+  const withoutAcIn = domain.replace(/\.ac\.in$/, '');
+  const parts = withoutAcIn.split('.');
+  return parts[parts.length - 1].toLowerCase();
+}
+
 // GET /api/feed?category=&location=&limit=20&offset=0
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
   const sp = req.nextUrl.searchParams;
+  const institution = extractInstitution(authUser.email || '');
 
   try {
     const result = await getFeedPosts({
@@ -25,6 +38,7 @@ export async function GET(req: NextRequest) {
       limit: parseInt(sp.get('limit') || '20'),
       offset: parseInt(sp.get('offset') || '0'),
       userId: authUser.id,
+      institution: institution || undefined,
     });
 
     return NextResponse.json({ success: true, data: result });
@@ -40,6 +54,8 @@ export async function POST(req: NextRequest) {
   if (!authUser) return unauthorized();
 
   if (!rateLimit(`feed-post:${authUser.id}`, 10, 60_000)) return rateLimitExceeded();
+
+  const institution = extractInstitution(authUser.email || '');
 
   try {
     const body = await req.json();
@@ -58,6 +74,7 @@ export async function POST(req: NextRequest) {
       lat,
       lng,
       isAnonymous,
+      institution,
     });
 
     return NextResponse.json(result);

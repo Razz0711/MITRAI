@@ -33,14 +33,6 @@ const CATEGORIES = [
 const LOCATIONS = ['Anywhere', 'Library', 'Canteen', 'Hostel', 'Ground', 'Dept'];
 const DISTANCES = ['Any', 'Nearby · 200m', '500m', 'Campus'];
 
-const KNOWN_PLACES: { name: string; lat: number; lng: number }[] = [
-  { name: 'Library', lat: 21.1627, lng: 72.7871 },
-  { name: 'Canteen', lat: 21.1631, lng: 72.7865 },
-  { name: 'Hostel', lat: 21.1622, lng: 72.7880 },
-  { name: 'Ground', lat: 21.1635, lng: 72.7858 },
-  { name: 'Dept', lat: 21.1625, lng: 72.7875 },
-];
-
 interface FeedPost {
   id: string;
   userId: string;
@@ -76,15 +68,6 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 }
 
 
-function nearestPlace(lat: number, lng: number): string {
-  let closest = 'Campus';
-  let minDist = Infinity;
-  for (const p of KNOWN_PLACES) {
-    const d = haversineDistance(lat, lng, p.lat, p.lng);
-    if (d < minDist) { minDist = d; closest = p.name; }
-  }
-  return minDist < 300 ? closest : 'Campus';
-}
 
 /* ─── main component ─── */
 export default function CampusFeedPage() {
@@ -108,10 +91,11 @@ export default function CampusFeedPage() {
   const [showTagSheet, setShowTagSheet] = useState(false);
   const [posting, setPosting] = useState(false);
 
-  // Location
+  // Location state
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [userLocation, setUserLocation] = useState('Campus');
+  const [locationGranted, setLocationGranted] = useState<boolean | null>(null); // null = loading, false = denied, true = granted
 
   // Filters (viewer side)
   const [filterCat, setFilterCat] = useState('all');
@@ -128,18 +112,23 @@ export default function CampusFeedPage() {
 
   const feedRef = useRef<HTMLDivElement>(null);
 
-  // Geolocation
+  // Geolocation — mandatory for feed
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserLat(pos.coords.latitude);
-          setUserLng(pos.coords.longitude);
-          setUserLocation(nearestPlace(pos.coords.latitude, pos.coords.longitude));
-        },
-        () => { setUserLocation('Campus'); }
-      );
+    if (!navigator.geolocation) {
+      setLocationGranted(false);
+      return;
     }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLat(pos.coords.latitude);
+        setUserLng(pos.coords.longitude);
+        setUserLocation('Campus');
+        setLocationGranted(true);
+      },
+      () => {
+        setLocationGranted(false);
+      }
+    );
   }, []);
 
   // Fetch student info from profiles table
@@ -335,6 +324,60 @@ export default function CampusFeedPage() {
   const catInfo = CATEGORIES.find(c => c.id === composeCat);
 
   if (!user) return null;
+
+  // ─── Location Permission Gate ───
+  if (locationGranted === null) {
+    // Still loading permission state
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-3 px-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-green-500/15 flex items-center justify-center animate-pulse">
+            <MapPin size={28} className="text-green-400" />
+          </div>
+          <p className="text-sm text-[var(--muted)]">Checking location access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (locationGranted === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="card p-8 text-center space-y-5 max-w-sm mx-auto">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center" style={{ animation: 'float 4s ease-in-out infinite' }}>
+            <MapPin size={36} className="text-green-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">Enable Location Access</h2>
+            <p className="text-sm text-[var(--muted-strong)] leading-relaxed">
+              Campus Feed needs your location to show posts from your campus. Allow location access in your browser settings to continue.
+            </p>
+          </div>
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    setUserLat(pos.coords.latitude);
+                    setUserLng(pos.coords.longitude);
+                    setUserLocation('Campus');
+                    setLocationGranted(true);
+                  },
+                  () => setLocationGranted(false)
+                );
+              }}
+              className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-lg shadow-green-500/30 hover:bg-green-600 transition-all"
+            >
+              📍 Allow Location
+            </button>
+            <p className="text-[10px] text-[var(--muted)] leading-relaxed">
+              Your location is only used to show nearby campus posts. We don&apos;t track or store your movement.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-4">
