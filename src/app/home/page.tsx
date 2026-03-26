@@ -536,7 +536,7 @@ export default function CampusFeedPage() {
         )}
 
         {/* ─── Loading ─── */}
-        {loading && <LoadingSkeleton />}
+        {loading && <LoadingSkeleton type="feed" count={3} label="Loading campus feed..." />}
 
         {/* ─── Empty State ─── */}
         {!loading && posts.length === 0 && (

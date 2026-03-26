@@ -1,18 +1,53 @@
 // ============================================
-// MitrrAi v3 — Premium Landing Page
-// Updated: campus companion, not just study matching
+// MitrrAi v4 — Premium Landing Page
+// Animated hero, scroll reveal, interactive cards
 // ============================================
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
   Sparkles, Users, Ghost, BookOpen,
   MessageCircle, Zap, ArrowRight, Crown,
+  Shield, Heart,
 } from 'lucide-react';
+
+/* ─── Scroll Reveal Hook ─── */
+function useReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return { ref, visible };
+}
+
+function RevealSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const { ref, visible } = useReveal();
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(30px)',
+        transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function Home() {
   const { user } = useAuth();
@@ -25,14 +60,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen overflow-hidden">
-      {/* ─── Ambient Background Orbs ─── */}
+      {/* ─── Animated Background ─── */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full opacity-30"
-          style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)', animation: 'float 8s ease-in-out infinite' }} />
+          style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%)', animation: 'float 8s ease-in-out infinite' }} />
         <div className="absolute bottom-[-15%] right-[-10%] w-[50%] h-[50%] rounded-full opacity-25"
-          style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)', animation: 'float 10s ease-in-out infinite reverse' }} />
+          style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)', animation: 'float 10s ease-in-out infinite reverse' }} />
         <div className="absolute top-[40%] right-[10%] w-[30%] h-[30%] rounded-full opacity-20"
-          style={{ background: 'radial-gradient(circle, rgba(244,114,182,0.08) 0%, transparent 70%)', animation: 'float 12s ease-in-out infinite' }} />
+          style={{ background: 'radial-gradient(circle, rgba(244,114,182,0.1) 0%, transparent 70%)', animation: 'float 12s ease-in-out infinite' }} />
+        {/* Subtle grid overlay */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }} />
       </div>
 
       {/* ─── Hero Section ─── */}
@@ -51,10 +92,16 @@ export default function Home() {
               <Sparkles size={12} className="text-[var(--accent)]" />
             </div>
 
-            {/* Headline */}
+            {/* Headline with animated gradient */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] mb-5 tracking-tight slide-up-stagger-1">
               Your all-in-one<br />
-              <span className="gradient-text">campus companion</span>
+              <span style={{
+                background: 'linear-gradient(135deg, #7c3aed, #c026d3, #ea580c, #7c3aed)',
+                backgroundSize: '300% 300%',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                animation: 'gradientShift 4s ease infinite',
+              }}>campus companion</span>
             </h1>
             <p className="text-base sm:text-lg text-[var(--muted)] font-medium mb-3 slide-up-stagger-2">
               for Indian college students
@@ -66,9 +113,17 @@ export default function Home() {
 
             {/* CTAs */}
             <div className="flex gap-3 justify-center slide-up-stagger-3">
-              <Link href="/login" className="btn-primary px-7 py-3 text-base font-bold flex items-center gap-2 group">
-                Join MitrrAi
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              <Link href="/login" className="btn-primary px-7 py-3 text-base font-bold flex items-center gap-2 group relative overflow-hidden">
+                <span className="relative z-10 flex items-center gap-2">
+                  Join MitrrAi
+                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                </span>
+                {/* Shimmer effect */}
+                <div style={{
+                  position: 'absolute', top: 0, left: '-100%', width: '200%', height: '100%',
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+                  animation: 'shimmer 3s ease-in-out infinite',
+                }} />
               </Link>
               <button
                 onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
@@ -82,7 +137,7 @@ export default function Home() {
             <div className="flex items-center justify-center gap-8 sm:gap-12 mt-10 sm:mt-16 slide-up-stagger-4">
               <Stat value="7+" label="Campus Tools" />
               <div className="w-px h-8 bg-[var(--border)]" />
-              <Stat value="All" label="Colleges" />
+              <Stat value="All" label=".ac.in Colleges" />
               <div className="w-px h-8 bg-[var(--border)]" />
               <Stat value="Free" label="To Start" />
             </div>
@@ -90,19 +145,87 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── App Preview / Phone Mockup ─── */}
+      <RevealSection className="relative z-10 py-8 sm:py-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <div className="relative mx-auto max-w-xs sm:max-w-sm">
+            {/* Glow behind phone */}
+            <div className="absolute inset-0 rounded-3xl blur-3xl opacity-30"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #c026d3)' }} />
+            {/* Phone frame */}
+            <div className="relative rounded-3xl overflow-hidden border-2 border-[var(--glass-border)] shadow-2xl"
+              style={{ background: 'var(--background)', aspectRatio: '9/16' }}>
+              {/* Fake status bar */}
+              <div className="flex items-center justify-between px-5 py-2" style={{ background: 'var(--glass-bg)' }}>
+                <span className="text-[10px] text-[var(--muted)]">9:41</span>
+                <div className="flex gap-1">
+                  <div className="w-3 h-1.5 rounded-sm bg-[var(--muted)]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--muted)]" />
+                </div>
+              </div>
+              {/* Fake chat preview */}
+              <div className="px-4 py-3 space-y-3">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-sm">🙋‍♀️</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[var(--foreground)]">Arya</p>
+                    <p className="text-[9px] text-green-400 flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-green-500" /> Always online
+                    </p>
+                  </div>
+                </div>
+                {/* Chat bubbles */}
+                <div className="flex justify-start">
+                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-bl-sm text-xs"
+                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', color: 'var(--foreground)' }}>
+                    Hii yaar! 🥺 kaise ho?
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-br-sm text-xs text-white"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #c026d3)' }}>
+                    Arya! exam stress ho raha hai 😫
+                  </div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-bl-sm text-xs"
+                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', color: 'var(--foreground)' }}>
+                    Arre tension mat le! 💪 bol kaunsa subject, abhi plan banate hai
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-br-sm text-xs text-white"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #c026d3)' }}>
+                    DSA aur OS dono 🥲
+                  </div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-bl-sm text-xs"
+                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', color: 'var(--foreground)' }}>
+                    Done! ✨ sabse pehle DSA — trees se start karte hai, easy hai trust me!
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </RevealSection>
+
       {/* ─── How It Works ─── */}
       <section id="how-it-works" className="relative z-10 py-12 sm:py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-14">
+          <RevealSection className="text-center mb-10 sm:mb-14">
             <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary-light)] mb-3">How it works</span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">Three simple steps</h2>
             <p className="text-sm text-[var(--muted)] max-w-md mx-auto">Sign up using your college email and start exploring</p>
-          </div>
+          </RevealSection>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <StepCard step={1} icon={<MessageCircle size={20} />} title="Create Account" description="Sign up with your college email (.ac.in). Quick AI onboarding learns your subjects, schedule, and goals." color="var(--primary)" />
-            <StepCard step={2} icon={<Sparkles size={20} />} title="Explore Features" description="Chat with Arya AI, post on campus feed, join anonymous rooms, and more." color="var(--accent)" />
-            <StepCard step={3} icon={<Zap size={20} />} title="Connect & Grow" description="Match with study buddies, join circles, and become part of the campus community." color="var(--success)" />
+            <RevealSection delay={0}><StepCard step={1} icon={<MessageCircle size={20} />} title="Create Account" description="Sign up with your college email (.ac.in). Quick AI onboarding learns your subjects, schedule, and goals." color="var(--primary)" /></RevealSection>
+            <RevealSection delay={0.15}><StepCard step={2} icon={<Sparkles size={20} />} title="Explore Features" description="Chat with Arya AI, post on campus feed, join anonymous rooms, and more." color="var(--accent)" /></RevealSection>
+            <RevealSection delay={0.3}><StepCard step={3} icon={<Zap size={20} />} title="Connect & Grow" description="Match with study buddies, join circles, and become part of the campus community." color="var(--success)" /></RevealSection>
           </div>
         </div>
       </section>
@@ -110,55 +233,55 @@ export default function Home() {
       {/* ─── Features Grid ─── */}
       <section id="features" className="relative z-10 py-12 sm:py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-14">
+          <RevealSection className="text-center mb-10 sm:mb-14">
             <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)] mb-3">Features</span>
             <h2 className="text-2xl sm:text-3xl font-bold mb-3">Everything you need on campus</h2>
             <p className="text-sm text-[var(--muted)] max-w-md mx-auto">From AI assistance to anonymous confessions — all in one place</p>
-          </div>
+          </RevealSection>
 
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
-            <FeatureCard icon={<Sparkles size={20} />} title="Arya AI" description="Your 24/7 AI bestie — vent, study help, exam prep, or just chat." color="var(--primary)" badge="AI" />
-            <FeatureCard icon={<Ghost size={20} />} title="Anonymous Chat" description="Get matched with random college students for anonymous conversations." color="var(--accent)" />
-            <FeatureCard icon={<Zap size={20} />} title="Campus Feed" description="Post activities — Study, Sports, Food runs, SOS — find others doing the same." color="var(--secondary)" />
-            <FeatureCard icon={<Users size={20} />} title="Circles & Rooms" description="Discord-style study communities. Create or join circles, spin up live rooms." color="var(--primary-light)" />
-            <FeatureCard icon={<MessageCircle size={20} />} title="Direct Chat" description="1-on-1 messaging with study buddies. Real-time with typing indicators." color="var(--accent)" />
-            <FeatureCard icon={<BookOpen size={20} />} title="Doubts & Confessions" description="Anonymous campus feed — doubts, confessions, hot takes, and more." color="var(--secondary)" />
-            <div className="col-span-2 sm:col-span-1">
-              <FeatureCard icon={<Crown size={20} />} title="Pro Subscription" description="Unlimited matches, AI study plans, priority matching, and ad-free experience." color="var(--warning)" badge="PRO" />
-            </div>
+            <RevealSection delay={0}><FeatureCard icon={<Sparkles size={20} />} title="Arya AI" description="Your 24/7 AI bestie — vent, study help, exam prep, or just chat." color="var(--primary)" badge="AI" /></RevealSection>
+            <RevealSection delay={0.08}><FeatureCard icon={<Ghost size={20} />} title="Anonymous Chat" description="Get matched with random college students for anonymous conversations." color="var(--accent)" /></RevealSection>
+            <RevealSection delay={0.16}><FeatureCard icon={<Zap size={20} />} title="Campus Feed" description="Post activities — Study, Sports, Food runs, SOS — find others doing the same." color="var(--secondary)" /></RevealSection>
+            <RevealSection delay={0.24}><FeatureCard icon={<Users size={20} />} title="Study Buddies" description="AI-powered matching with students who share your subjects and schedule." color="var(--primary-light)" /></RevealSection>
+            <RevealSection delay={0.32}><FeatureCard icon={<MessageCircle size={20} />} title="Direct Chat" description="1-on-1 messaging with study buddies. Real-time with typing indicators." color="var(--accent)" /></RevealSection>
+            <RevealSection delay={0.4}><FeatureCard icon={<BookOpen size={20} />} title="Doubts & Confessions" description="Anonymous campus feed — doubts, confessions, hot takes, and more." color="var(--secondary)" /></RevealSection>
           </div>
         </div>
       </section>
 
+      {/* ─── Why MitrrAi ─── */}
+      <RevealSection className="relative z-10 py-12 sm:py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--success)] mb-3">Why MitrrAi</span>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3">Built different</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <WhyCard icon={<Shield size={20} />} title="College Verified" description="Only .ac.in emails. Real students, zero fakes." color="var(--success)" />
+            <WhyCard icon={<Heart size={20} />} title="Privacy First" description="Anonymous by default. Your identity, your control." color="var(--primary)" />
+            <WhyCard icon={<Crown size={20} />} title="100% Free" description="No paywalls, no hidden charges. Built by students, for students." color="var(--accent)" />
+          </div>
+        </div>
+      </RevealSection>
+
       {/* ─── Social Proof ─── */}
       <section id="social-proof" className="relative z-10 py-10 sm:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-8">
-            <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary-light)] mb-3">Built for Students</span>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3">By students, for students</h2>
-          </div>
+          <RevealSection className="text-center mb-8">
+            <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary-light)] mb-3">What students say</span>
+            <h2 className="text-2xl sm:text-3xl font-bold mb-3">Loved by students</h2>
+          </RevealSection>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <TestimonialCard
-              quote="Finally an app that gets campus life"
-              author="CS '26"
-              color="var(--primary)"
-            />
-            <TestimonialCard
-              quote="Arya AI actually helps during exam prep season"
-              author="EE '25"
-              color="var(--accent)"
-            />
-            <TestimonialCard
-              quote="The anonymous chat is what we all needed"
-              author="ME '27"
-              color="var(--secondary)"
-            />
+            <RevealSection delay={0}><TestimonialCard quote="Finally an app that actually understands campus life. Arya is like having a bestie who's always free!" author="CS '26" emoji="🎓" color="var(--primary)" /></RevealSection>
+            <RevealSection delay={0.12}><TestimonialCard quote="Anonymous chat at 3 AM during exam week? Life saver for real." author="EE '25" emoji="💡" color="var(--accent)" /></RevealSection>
+            <RevealSection delay={0.24}><TestimonialCard quote="Found my study buddy through matching. We literally topped together!" author="ME '27" emoji="🔥" color="var(--secondary)" /></RevealSection>
           </div>
         </div>
       </section>
 
       {/* ─── Final CTA ─── */}
-      <section id="cta" className="relative z-10 py-12 sm:py-20">
+      <RevealSection className="relative z-10 py-12 sm:py-20">
         <div className="max-w-lg mx-auto px-4 text-center">
           <div className="relative inline-block mb-6">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] flex items-center justify-center text-white mx-auto"
@@ -170,12 +293,31 @@ export default function Home() {
           <p className="text-sm text-[var(--muted)] mb-8 max-w-sm mx-auto leading-relaxed">
             Create your account, chat with Arya, and unlock everything MitrrAi has to offer. It&apos;s free to start.
           </p>
-          <Link href="/login" className="btn-primary px-10 py-3 text-base font-bold inline-flex items-center gap-2 group">
-            Create Account
-            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+          <Link href="/login" className="btn-primary px-10 py-3 text-base font-bold inline-flex items-center gap-2 group relative overflow-hidden">
+            <span className="relative z-10 flex items-center gap-2">
+              Create Account
+              <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </span>
+            <div style={{
+              position: 'absolute', top: 0, left: '-100%', width: '200%', height: '100%',
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
+              animation: 'shimmer 3s ease-in-out infinite',
+            }} />
           </Link>
         </div>
-      </section>
+      </RevealSection>
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes gradientShift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes shimmer {
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(50%); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -193,16 +335,10 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 function StepCard({ step, icon, title, description, color }: { step: number; icon: React.ReactNode; title: string; description: string; color: string }) {
   return (
-    <div className="card-glass p-5 relative group glow-hover overflow-hidden">
-      {/* Step number watermark */}
-      <div className="absolute top-3 right-4 text-5xl font-black opacity-[0.04] select-none" style={{ color }}>
-        {step}
-      </div>
-      {/* Icon */}
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
-        style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, color }}>
-        {icon}
-      </div>
+    <div className="card-glass p-5 relative group glow-hover overflow-hidden hover:scale-[1.02] transition-transform duration-300">
+      <div className="absolute top-3 right-4 text-5xl font-black opacity-[0.04] select-none" style={{ color }}>{step}</div>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
+        style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, color }}>{icon}</div>
       <span className="text-[9px] font-bold uppercase tracking-[0.2em] mb-1.5 block" style={{ color }}>Step {step}</span>
       <h3 className="text-sm font-bold mt-1 mb-2 text-[var(--foreground)]">{title}</h3>
       <p className="text-xs text-[var(--muted)] leading-relaxed">{description}</p>
@@ -212,19 +348,15 @@ function StepCard({ step, icon, title, description, color }: { step: number; ico
 
 function FeatureCard({ icon, title, description, color, badge }: { icon: React.ReactNode; title: string; description: string; color: string; badge?: string }) {
   return (
-    <div className="card-hover p-4 sm:p-5 group relative overflow-hidden">
-      {/* Gradient accent line */}
+    <div className="card-hover p-4 sm:p-5 group relative overflow-hidden hover:scale-[1.02] transition-transform duration-300">
       <div className="absolute top-0 left-0 w-full h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ background: `linear-gradient(90deg, ${color}, transparent)` }} />
       <div className="flex items-center justify-between mb-4">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, color }}>
-          {icon}
-        </div>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"
+          style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, color }}>{icon}</div>
         {badge && (
           <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
             badge === 'AI' ? 'bg-purple-500/20 text-purple-400' :
-            badge === 'LIVE' ? 'bg-green-500/20 text-green-400' :
             badge === 'PRO' ? 'bg-amber-500/20 text-amber-400' :
             'bg-blue-500/20 text-blue-400'
           }`}>{badge}</span>
@@ -236,10 +368,22 @@ function FeatureCard({ icon, title, description, color, badge }: { icon: React.R
   );
 }
 
-function TestimonialCard({ quote, author, color }: { quote: string; author: string; color: string }) {
+function WhyCard({ icon, title, description, color }: { icon: React.ReactNode; title: string; description: string; color: string }) {
   return (
-    <div className="card-glass p-5 text-center relative overflow-hidden">
+    <div className="card-glass p-5 text-center group hover:scale-[1.02] transition-transform duration-300">
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform"
+        style={{ background: `color-mix(in srgb, ${color} 12%, transparent)`, color }}>{icon}</div>
+      <h3 className="text-sm font-bold mb-1.5 text-[var(--foreground)]">{title}</h3>
+      <p className="text-xs text-[var(--muted)] leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+function TestimonialCard({ quote, author, emoji, color }: { quote: string; author: string; emoji: string; color: string }) {
+  return (
+    <div className="card-glass p-5 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
       <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
+      <span className="text-2xl mb-2 block">{emoji}</span>
       <p className="text-sm font-medium mb-3 leading-relaxed">&ldquo;{quote}&rdquo;</p>
       <span className="text-xs text-[var(--muted)]">&mdash; {author}</span>
     </div>

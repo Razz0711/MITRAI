@@ -1,13 +1,52 @@
 // ============================================
 // MitrRAI - Loading Skeleton Components
+// Shimmer gradient effect for premium feel
 // ============================================
 
 'use client';
 
-/** Animated pulse bar */
+/** Shimmer bar with gradient sweep animation */
 function SkeletonBar({ className = '' }: { className?: string }) {
   return (
-    <div className={`animate-pulse rounded-lg bg-[var(--surface-light)] ${className}`} />
+    <div
+      className={`rounded-lg ${className}`}
+      style={{
+        background: 'linear-gradient(90deg, var(--surface-light) 25%, rgba(255,255,255,0.08) 50%, var(--surface-light) 75%)',
+        backgroundSize: '200% 100%',
+        animation: 'skeletonShimmer 1.5s ease-in-out infinite',
+      }}
+    />
+  );
+}
+
+/** Feed post skeleton — looks like a real post card */
+export function FeedPostSkeleton({ index = 0 }: { index?: number }) {
+  return (
+    <div
+      className="card p-4 space-y-3"
+      style={{ animationDelay: `${index * 0.1}s`, animation: 'fadeSlideUp 0.4s ease-out both' }}
+    >
+      {/* Header: avatar + name + time */}
+      <div className="flex items-center gap-3">
+        <SkeletonBar className="w-9 h-9 rounded-full shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <SkeletonBar className="h-3 w-24" />
+          <SkeletonBar className="h-2 w-16" />
+        </div>
+        <SkeletonBar className="h-5 w-14 rounded-full" />
+      </div>
+      {/* Content lines */}
+      <div className="space-y-2 pl-12">
+        <SkeletonBar className="h-3 w-full" />
+        <SkeletonBar className="h-3 w-4/5" />
+      </div>
+      {/* Reaction bar */}
+      <div className="flex gap-2 pl-12 pt-1">
+        <SkeletonBar className="h-7 w-16 rounded-xl" />
+        <SkeletonBar className="h-7 w-16 rounded-xl" />
+        <SkeletonBar className="h-7 w-16 rounded-xl" />
+      </div>
+    </div>
   );
 }
 
@@ -84,7 +123,7 @@ export default function LoadingSkeleton({
   count = 4,
   label = 'Loading...',
 }: {
-  type?: 'cards' | 'stats' | 'rows' | 'materials';
+  type?: 'cards' | 'stats' | 'rows' | 'materials' | 'feed';
   count?: number;
   label?: string;
 }) {
@@ -92,6 +131,7 @@ export default function LoadingSkeleton({
     type === 'stats' ? StatCardSkeleton
     : type === 'rows' ? RowSkeleton
     : type === 'materials' ? MaterialCardSkeleton
+    : type === 'feed' ? FeedPostSkeleton
     : FriendCardSkeleton;
 
   return (
