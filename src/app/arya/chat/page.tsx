@@ -61,7 +61,7 @@ const MessageBubble = memo(function MessageBubble({
   const textContent = stickerMatch ? msg.content.replace(stickerMatch[0], '').trim() : msg.content;
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-1 animate-appear`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-1 ${isUser ? 'msg-sent' : 'msg-received'}`}>
       {/* Arya avatar for received */}
       {!isUser && (
         <Image

@@ -569,7 +569,7 @@ export default function CampusFeedPage() {
               <span className="flex-1 h-px bg-green-500/10" />
               <span className="text-[10px] text-[var(--muted)] font-medium">last 15 min</span>
             </div>
-            {grouped.fresh.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} categories={CATEGORIES} />)}
+            {grouped.fresh.map((post, i) => <div key={post.id} className="stagger-card" style={{ animationDelay: `${i * 50}ms` }}><PostCard post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} categories={CATEGORIES} /></div>)}
           </div>
         )}
 
@@ -583,7 +583,7 @@ export default function CampusFeedPage() {
               <span className="flex-1 h-px bg-blue-500/10" />
               <span className="text-[10px] text-[var(--muted)] font-medium">last 2 hrs</span>
             </div>
-            {grouped.active.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} categories={CATEGORIES} />)}
+            {grouped.active.map((post, i) => <div key={post.id} className="stagger-card" style={{ animationDelay: `${i * 50}ms` }}><PostCard post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} categories={CATEGORIES} /></div>)}
           </div>
         )}
 
@@ -596,7 +596,7 @@ export default function CampusFeedPage() {
               <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-white/8 text-[var(--muted-strong)] border border-white/10">{grouped.older.length}</span>
               <span className="flex-1 h-px bg-white/5" />
             </div>
-            {grouped.older.map(post => <PostCard key={post.id} post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} isOlder categories={CATEGORIES} />)}
+            {grouped.older.map((post, i) => <div key={post.id} className="stagger-card" style={{ animationDelay: `${i * 40}ms` }}><PostCard post={post} userLat={userLat} userLng={userLng} userId={user?.id || ''} onReact={handleReact} menuPostId={menuPostId} setMenuPostId={setMenuPostId} deleteConfirm={deleteConfirm} setDeleteConfirm={setDeleteConfirm} onDelete={handleDelete} isOlder categories={CATEGORIES} /></div>)}
           </div>
         )}
 

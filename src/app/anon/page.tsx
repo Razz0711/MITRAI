@@ -288,7 +288,7 @@ export default function AnonLobbyPage() {
   const queueEstimate = stats ? Math.max(1, Math.ceil((stats.queueCount + 1) / 2)) : null;
 
   return (
-    <div className="min-h-screen anon-polish relative">
+    <div className="min-h-screen anon-polish relative page-enter">
       <div className="anon-aura anon-aura-1" />
       <div className="anon-aura anon-aura-2" />
       <div className="flex-1 overflow-y-auto px-4">
@@ -672,8 +672,8 @@ export default function AnonLobbyPage() {
               {/* Placement Talk */}
               <button
                 onClick={() => setSelectedType('career')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
-                style={{
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                style={{ animationDelay: '0ms',
                   background: selectedType === 'career' ? 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(234,88,12,0.06))' : 'var(--surface-card, #141414)',
                   border: selectedType === 'career' ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border)',
                 }}
@@ -696,8 +696,8 @@ export default function AnonLobbyPage() {
               {/* College Gossip */}
               <button
                 onClick={() => setSelectedType('confession')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
-                style={{
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                style={{ animationDelay: '60ms',
                   background: selectedType === 'confession' ? 'linear-gradient(135deg, rgba(236,72,153,0.10), rgba(239,68,68,0.06))' : 'var(--surface-card, #141414)',
                   border: selectedType === 'confession' ? '1px solid rgba(236,72,153,0.4)' : '1px solid var(--border)',
                 }}
@@ -720,8 +720,8 @@ export default function AnonLobbyPage() {
               {/* Dil Ki Baat */}
               <button
                 onClick={() => setSelectedType('crush')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
-                style={{
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                style={{ animationDelay: '120ms',
                   background: selectedType === 'crush' ? 'linear-gradient(135deg, rgba(239,68,68,0.10), rgba(236,72,153,0.06))' : 'var(--surface-card, #141414)',
                   border: selectedType === 'crush' ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--border)',
                 }}
@@ -743,8 +743,8 @@ export default function AnonLobbyPage() {
               {/* No Filter */}
               <button
                 onClick={() => setSelectedType('radar')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
-                style={{
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                style={{ animationDelay: '180ms',
                   background: selectedType === 'radar' ? 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(59,130,246,0.06))' : 'var(--surface-card, #141414)',
                   border: selectedType === 'radar' ? '1px solid rgba(16,185,129,0.4)' : '1px solid var(--border)',
                 }}
@@ -766,8 +766,8 @@ export default function AnonLobbyPage() {
               {/* 3 AM Thoughts */}
               <button
                 onClick={() => setSelectedType('night_owl')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200"
-                style={{
+                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                style={{ animationDelay: '240ms',
                   background: selectedType === 'night_owl' ? 'linear-gradient(135deg, rgba(139,92,246,0.10), rgba(99,102,241,0.06))' : 'var(--surface-card, #141414)',
                   border: selectedType === 'night_owl' ? '1px solid rgba(139,92,246,0.4)' : '1px solid var(--border)',
                   opacity: new Date().getHours() >= 23 || new Date().getHours() < 4 ? 1 : 0.6,

@@ -32,7 +32,7 @@ const MessageBubble = memo(function MessageBubble({
   };
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1 animate-appear`}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1 ${isMe ? 'msg-sent' : 'msg-received'}`}>
       <div className="px-3 py-2" style={{
         maxWidth: '75%',
         wordBreak: 'break-word',

@@ -44,7 +44,7 @@ const AnonBubble = memo(function AnonBubble({
   isMe: boolean;
 }) {
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1`}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-1 ${isMe ? 'msg-sent' : 'msg-received'}`}>
       <div
         style={{ maxWidth: '75%', wordBreak: 'break-word', overflowWrap: 'break-word' }}
       >
