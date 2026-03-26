@@ -94,7 +94,7 @@ export default function PwaInstallBanner() {
           <div className="px-4 pb-3 space-y-1.5 border-t border-white/20 pt-2">
             <p className="text-[11px] text-white font-semibold mb-1">How to install on iPhone:</p>
             <p className="text-[11px] text-white/80">1. Tap the <strong>Share</strong> icon (□↑) in Safari</p>
-            <p className="text-[11px] text-white/80">2. Scroll and tap <strong>"Add to Home Screen"</strong></p>
+            <p className="text-[11px] text-white/80">2. Scroll and tap <strong>&quot;Add to Home Screen&quot;</strong></p>
             <p className="text-[11px] text-white/80">3. Tap <strong>Add</strong> — done! ✅</p>
           </div>
         )}
