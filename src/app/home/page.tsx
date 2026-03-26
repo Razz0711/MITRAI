@@ -403,7 +403,7 @@ export default function CampusFeedPage() {
                     setUserLocation('Campus');
                     setLocationGranted(true);
                   },
-                  (err) => {
+                  (_err) => {
                     // Show blocked hint regardless of error code
                     const hint = document.getElementById('loc-blocked-hint');
                     if (hint) hint.style.display = 'block';
