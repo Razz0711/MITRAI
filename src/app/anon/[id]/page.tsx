@@ -232,7 +232,7 @@ export default function AnonChatRoomPage() {
   return (
     <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#090909', overflow: 'hidden' }}>
       {/* ─── Header ─── */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-2.5" style={{ background: '#111111', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="shrink-0 flex items-center gap-2 px-3 py-2.5" style={{ background: '#111111', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingTop: 'calc(env(safe-area-inset-top) + 0.625rem)' }}>
         <button onClick={() => router.push('/anon')} className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition-colors">
           <ArrowLeft size={24} />
         </button>

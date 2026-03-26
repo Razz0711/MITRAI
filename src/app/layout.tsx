@@ -57,7 +57,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         {/* visualViewport --vh variable for mobile keyboard */}
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script dangerouslySetInnerHTML={{
+          __html: `
           (function(){
             function setVh(){
               var vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)*0.01;

@@ -99,6 +99,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         backdropFilter: 'blur(20px) saturate(1.5)',
         WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
         borderBottom: '1px solid var(--glass-border)',
+        paddingTop: 'env(safe-area-inset-top)',
       }}>
         <div className="flex items-center justify-between h-14 px-4 max-w-7xl mx-auto">
           <Link href="/" className="flex items-center gap-2.5 group">
@@ -124,7 +125,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="pt-14 min-h-screen">
+      <main style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }} className="min-h-screen">
         {children}
       </main>
       <footer className="border-t border-[var(--glass-border)] py-5 px-4 text-center text-[11px] text-[var(--muted-strong)] space-x-4">

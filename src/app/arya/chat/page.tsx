@@ -707,6 +707,7 @@ export default function AryaChatPage() {
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderBottom: '1px solid var(--glass-border)',
+          paddingTop: 'calc(env(safe-area-inset-top) + 0.625rem)',
         }}
       >
         <button onClick={() => router.push('/arya')} className="p-1.5 rounded-lg text-white/70 hover:text-white transition-colors">
