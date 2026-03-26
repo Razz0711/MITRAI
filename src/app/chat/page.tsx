@@ -37,7 +37,7 @@ const MessageBubble = memo(function MessageBubble({
         maxWidth: '75%',
         wordBreak: 'break-word',
         overflowWrap: 'break-word',
-        background: isMe ? 'var(--primary)' : '#1e1e1e',
+        background: isMe ? 'var(--primary)' : 'var(--surface-light)',
         color: '#fff',
         fontSize: '14px',
         lineHeight: '1.45',
@@ -312,8 +312,8 @@ function ChatContent() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
-  if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-[#090909]"><div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" /></div>;
-  if (!user || !studentId) return <div className="min-h-screen flex items-center justify-center bg-[#090909]"><p className="text-white/60">Please log in</p></div>;
+  if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-[var(--background)]"><div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" /></div>;
+  if (!user || !studentId) return <div className="min-h-screen flex items-center justify-center bg-[var(--background)]"><p className="text-white/60">Please log in</p></div>;
 
   // If no chat is selected (and no friendId in URL to start one), render thread list.
   // We rewrite this into a clean list view.
@@ -530,9 +530,9 @@ function ChatContent() {
   };
 
   return (
-    <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#090909', overflow: 'hidden' }}>
+    <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--background)', overflow: 'hidden' }}>
       {/* ─── Header ─── */}
-      <div className="shrink-0 flex items-center gap-3 px-4 py-2" style={{ background: '#111111', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="shrink-0 flex items-center gap-3 px-4 py-2" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)', paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
         <button onClick={() => setSelectedChatId(null)} className="text-white p-1 -ml-1 hover:bg-white/10 rounded-full transition-colors">
           <ArrowLeft size={24} />
         </button>
@@ -559,7 +559,7 @@ function ChatContent() {
       <div ref={chatScrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-3 py-3" style={{ overscrollBehavior: 'contain' }}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 mt-10">
-            <div className="w-16 h-16 bg-[#1e1e1e] rounded-2xl flex items-center justify-center mb-4 text-2xl">👋</div>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 text-2xl" style={{ background: 'var(--surface-light)' }}>👋</div>
             <p className="text-white font-medium mb-1">Say hi to {otherName?.split(' ')[0] || 'your match'}!</p>
             <p className="text-white/60 text-xs">Messages are end-to-end encrypted.</p>
           </div>
@@ -567,7 +567,7 @@ function ChatContent() {
           messagesByDate.map(group => (
             <div key={group.date}>
               <div className="flex items-center justify-center my-3">
-                <span className="px-3 py-1 bg-[#141414] rounded-full text-[11px] font-bold text-white/60 border border-white/[0.04]">
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold text-[var(--muted-strong)] border border-[var(--border)]" style={{ background: 'var(--surface)' }}>
                   {getDateLabel(group.msgs[0].createdAt)}
                 </span>
               </div>
@@ -581,7 +581,7 @@ function ChatContent() {
       </div>
 
       {/* ─── Input Bar ─── */}
-      <div className="shrink-0 flex items-end gap-2 px-3 py-2" style={{ background: '#111111', borderTop: '1px solid rgba(255,255,255,0.06)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
+      <div className="shrink-0 flex items-end gap-2 px-3 py-2" style={{ background: 'var(--glass-bg)', borderTop: '1px solid var(--glass-border)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
         <textarea
           ref={textareaRef}
           value={newMsg}
@@ -590,8 +590,8 @@ function ChatContent() {
           placeholder="Message"
           maxLength={1000}
           rows={1}
-          className="flex-1 resize-none bg-[#1e1e1e] text-white text-[15px] placeholder:text-white/40 rounded-[20px] px-4 py-2.5 outline-none tracking-tight transition-colors"
-          style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
+          className="flex-1 resize-none text-[var(--foreground)] text-[15px] placeholder:text-[var(--muted)] rounded-[20px] px-4 py-2.5 outline-none tracking-tight transition-colors"
+          style={{ background: 'var(--surface-light)', border: '1px solid var(--border)', minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
         />
         <button
           onClick={sendMessage}
@@ -609,7 +609,7 @@ function ChatContent() {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#090909]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
       </div>
     }>

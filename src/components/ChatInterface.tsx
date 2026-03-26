@@ -20,7 +20,7 @@ const ChatBubble = memo(function ChatBubble({ msg }: { msg: ChatMessage }) {
           maxWidth: '75%',
           wordBreak: 'break-word',
           overflowWrap: 'break-word',
-          background: isUser ? '#7c71ff' : '#1e1e1e',
+          background: isUser ? 'var(--primary)' : 'var(--surface-light)',
           color: '#fff',
           fontSize: '14px',
           lineHeight: '1.45',
@@ -105,7 +105,7 @@ export default function ChatInterface({
 
         {isLoading && (
           <div className="flex justify-start mb-1">
-            <div className="px-4 py-3 rounded-2xl rounded-bl-sm" style={{ background: '#1e1e1e' }}>
+            <div className="px-4 py-3 rounded-2xl rounded-bl-sm" style={{ background: 'var(--surface-light)' }}>
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-[#6d28d9] flex items-center justify-center text-[8px] text-white font-bold">M</div>
                 <div className="flex gap-1">
@@ -129,7 +129,7 @@ export default function ChatInterface({
       )}
 
       {/* Input */}
-      <div className="p-3 flex items-end gap-2" style={{ background: '#111111', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="p-3 flex items-end gap-2" style={{ background: 'var(--glass-bg)', borderTop: '1px solid var(--glass-border)' }}>
         <textarea
           ref={textareaRef}
           value={input}
@@ -138,14 +138,14 @@ export default function ChatInterface({
           placeholder={placeholder}
           disabled={isLoading}
           rows={1}
-          className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/50 rounded-2xl px-4 py-2.5 outline-none border border-white/15 focus:border-[#7c71ff]/50 transition-colors"
-          style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
+          className="flex-1 resize-none text-[var(--foreground)] text-sm placeholder:text-[var(--muted)] rounded-2xl px-4 py-2.5 outline-none border transition-colors"
+          style={{ background: 'var(--surface-light)', borderColor: 'var(--border)', minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
         />
         <button
           onClick={handleSend}
           disabled={!input.trim() || isLoading}
           className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-30"
-          style={{ background: '#7c71ff' }}
+          style={{ background: 'var(--primary)' }}
         >
           <Send size={16} />
         </button>

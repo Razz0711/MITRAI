@@ -86,7 +86,7 @@ const MessageBubble = memo(function MessageBubble({
           <div
             className="px-3 py-2"
             style={{
-              background: isUser ? 'var(--primary)' : '#1e1e1e',
+              background: isUser ? 'var(--primary)' : 'var(--surface-light)',
               color: '#ffffff',
               fontSize: '14px',
               lineHeight: '1.45',
@@ -124,8 +124,8 @@ const MessageBubble = memo(function MessageBubble({
         {isUser && msg.arya_reaction && (
           <div className="flex justify-end mt-0.5 mr-1">
             <span
-              className="text-base leading-none px-1.5 py-0.5 rounded-full bg-[#1e1e1e] border border-white/10 shadow"
-              style={{ fontSize: '16px' }}
+              className="text-base leading-none px-1.5 py-0.5 rounded-full border shadow"
+              style={{ background: 'var(--surface-light)', borderColor: 'var(--border)', fontSize: '16px' }}
             >
               {msg.arya_reaction}
             </span>
@@ -733,7 +733,7 @@ export default function AryaChatPage() {
           {showHeaderMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowHeaderMenu(false)} />
-              <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl py-2 shadow-2xl" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
+              <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl py-2 shadow-2xl" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }} onClick={e => e.stopPropagation()}>
                 {[
                   { icon: Share2, label: 'Share App', color: 'text-white', action: () => {
                     window.open(`https://wa.me/?text=${encodeURIComponent(`Hey! Chat with ${companionName} AI on MitrrAi \nhttps://mitrrai.vercel.app`)}`, '_blank');
@@ -811,7 +811,7 @@ export default function AryaChatPage() {
         {sending && (
           <div className="flex justify-start mb-1">
             <Image src={companionAvatar} alt={companionName} width={28} height={28} className="w-7 h-7 rounded-full object-cover shrink-0 mr-2 mt-auto mb-1" />
-            <div className="px-4 py-3 rounded-2xl rounded-bl-sm" style={{ background: '#1e1e1e' }}>
+            <div className="px-4 py-3 rounded-2xl rounded-bl-sm" style={{ background: 'var(--surface-light)' }}>
               <div className="flex gap-1">
                 <span className="w-2 h-2 rounded-full bg-white/55 animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-2 h-2 rounded-full bg-white/55 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -828,8 +828,8 @@ export default function AryaChatPage() {
       <div
         className="shrink-0 flex items-end gap-2 px-3 py-2"
         style={{
-          background: '#111111',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--glass-bg)',
+          borderTop: '1px solid var(--glass-border)',
           paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)',
         }}
       >
@@ -840,8 +840,8 @@ export default function AryaChatPage() {
           onKeyDown={handleKeyDown}
           placeholder="Message..."
           rows={1}
-          className="flex-1 resize-none bg-[#1e1e1e] text-white text-sm placeholder:text-white/55 rounded-2xl px-4 py-2.5 outline-none border border-white/8 focus:border-[var(--primary)]/50 transition-colors"
-          style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
+          className="flex-1 resize-none text-[var(--foreground)] text-sm placeholder:text-[var(--muted)] rounded-2xl px-4 py-2.5 outline-none transition-colors"
+          style={{ background: 'var(--surface-light)', border: '1px solid var(--border)', minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
         />
         <button
           onClick={handleSend}
@@ -857,7 +857,7 @@ export default function AryaChatPage() {
       {clearConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setClearConfirm(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative w-72 rounded-2xl p-5 space-y-4" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }} onClick={e => e.stopPropagation()}>
+          <div className="relative w-72 rounded-2xl p-5 space-y-4" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }} onClick={e => e.stopPropagation()}>
             <div className="text-center">
               <div className="w-12 h-12 mx-auto rounded-full bg-red-500/15 flex items-center justify-center mb-3">
                 <Trash2 size={20} className="text-red-400" />

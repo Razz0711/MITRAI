@@ -56,7 +56,7 @@ const AnonBubble = memo(function AnonBubble({
         <div
           className="px-3 py-2 whitespace-pre-wrap"
           style={{
-            background: isMe ? 'var(--primary)' : '#1e1e1e',
+            background: isMe ? 'var(--primary)' : 'var(--surface-light)',
             color: '#fff',
             fontSize: '14px',
             lineHeight: '1.45',
@@ -230,9 +230,9 @@ export default function AnonChatRoomPage() {
   const canReveal = messages.length >= 10 && !isRevealed;
 
   return (
-    <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#090909', overflow: 'hidden' }}>
+    <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--background)', overflow: 'hidden' }}>
       {/* ─── Header ─── */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-2.5" style={{ background: '#111111', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingTop: 'calc(env(safe-area-inset-top) + 0.625rem)' }}>
+      <div className="shrink-0 flex items-center gap-2 px-3 py-2.5" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)', paddingTop: 'calc(env(safe-area-inset-top) + 0.625rem)' }}>
         <button onClick={() => router.push('/anon')} className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition-colors">
           <ArrowLeft size={24} />
         </button>
@@ -264,7 +264,7 @@ export default function AnonChatRoomPage() {
               <MoreVertical size={18} />
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 w-48 rounded-2xl z-50 overflow-hidden" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="absolute right-0 top-full mt-1 w-48 rounded-2xl z-50 overflow-hidden" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}>
                 <button onClick={() => { setShowMenu(false); setShowReport(true); }} className="w-full px-4 py-3 text-left text-sm text-white hover:bg-white/[0.04] transition-colors">Report User</button>
                 <button onClick={() => { setShowMenu(false); setShowBlockConfirm(true); }} className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors border-t border-white/[0.06]">Block & Leave</button>
                 <button onClick={() => { setShowMenu(false); handleClose(); }} className="w-full px-4 py-3 text-left text-sm text-white/50 hover:bg-white/[0.04] transition-colors border-t border-white/[0.06]">Leave Chat</button>
@@ -278,7 +278,7 @@ export default function AnonChatRoomPage() {
       <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-3 py-3" style={{ overscrollBehavior: 'contain' }}>
         {/* System message */}
         <div className="text-center py-3 mb-2">
-          <p className="text-[11px] text-white/65 inline-block px-3 py-1 rounded-full" style={{ background: '#141414' }}>
+          <p className="text-[11px] text-white/65 inline-block px-3 py-1 rounded-full" style={{ background: 'var(--surface)' }}>
             {roomType?.label} — Chat started. Be kind & respectful.
           </p>
         </div>
@@ -290,7 +290,7 @@ export default function AnonChatRoomPage() {
 
         {closed && (
           <div className="text-center py-4">
-            <p className="text-xs text-red-400 inline-block px-3 py-1 rounded-full" style={{ background: '#141414' }}>This chat has ended</p>
+            <p className="text-xs text-red-400 inline-block px-3 py-1 rounded-full" style={{ background: 'var(--surface)' }}>This chat has ended</p>
             <button onClick={() => router.push('/anon')} className="block mx-auto mt-3 px-4 py-2 bg-purple-600 text-white rounded-xl text-xs">Back to Lobby</button>
           </div>
         )}
@@ -299,7 +299,7 @@ export default function AnonChatRoomPage() {
 
       {/* ─── Input Bar ─── */}
       {!closed && (
-        <div className="shrink-0 flex items-end gap-2 px-3 py-2" style={{ background: '#111111', borderTop: '1px solid rgba(255,255,255,0.06)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
+        <div className="shrink-0 flex items-end gap-2 px-3 py-2" style={{ background: 'var(--glass-bg)', borderTop: '1px solid var(--glass-border)', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
           <textarea
             ref={textareaRef}
             value={newMsg}
@@ -309,8 +309,8 @@ export default function AnonChatRoomPage() {
             maxLength={1000}
             rows={1}
             disabled={sending}
-            className="flex-1 resize-none bg-[#1e1e1e] text-white text-[15px] placeholder:text-white/55 rounded-[20px] px-4 py-2.5 outline-none tracking-tight transition-colors disabled:opacity-50"
-            style={{ minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
+            className="flex-1 resize-none text-[var(--foreground)] text-[15px] placeholder:text-[var(--muted)] rounded-[20px] px-4 py-2.5 outline-none tracking-tight transition-colors disabled:opacity-50"
+            style={{ background: 'var(--surface-light)', border: '1px solid var(--border)', minHeight: '40px', maxHeight: '160px', lineHeight: '1.4' }}
           />
           <button
             onClick={sendMessage}
@@ -326,7 +326,7 @@ export default function AnonChatRoomPage() {
       {/* ─── Block Confirmation ─── */}
       {showBlockConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="rounded-2xl p-6 max-w-sm w-full" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="rounded-2xl p-6 max-w-sm w-full" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}>
             <h3 className="text-lg font-bold text-white mb-2">Block User</h3>
             <p className="text-sm text-white/40 mb-4">Are you sure? This will close the chat and they won&apos;t be matched with you again.</p>
             <div className="flex gap-2">
@@ -340,7 +340,7 @@ export default function AnonChatRoomPage() {
       {/* ─── Reveal Modal ─── */}
       {showReveal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="rounded-2xl p-6 max-w-sm w-full" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="rounded-2xl p-6 max-w-sm w-full" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}>
             <h3 className="text-lg font-bold text-white mb-2">Reveal Identity</h3>
             <p className="text-sm text-white/40 mb-4">Both must consent. Once both agree, real names are shown. 10+ messages required.</p>
             <div className="flex items-center gap-3 mb-4 text-sm">
@@ -364,13 +364,13 @@ export default function AnonChatRoomPage() {
       {/* ─── Report Modal ─── */}
       {showReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="rounded-2xl p-6 max-w-sm w-full" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="rounded-2xl p-6 max-w-sm w-full" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}>
             <h3 className="text-lg font-bold text-white mb-2">Report User</h3>
             <p className="text-sm text-white/40 mb-4">Help keep the community safe. False reports may result in your own ban.</p>
             <select
               value={reportReason}
               onChange={e => setReportReason(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-white/8 bg-[#1e1e1e] text-white text-sm mb-4"
+              className="w-full px-3 py-2 rounded-xl text-[var(--foreground)] text-sm mb-4" style={{ background: 'var(--surface-light)', border: '1px solid var(--border)' }}
             >
               <option value="">Select a reason...</option>
               <option value="harassment">Harassment or bullying</option>
