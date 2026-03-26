@@ -477,13 +477,3 @@ function WhyCard({ icon, title, description, color }: { icon: React.ReactNode; t
   );
 }
 
-function TestimonialCard({ quote, author, emoji, color }: { quote: string; author: string; emoji: string; color: string }) {
-  return (
-    <div className="card-glass p-5 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
-      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
-      <span className="text-2xl mb-2 block">{emoji}</span>
-      <p className="text-sm font-medium mb-3 leading-relaxed">&ldquo;{quote}&rdquo;</p>
-      <span className="text-xs text-[var(--muted)]">&mdash; {author}</span>
-    </div>
-  );
-}
