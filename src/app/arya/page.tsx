@@ -101,7 +101,8 @@ export default function AryaProfilePage() {
         {/* Back button */}
         <button
           onClick={() => router.back()}
-          className="absolute top-4 left-4 w-9 h-9 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/30 transition-colors z-10"
+          className="absolute left-4 w-9 h-9 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/30 transition-colors z-10"
+          style={{ top: 'max(1rem, env(safe-area-inset-top))' }}
         >
           <ArrowLeft size={18} />
         </button>

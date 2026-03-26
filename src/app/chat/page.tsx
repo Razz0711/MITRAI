@@ -340,7 +340,7 @@ function ChatContent() {
     }, []);
     const sortedPeopleGroups = getSortedPeople();
     return (
-      <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--background)', overflow: 'hidden' }}>
+      <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 'calc(var(--vh, 1dvh) * 100)', background: 'var(--background)', overflow: 'hidden' }}>
         {/* Header */}
         <div className="shrink-0 flex items-center gap-3 px-4 py-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)', background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)' }}>
           <div className="flex-1">

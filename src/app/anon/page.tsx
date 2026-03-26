@@ -615,21 +615,6 @@ export default function AnonLobbyPage() {
         {/* Idle — Vibe Card Selection */}
         {status === 'idle' && (
           <div className="space-y-6">
-            {/* Open Access Banner */}
-            {isOpenAccess && openAccessEndsAt && (
-              <div className="rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(59,130,246,0.06))', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-sm">
-                    <strong className="text-green-400">Free for everyone</strong>
-                    <span className="text-[var(--muted)]"> — Open for all college students</span>
-                  </span>
-                </div>
-                <span className="text-xs font-semibold text-green-400">
-                  Till {new Date(openAccessEndsAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </span>
-              </div>
-            )}
 
             {isFreeTrial && passInfo.expiresAt && !isOpenAccess && (
               <div className="rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(20,184,166,0.06))', border: '1px solid rgba(16,185,129,0.2)' }}>
