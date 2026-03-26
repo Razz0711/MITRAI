@@ -22,7 +22,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-export function usePushNotifications(userId: string | null | undefined) {
+export function useVapidSubscription(userId: string | null | undefined) {
   const registered = useRef(false);
 
   useEffect(() => {

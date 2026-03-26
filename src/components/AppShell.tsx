@@ -16,7 +16,7 @@ import IncomingCallBanner from './IncomingCallBanner';
 import { useTimeTracker } from '@/hooks/useTimeTracker';
 import MitrrAiLogo from './MitrrAiLogo';
 import PwaInstallBanner from './PwaInstallBanner';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useVapidSubscription } from '@/hooks/usePushNotifications';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -26,8 +26,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Start background tracker
   useTimeTracker();
 
-  // Register push notifications for logged-in users
-  usePushNotifications(user?.id);
+  // Register VAPID push subscription for logged-in users
+  useVapidSubscription(user?.id);
 
   // Determine page type
   const isAuthPage = pathname === '/login' || pathname.startsWith('/reset-password');
