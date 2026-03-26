@@ -6,7 +6,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useCountUp } from '@/hooks/useCountUp';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
