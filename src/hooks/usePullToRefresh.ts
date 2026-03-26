@@ -61,23 +61,5 @@ export function usePullToRefresh({ onRefresh, threshold = 80 }: UsePullToRefresh
 
   const progress = Math.min(pullDistance / threshold, 1);
 
-  const PullIndicator = () => {
-    if (pullDistance <= 5 && !refreshing) return null;
-    return (
-      <div
-        className="flex items-center justify-center overflow-hidden transition-all"
-        style={{ height: refreshing ? 48 : pullDistance, opacity: refreshing ? 1 : progress }}
-      >
-        <div
-          className="w-8 h-8 rounded-full border-2 border-[var(--primary)] border-t-transparent"
-          style={{
-            transform: `rotate(${pullDistance * 3}deg)`,
-            animation: refreshing ? 'spin 0.8s linear infinite' : 'none',
-          }}
-        />
-      </div>
-    );
-  };
-
-  return { containerRef, PullIndicator, refreshing };
+  return { containerRef, pullDistance, refreshing, progress };
 }
