@@ -390,8 +390,8 @@ export default function CampusFeedPage() {
             >
               Skip for now →
             </button>
-            <p id="loc-blocked-hint" className="text-[11px] text-amber-400 text-center leading-relaxed hidden" style={{ display: 'none' }}>
-              📍 Location blocked. Tap the lock 🔒 in your browser address bar → tap Location → Allow → refresh.
+            <p id="loc-blocked-hint" className="text-[11px] text-amber-400 text-center leading-relaxed" style={{ display: 'none' }}>
+              📍 Location blocked. Open <strong>Chrome → ⋮ Menu → Settings → Site Settings → Location</strong> → find this site → tap Allow → come back &amp; refresh.
             </p>
             <p className="text-[10px] text-[var(--muted)] leading-relaxed">
               Your location is only used to show nearby campus posts. We don&apos;t track or store your movement.

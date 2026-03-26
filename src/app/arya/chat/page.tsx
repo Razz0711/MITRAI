@@ -93,15 +93,27 @@ const MessageBubble = memo(function MessageBubble({
               borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
             }}
           >
-            {/* Render markdown images */}
+            {/* Render markdown images OR selfie placeholder */}
             {textContent.includes('![') ? (
               <div>
                 {textContent.split(/(\!\[.*?\]\(.*?\))/g).map((part, i) => {
                   const imgMatch = part.match(/\!\[.*?\]\((.*?)\)/);
                   if (imgMatch) {
+                    // Check if it's a real external URL
+                    const src = imgMatch[1];
+                    const isFakeUrl = !src.startsWith('http') || src.includes('placeholder') || src.includes('example');
+                    if (isFakeUrl) {
+                      // Render a fun selfie card instead
+                      return (
+                        <div key={i} className="flex flex-col items-center justify-center rounded-xl p-4 my-1" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', minWidth: '140px' }}>
+                          <span style={{ fontSize: '48px' }}>🥳</span>
+                          <p className="text-[11px] text-white/60 mt-2">Arya Selfie ✨</p>
+                          <p className="text-[10px] text-white/40">Real photo coming soon!</p>
+                        </div>
+                      );
+                    }
                     return (
-                      <Image key={i} src={imgMatch[1]} alt="Arya Selfie" width={256} height={256}
-                        className="w-full max-w-[256px] rounded-xl mt-1 mb-1" unoptimized />
+                      <img key={i} src={src} alt="Arya" className="w-full max-w-[256px] rounded-xl mt-1 mb-1" />
                     );
                   }
                   return part ? <span key={i}>{part}</span> : null;
@@ -202,16 +214,14 @@ export default function AryaChatPage() {
     const handleResize = () => {
       const root = document.getElementById('chat-root');
       if (!root) return;
+      // Only update height — do NOT touch top (causes jump on some Android browsers)
       root.style.height = viewport.height + 'px';
-      root.style.top = viewport.offsetTop + 'px';
       // Auto-scroll to bottom when keyboard opens
-      bottomRef.current?.scrollIntoView({ behavior: 'instant', block: 'end' });
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'instant', block: 'end' }), 50);
     };
     viewport.addEventListener('resize', handleResize);
-    viewport.addEventListener('scroll', handleResize);
     return () => {
       viewport.removeEventListener('resize', handleResize);
-      viewport.removeEventListener('scroll', handleResize);
     };
   }, []);
 
@@ -733,7 +743,16 @@ export default function AryaChatPage() {
           {showHeaderMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowHeaderMenu(false)} />
-              <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl py-2 shadow-2xl" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }} onClick={e => e.stopPropagation()}>
+              <div
+                className="absolute right-0 z-50 w-52 rounded-2xl py-2 shadow-2xl"
+                style={{
+                  top: 'calc(100% + 8px)',
+                  background: '#1e1e2e',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                }}
+                onClick={e => e.stopPropagation()}
+              >
                 {[
                   { icon: Share2, label: 'Share App', color: 'text-white', action: () => {
                     window.open(`https://wa.me/?text=${encodeURIComponent(`Hey! Chat with ${companionName} AI on MitrrAi \nhttps://mitrrai.vercel.app`)}`, '_blank');
@@ -748,8 +767,10 @@ export default function AryaChatPage() {
                   { icon: Trash2, label: 'Clear Chat', color: 'text-red-400', action: () => { setShowHeaderMenu(false); setClearConfirm(true); }},
                 ].map(item => (
                   <button key={item.label} onClick={item.action}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm ${item.color} hover:bg-white/[0.04] transition-colors`}>
-                    <item.icon size={16} className="opacity-60" /> {item.label}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium ${item.color} active:bg-white/10 transition-colors`}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                  >
+                    <item.icon size={16} className="opacity-70 shrink-0" /> {item.label}
                   </button>
                 ))}
               </div>
