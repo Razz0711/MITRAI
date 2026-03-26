@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AppProviders from "@/components/AppProviders";
@@ -19,6 +19,14 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
   weight: ["400", "500", "700"],
 });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#0a0a12',
+};
 
 export const metadata: Metadata = {
   title: "MitrrAi — Campus Companion",
