@@ -354,7 +354,7 @@ export default function CampusFeedPage() {
           <div>
             <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">Enable Location Access</h2>
             <p className="text-sm text-[var(--muted-strong)] leading-relaxed">
-              Campus Feed needs your location to show posts from your campus. Allow location access in your browser settings to continue.
+              Campus Feed needs your location to show posts from your campus and nearby colleges.
             </p>
           </div>
           <div className="space-y-3">
@@ -367,12 +367,26 @@ export default function CampusFeedPage() {
                     setUserLocation('Campus');
                     setLocationGranted(true);
                   },
-                  () => setLocationGranted(false)
+                  (err) => {
+                    if (err.code === 1) {
+                      // Permission denied — show instructions
+                      alert('Location permission is blocked.\n\nTo enable:\n1. Click the 🔒 lock icon in your browser address bar\n2. Find "Location" and set it to "Allow"\n3. Refresh the page');
+                    }
+                    setLocationGranted(false);
+                  }
                 );
               }}
-              className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-lg shadow-green-500/30 hover:bg-green-600 transition-all"
+              className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-[0.98] transition-all cursor-pointer"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               📍 Allow Location
+            </button>
+            <button
+              onClick={() => setLocationGranted(true)}
+              className="w-full py-2.5 rounded-xl text-[var(--muted-strong)] text-xs hover:text-[var(--foreground)] transition-colors cursor-pointer"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              Skip for now →
             </button>
             <p className="text-[10px] text-[var(--muted)] leading-relaxed">
               Your location is only used to show nearby campus posts. We don&apos;t track or store your movement.
