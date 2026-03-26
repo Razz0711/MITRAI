@@ -117,8 +117,11 @@ code, pre, .font-mono {
   font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  letter-spacing: -0.4px;
+/* Two-font hierarchy: Outfit for headings, Jakarta for body */
+h1, h2, h3, h4, h5, h6,
+.font-heading {
+  font-family: var(--font-heading), 'Outfit', var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
   font-weight: 700;
   color: var(--foreground);
 }
@@ -727,6 +730,22 @@ main > div, main > section {
 @keyframes pulseRing {
   0% { transform: scale(1); opacity: 0.4; }
   100% { transform: scale(1.3); opacity: 0; }
+}
+
+/* Nav indicator — scale in from center */
+@keyframes navIndicator {
+  from { transform: translateX(-50%) scaleX(0); }
+  to { transform: translateX(-50%) scaleX(1); }
+}
+
+/* Splash screen animations */
+@keyframes splashLogoEnter {
+  from { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+  to { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes splashTextEnter {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

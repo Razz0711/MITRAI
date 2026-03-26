@@ -99,13 +99,21 @@ export function MobileNavbar() {
             >
               <div className="relative p-1.5 rounded-xl transition-all duration-300">
                 <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
-                {isActive && (
-                  <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--primary-light)]" />
-                )}
               </div>
               <span className={`text-[11px] font-semibold transition-all duration-300 ${isActive ? 'opacity-100' : ''}`}>
                 {tab.label}
               </span>
+              {isActive && (
+                <span
+                  className="absolute bottom-1 left-1/2 -translate-x-1/2 h-[3px] rounded-full"
+                  style={{
+                    width: 20,
+                    background: 'linear-gradient(90deg, var(--primary), #c026d3)',
+                    animation: 'navIndicator 0.3s ease-out',
+                    boxShadow: '0 0 8px rgba(124,58,237,0.5)',
+                  }}
+                />
+              )}
             </Link>
           );
         })}

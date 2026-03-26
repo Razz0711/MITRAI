@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import AppProviders from "@/components/AppProviders";
 import { AuthProvider } from "@/lib/auth";
@@ -8,12 +8,19 @@ import AppShell from "@/components/AppShell";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ToastProvider from "@/components/ToastProvider";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
+import SplashScreen from "@/components/SplashScreen";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800"],
+});
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
 });
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
@@ -66,7 +73,7 @@ export default function RootLayout({
         `}} />
       </head>
       <body
-        className={`${plusJakarta.variable} ${jetbrainsMono.variable} antialiased`}
+        className={`${plusJakarta.variable} ${outfit.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <AuthProvider>
           <ThemeProvider>
@@ -77,6 +84,7 @@ export default function RootLayout({
                     {children}
                   </ErrorBoundary>
                   <OnboardingWalkthrough />
+                  <SplashScreen />
                 </AppShell>
               </AppProviders>
             </ToastProvider>
