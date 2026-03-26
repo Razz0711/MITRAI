@@ -37,7 +37,7 @@ export default function AnonLobbyPage() {
   const [trialGranted, setTrialGranted] = useState(false);
   const [usedTrial, setUsedTrial] = useState(false);
   const [isOpenAccess, setIsOpenAccess] = useState(false);
-  const [openAccessEndsAt, setOpenAccessEndsAt] = useState('');
+  const [_openAccessEndsAt, setOpenAccessEndsAt] = useState('');
 
   // Live stats
   const [stats, setStats] = useState<{ queueCount: number; activeRooms: number; queueByType: Record<string, number> } | null>(null);
