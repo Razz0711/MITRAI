@@ -355,7 +355,7 @@ export default function Home() {
             <RevealSection delay={0}><FeatureCard icon={<Sparkles size={20} />} title="Arya AI" description="Your 3 AM study partner who never sleeps, never judges, and never leaves you on seen." color="var(--primary)" badge="AI" /></RevealSection>
             <RevealSection delay={0.08}><FeatureCard icon={<Ghost size={20} />} title="Anonymous Chat" description="Get matched with random college students for anonymous conversations." color="var(--accent)" /></RevealSection>
             <RevealSection delay={0.16}><FeatureCard icon={<Zap size={20} />} title="Campus Feed" description="Post activities — Study, Sports, Food runs, SOS — find others doing the same." color="var(--secondary)" /></RevealSection>
-            <RevealSection delay={0.24}><FeatureCard icon={<Users size={20} />} title="Study Buddies" description="AI-powered matching with students who share your subjects and schedule." color="var(--primary-light)" /></RevealSection>
+            <RevealSection delay={0.24}><FeatureCard icon={<Users size={20} />} title="Community" description="Join college circles, find your tribe, and stay connected with campus life." color="var(--primary-light)" /></RevealSection>
             <RevealSection delay={0.32}><FeatureCard icon={<MessageCircle size={20} />} title="Direct Chat" description="1-on-1 messaging with study buddies. Real-time with typing indicators." color="var(--accent)" /></RevealSection>
             <RevealSection delay={0.4}><FeatureCard icon={<BookOpen size={20} />} title="Doubts & Confessions" description="Anonymous campus feed — doubts, confessions, hot takes, and more." color="var(--secondary)" /></RevealSection>
           </div>
