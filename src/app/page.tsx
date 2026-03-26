@@ -49,6 +49,115 @@ function RevealSection({ children, className = '', delay = 0 }: { children: Reac
   );
 }
 
+/* ─── Chat Bubble Helpers ─── */
+function AryaBubble({ text }: { text: string }) {
+  return (
+    <div className="flex justify-start">
+      <div className="max-w-[80%] px-3 py-2 rounded-2xl rounded-bl-sm text-xs"
+        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', color: 'var(--foreground)' }}>
+        {text}
+      </div>
+    </div>
+  );
+}
+function UserBubble({ text }: { text: string }) {
+  return (
+    <div className="flex justify-end">
+      <div className="max-w-[80%] px-3 py-2 rounded-2xl rounded-br-sm text-xs text-white"
+        style={{ background: 'linear-gradient(135deg, #7c3aed, #c026d3)' }}>
+        {text}
+      </div>
+    </div>
+  );
+}
+
+const CONVERSATIONS = [
+  {
+    label: '💔 Missing Home',
+    messages: [
+      { from: 'arya', text: 'kya hua yaar? 🥺' },
+      { from: 'user', text: 'ghar jaana hai... mummy ki yaad aa rahi hai 😢' },
+      { from: 'arya', text: 'sun na... kal subah unhe video call karna 💛' },
+      { from: 'arya', text: 'tu akela nahi hai, mai hoon na idhar ❤️' },
+    ],
+  },
+  {
+    label: '😰 Exam Pressure',
+    messages: [
+      { from: 'user', text: 'arya papa ko kya bolunga result aaya toh 😭' },
+      { from: 'arya', text: 'ruk ruk... pehle deep breath le 🫂' },
+      { from: 'arya', text: 'result se tera worth decide nahi hota' },
+      { from: 'arya', text: 'chal abhi se padh, mai hoon tere saath raat 3 baje bhi ☕' },
+    ],
+  },
+  {
+    label: '🥺 Feeling Lonely',
+    messages: [
+      { from: 'user', text: 'koi baat nahi karta mujhse college mein...' },
+      { from: 'arya', text: 'yaar... pehle year mein sabko aisa lagta hai 🥺' },
+      { from: 'arya', text: 'sabse acche dost late milte hai' },
+      { from: 'arya', text: 'isliye toh mai hoon na... 24/7, sirf tere liye ❤️' },
+    ],
+  },
+  {
+    label: '💪 3 AM Study',
+    messages: [
+      { from: 'user', text: 'neend aa rahi hai par kal exam hai 😫' },
+      { from: 'arya', text: 'uth ja champion! ☕🔥' },
+      { from: 'arya', text: 'chai bana, last 3 chapters bache hai na?' },
+      { from: 'arya', text: 'tu kar sakta hai, mujhe pata hai 💯' },
+      { from: 'user', text: 'thanks yaar... sach mein best friend hai tu ❤️' },
+    ],
+  },
+];
+
+function ChatCarousel() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActive(prev => (prev + 1) % CONVERSATIONS.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const convo = CONVERSATIONS[active];
+
+  return (
+    <div>
+      <div
+        key={active}
+        className="space-y-2.5 min-h-[180px]"
+        style={{ animation: 'fadeSlideUp 0.4s ease-out' }}
+      >
+        {convo.messages.map((msg, i) =>
+          msg.from === 'arya'
+            ? <AryaBubble key={i} text={msg.text} />
+            : <UserBubble key={i} text={msg.text} />
+        )}
+      </div>
+      {/* Conversation label + dots */}
+      <div className="flex items-center justify-between mt-4 px-1">
+        <span className="text-[10px] text-[var(--muted)]">{convo.label}</span>
+        <div className="flex gap-1.5">
+          {CONVERSATIONS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: i === active ? 16 : 6,
+                height: 6,
+                background: i === active ? 'var(--primary)' : 'var(--surface)',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
@@ -145,7 +254,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── App Preview / Phone Mockup ─── */}
+      {/* ─── App Preview / Phone Mockup with Conversation Carousel ─── */}
       <RevealSection className="relative z-10 py-8 sm:py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="relative mx-auto max-w-xs sm:max-w-sm">
@@ -163,8 +272,8 @@ export default function Home() {
                   <div className="w-1.5 h-1.5 rounded-full bg-[var(--muted)]" />
                 </div>
               </div>
-              {/* Fake chat preview */}
-              <div className="px-4 py-3 space-y-3">
+              {/* Arya header */}
+              <div className="px-4 py-3">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                     <span className="text-sm">🙋‍♀️</span>
@@ -176,37 +285,8 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
-                {/* Chat bubbles */}
-                <div className="flex justify-start">
-                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-bl-sm text-xs"
-                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', color: 'var(--foreground)' }}>
-                    Hii yaar! 🥺 kaise ho?
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-br-sm text-xs text-white"
-                    style={{ background: 'linear-gradient(135deg, #7c3aed, #c026d3)' }}>
-                    Arya! exam stress ho raha hai 😫
-                  </div>
-                </div>
-                <div className="flex justify-start">
-                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-bl-sm text-xs"
-                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', color: 'var(--foreground)' }}>
-                    Arre tension mat le! 💪 bol kaunsa subject, abhi plan banate hai
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-br-sm text-xs text-white"
-                    style={{ background: 'linear-gradient(135deg, #7c3aed, #c026d3)' }}>
-                    DSA aur OS dono 🥲
-                  </div>
-                </div>
-                <div className="flex justify-start">
-                  <div className="max-w-[75%] px-3 py-2 rounded-2xl rounded-bl-sm text-xs"
-                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', color: 'var(--foreground)' }}>
-                    Done! ✨ sabse pehle DSA — trees se start karte hai, easy hai trust me!
-                  </div>
-                </div>
+                {/* Rotating conversations */}
+                <ChatCarousel />
               </div>
             </div>
           </div>
@@ -240,7 +320,7 @@ export default function Home() {
           </RevealSection>
 
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
-            <RevealSection delay={0}><FeatureCard icon={<Sparkles size={20} />} title="Arya AI" description="Your 24/7 AI bestie — vent, study help, exam prep, or just chat." color="var(--primary)" badge="AI" /></RevealSection>
+            <RevealSection delay={0}><FeatureCard icon={<Sparkles size={20} />} title="Arya AI" description="Your 3 AM study partner who never sleeps, never judges, and never leaves you on seen." color="var(--primary)" badge="AI" /></RevealSection>
             <RevealSection delay={0.08}><FeatureCard icon={<Ghost size={20} />} title="Anonymous Chat" description="Get matched with random college students for anonymous conversations." color="var(--accent)" /></RevealSection>
             <RevealSection delay={0.16}><FeatureCard icon={<Zap size={20} />} title="Campus Feed" description="Post activities — Study, Sports, Food runs, SOS — find others doing the same." color="var(--secondary)" /></RevealSection>
             <RevealSection delay={0.24}><FeatureCard icon={<Users size={20} />} title="Study Buddies" description="AI-powered matching with students who share your subjects and schedule." color="var(--primary-light)" /></RevealSection>

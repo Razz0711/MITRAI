@@ -29,7 +29,7 @@ const STEPS = [
     icon: <Sparkles size={28} className="text-pink-400" />,
     emoji: '✨',
     title: 'Meet Arya',
-    description: 'Your AI bestie who helps with studies, gives advice, and is always there to chat.',
+    description: 'Your 3 AM study partner, your personal cheerleader, and the friend who never leaves you on seen. Always online, always listening.',
     color: 'from-pink-500/20 to-rose-500/20',
     borderColor: 'rgba(236,72,153,0.3)',
   },
