@@ -12,7 +12,7 @@ import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import { StudentProfile } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { X, Star, Globe, Moon, Shield, MessageSquare, HelpCircle, Pencil, Camera, UserPlus } from 'lucide-react';
+import { X, Star, Globe, Moon, Shield, MessageSquare, HelpCircle, Pencil, Camera, UserPlus, ArrowLeft } from 'lucide-react';
 
 export default function MePage() {
   const { user, logout } = useAuth();
@@ -105,7 +105,15 @@ export default function MePage() {
 
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[var(--foreground)]">Me</h1>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/home"
+            className="w-9 h-9 rounded-full bg-[var(--surface)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--muted-strong)] hover:text-[var(--foreground)] transition-colors"
+          >
+            <ArrowLeft size={16} />
+          </Link>
+          <h1 className="text-xl font-bold text-[var(--foreground)]">Me</h1>
+        </div>
         <Link
           href="/me/edit"
           className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--muted-strong)] hover:text-[var(--foreground)] transition-colors"

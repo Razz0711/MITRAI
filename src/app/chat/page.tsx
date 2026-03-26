@@ -343,6 +343,9 @@ function ChatContent() {
       <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 'calc(var(--vh, 1dvh) * 100)', background: 'var(--background)', overflow: 'hidden' }}>
         {/* Header */}
         <div className="shrink-0 flex items-center gap-3 px-4 py-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)', background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)' }}>
+          <button onClick={() => router.push('/home')} className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--muted-strong)] hover:text-[var(--foreground)] transition-colors shrink-0" style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <ArrowLeft size={18} />
+          </button>
           <div className="flex-1">
             <h1 className="text-lg font-bold text-[var(--foreground)]">Your Chats</h1>
             {deduped.length > 0 && <p className="text-[11px] text-[var(--muted-strong)]">{deduped.length} conversation{deduped.length !== 1 ? 's' : ''}</p>}

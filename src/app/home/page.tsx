@@ -369,8 +369,11 @@ export default function CampusFeedPage() {
                     setLocationGranted(true);
                   },
                   (err) => {
-                    // Silently fail — user already sees the location screen
-                    console.warn('Location denied:', err.code);
+                    if (err.code === 1) {
+                      // Permission denied — show inline tip instead of alert
+                      const hint = document.getElementById('loc-blocked-hint');
+                      if (hint) { hint.style.display = 'block'; }
+                    }
                     setLocationGranted(false);
                   }
                 );
@@ -387,6 +390,9 @@ export default function CampusFeedPage() {
             >
               Skip for now →
             </button>
+            <p id="loc-blocked-hint" className="text-[11px] text-amber-400 text-center leading-relaxed hidden" style={{ display: 'none' }}>
+              📍 Location blocked. Tap the lock 🔒 in your browser address bar → tap Location → Allow → refresh.
+            </p>
             <p className="text-[10px] text-[var(--muted)] leading-relaxed">
               Your location is only used to show nearby campus posts. We don&apos;t track or store your movement.
             </p>

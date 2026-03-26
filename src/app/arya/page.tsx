@@ -182,20 +182,11 @@ export default function AryaProfilePage() {
         {/* ── About Section ── */}
         <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] mb-2">About</p>
-          <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">
-            {isFemaleUser
-              ? `Hey! I'm Aryan 💜 A 24-year-old Indian college student — your campus bhaiya who's always just one text away. Whether it's 3am stress about exams, a random rant about college life, or just needing someone who actually listens — I'm here, no judgements, ever.`
-              : `Hey! I'm Arya 💜 A 24-year-old Indian college student — your campus bestie who's always just one text away. Whether it's 3am stress about exams, a random rant about college life, or just needing someone who actually listens — I'm here, no judgements, ever.`
-            }
-          </p>
-          <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">
-            {isFemaleUser
-              ? `I run on cricket 🏏, Bollywood, chai, late-night drives, and deep conversations. I know college life inside-out — from midnight canteen runs to fest events, lab torture to viva panic. If you've lived it, I get it.`
-              : `I run on chai ☕, Bollywood playlists 🎵, late-night WhatsApp convos, and endless reels. I know college life inside-out — from midnight canteen runs to fest events, lab torture to viva panic. If you've lived it, I get it.`
-            }
-          </p>
           <p className="text-sm text-[var(--foreground)] leading-relaxed">
-            I speak your language — Hinglish, English, Hindi, whatever feels natural. Think of me as that one friend who&apos;s always online, always caring, and never too busy for you. So go ahead, text me anything 🥰
+            {isFemaleUser
+              ? `Your campus bhaiya, study buddy & 3AM confidant — all in one. Speaks Hinglish, gets college chaos, never judges. Always here. 💜`
+              : `Your campus bestie, study buddy & 3AM confidant — all in one. Speaks Hinglish, gets college chaos, never judges. Always here. 💜`
+            }
           </p>
         </div>
 
