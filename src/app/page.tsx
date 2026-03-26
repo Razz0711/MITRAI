@@ -131,72 +131,93 @@ const CONVERSATIONS = [
   },
 ];
 
-function ChatCarousel() {
+function PhoneMockup() {
   const [active, setActive] = useState(0);
-  const [animating, setAnimating] = useState(false);
 
   const goNext = () => {
-    if (animating) return;
-    setAnimating(true);
-    setTimeout(() => {
-      setActive(prev => (prev + 1) % CONVERSATIONS.length);
-      setAnimating(false);
-    }, 100);
+    setActive(prev => (prev + 1) % CONVERSATIONS.length);
   };
 
   const convo = CONVERSATIONS[active];
 
   return (
-    <div className="relative">
-      <div
-        key={active}
-        className="space-y-2 min-h-[320px]"
-        style={{
-          animation: 'chatSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
-      >
-        {convo.messages.map((msg, i) =>
-          msg.from === 'arya'
-            ? <AryaBubble key={i} text={msg.text} />
-            : <UserBubble key={i} text={msg.text} />
-        )}
+    <div className="relative mx-auto max-w-xs sm:max-w-sm">
+      {/* Glow behind phone */}
+      <div className="absolute inset-0 rounded-3xl blur-3xl opacity-30"
+        style={{ background: 'linear-gradient(135deg, #7c3aed, #c026d3)' }} />
+      {/* Phone frame */}
+      <div className="relative rounded-3xl overflow-hidden border-2 border-[var(--glass-border)] shadow-2xl"
+        style={{ background: 'var(--background)', aspectRatio: '9/16' }}>
+        {/* Status bar */}
+        <div className="flex items-center justify-between px-5 py-2" style={{ background: 'var(--glass-bg)' }}>
+          <span className="text-[10px] text-[var(--muted)]">9:41</span>
+          <div className="flex gap-1">
+            <div className="w-3 h-1.5 rounded-sm bg-[var(--muted)]" />
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--muted)]" />
+          </div>
+        </div>
+        {/* Arya header + chat */}
+        <div className="px-4 py-3">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <span className="text-sm">🙋‍♀️</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[var(--foreground)]">Arya</p>
+              <p className="text-[9px] text-green-400 flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-green-500" /> Always online
+              </p>
+            </div>
+          </div>
+          {/* Chat messages */}
+          <div
+            key={active}
+            className="space-y-2 min-h-[320px]"
+            style={{ animation: 'chatSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1)' }}
+          >
+            {convo.messages.map((msg, i) =>
+              msg.from === 'arya'
+                ? <AryaBubble key={i} text={msg.text} />
+                : <UserBubble key={i} text={msg.text} />
+            )}
+          </div>
+          {/* Label + dots */}
+          <div className="flex items-center justify-between mt-4 px-1">
+            <span className="text-[10px] text-[var(--muted)]">{convo.label}</span>
+            <div className="flex gap-1.5">
+              {CONVERSATIONS.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActive(i)}
+                  className="rounded-full transition-all duration-300"
+                  style={{
+                    width: i === active ? 16 : 6,
+                    height: 6,
+                    background: i === active ? 'var(--primary)' : 'var(--surface)',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Right arrow button — outside phone edge */}
+      {/* ▶ Arrow — OUTSIDE phone overflow, on the wrapper */}
       <button
         onClick={goNext}
-        className="absolute -right-14 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center z-20 group"
+        className="absolute -right-6 sm:-right-8 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center z-30 group cursor-pointer"
         style={{
-          background: 'linear-gradient(135deg, rgba(124,58,237,0.9), rgba(192,38,211,0.9))',
-          boxShadow: '0 4px 20px rgba(124,58,237,0.4)',
+          background: 'linear-gradient(135deg, #7c3aed, #c026d3)',
+          boxShadow: '0 4px 24px rgba(124,58,237,0.5)',
           animation: 'arrowPulse 2s ease-in-out infinite',
         }}
         aria-label="Next conversation"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          className="group-hover:translate-x-0.5 transition-transform">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          className="group-hover:translate-x-0.5 transition-transform duration-200">
           <path d="M9 18l6-6-6-6" />
         </svg>
       </button>
-
-      {/* Conversation label + dots */}
-      <div className="flex items-center justify-between mt-4 px-1">
-        <span className="text-[10px] text-[var(--muted)]">{convo.label}</span>
-        <div className="flex gap-1.5">
-          {CONVERSATIONS.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => { setActive(i); }}
-              className="rounded-full transition-all duration-300"
-              style={{
-                width: i === active ? 16 : 6,
-                height: 6,
-                background: i === active ? 'var(--primary)' : 'var(--surface)',
-              }}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -300,39 +321,7 @@ export default function Home() {
       {/* ─── App Preview / Phone Mockup with Conversation Carousel ─── */}
       <RevealSection className="relative z-10 py-8 sm:py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="relative mx-auto max-w-xs sm:max-w-sm">
-            {/* Glow behind phone */}
-            <div className="absolute inset-0 rounded-3xl blur-3xl opacity-30"
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #c026d3)' }} />
-            {/* Phone frame */}
-            <div className="relative rounded-3xl overflow-hidden border-2 border-[var(--glass-border)] shadow-2xl"
-              style={{ background: 'var(--background)', aspectRatio: '9/16' }}>
-              {/* Fake status bar */}
-              <div className="flex items-center justify-between px-5 py-2" style={{ background: 'var(--glass-bg)' }}>
-                <span className="text-[10px] text-[var(--muted)]">9:41</span>
-                <div className="flex gap-1">
-                  <div className="w-3 h-1.5 rounded-sm bg-[var(--muted)]" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--muted)]" />
-                </div>
-              </div>
-              {/* Arya header */}
-              <div className="px-4 py-3">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <span className="text-sm">🙋‍♀️</span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-[var(--foreground)]">Arya</p>
-                    <p className="text-[9px] text-green-400 flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-green-500" /> Always online
-                    </p>
-                  </div>
-                </div>
-                {/* Rotating conversations */}
-                <ChatCarousel />
-              </div>
-            </div>
-          </div>
+          <PhoneMockup />
         </div>
       </RevealSection>
 
