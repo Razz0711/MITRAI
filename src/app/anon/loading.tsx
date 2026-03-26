@@ -1,5 +1,3 @@
-import LoadingSkeleton from '@/components/LoadingSkeleton';
-
 export default function AnonLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center">
