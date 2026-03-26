@@ -61,7 +61,7 @@ export default function Home() {
             </p>
 
             <p className="text-sm text-[var(--muted)] mb-8 max-w-md mx-auto leading-relaxed slide-up-stagger-2">
-              Chat with Arya AI, meet strangers anonymously, post on campus feed, go live on radar — everything a college student needs, in one app.
+              Chat with Arya AI, meet strangers anonymously, post on campus feed — everything a college student needs, in one app.
             </p>
 
             {/* CTAs */}
@@ -102,7 +102,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <StepCard step={1} icon={<MessageCircle size={20} />} title="Create Account" description="Sign up with your college email (.ac.in). Quick AI onboarding learns your subjects, schedule, and goals." color="var(--primary)" />
             <StepCard step={2} icon={<Sparkles size={20} />} title="Explore Features" description="Chat with Arya AI, post on campus feed, join anonymous rooms, and more." color="var(--accent)" />
-            <StepCard step={3} icon={<Zap size={20} />} title="Connect & Grow" description="Match with study buddies, join circles, go live on radar, and become part of the campus community." color="var(--success)" />
+            <StepCard step={3} icon={<Zap size={20} />} title="Connect & Grow" description="Match with study buddies, join circles, and become part of the campus community." color="var(--success)" />
           </div>
         </div>
       </section>
