@@ -269,7 +269,7 @@ export default function PostCard({
           {(!isOwn || iminCount > 0) && (
             <button
               onClick={handleIminClick}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 reaction-pop btn-ripple ${
                 isOwn && iminCount > 0
                   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
                   : iminActive
@@ -287,7 +287,7 @@ export default function PostCard({
           {/* Reply */}
           <button
             onClick={handleReplyClick}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 reaction-pop btn-ripple ${
               showComments
                 ? 'bg-blue-500/20 text-blue-400'
                 : 'text-[var(--muted-strong)] hover:bg-white/6 hover:text-[var(--foreground)]'
@@ -302,7 +302,7 @@ export default function PostCard({
           {!isOwn && (
             <button
               onClick={handleConnectClick}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ml-auto ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ml-auto reaction-pop btn-ripple ${
                 connectActive
                   ? 'bg-green-500/20 text-green-400'
                   : 'text-[var(--muted-strong)] hover:bg-white/6 hover:text-[var(--foreground)]'

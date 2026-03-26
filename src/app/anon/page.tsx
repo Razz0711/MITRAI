@@ -793,7 +793,7 @@ export default function AnonLobbyPage() {
             {/* Find a Random Match CTA */}
             <button
               onClick={handleJoinQueue}
-              className="w-full py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:shadow-lg active:scale-[0.98]"
+              className="w-full py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:shadow-lg active:scale-[0.98] btn-ripple"
               style={{
                 background: 'linear-gradient(135deg, #7c3aed, #6d28d9, #a855f7)',
                 backgroundSize: '200% 200%',
@@ -855,7 +855,7 @@ export default function AnonLobbyPage() {
         {/* Queuing — Premium animation */}
         {status === 'queuing' && (
           <div className="card p-10 text-center scale-in" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
-            <div className="relative w-24 h-24 mx-auto mb-8">
+            <div className="relative w-24 h-24 mx-auto mb-8 matching-pulse">
               {/* Outer ring */}
               <div className="absolute inset-0 rounded-full" style={{ border: '3px solid rgba(124,58,237,0.15)' }} />
               {/* Spinning gradient ring */}
@@ -885,7 +885,7 @@ export default function AnonLobbyPage() {
             <div className="text-4xl font-mono font-bold text-[var(--foreground)] mb-8 tracking-wider">{formatTime(queueSeconds)}</div>
             <button
               onClick={handleLeaveQueue}
-              className="text-sm text-[var(--muted)] hover:text-[var(--error)] transition-all duration-200 px-6 py-2 rounded-xl hover:bg-[var(--error)]/10"
+              className="text-sm text-[var(--muted)] hover:text-[var(--error)] transition-all duration-200 px-6 py-2 rounded-xl hover:bg-[var(--error)]/10 btn-ripple"
             >
               Cancel & Leave Queue
             </button>

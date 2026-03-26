@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useCountUp } from '@/hooks/useCountUp';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -101,7 +102,7 @@ export default function MePage() {
   const yearLevel = student?.yearLevel || '';
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-4 space-y-5 pb-28">
+    <div className="max-w-lg mx-auto px-4 py-4 space-y-5 pb-28 page-enter">
 
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between">
@@ -170,7 +171,7 @@ export default function MePage() {
             <Link href="/friends" className="text-center py-3 hover:bg-white/5 transition-colors">
               {matchCount > 0 ? (
                 <>
-                  <div className="text-lg font-bold text-[var(--foreground)]">{matchCount}</div>
+                  <div className="text-lg font-bold text-[var(--foreground)] count-up">{matchCount}</div>
                   <div className="text-[11px] text-[var(--muted-strong)]">Matches</div>
                 </>
               ) : (
@@ -183,7 +184,7 @@ export default function MePage() {
             <Link href="/circles" className="text-center py-3 border-l border-[var(--border)] hover:bg-white/5 transition-colors">
               {circleCount > 0 ? (
                 <>
-                  <div className="text-lg font-bold text-[var(--foreground)]">{circleCount}</div>
+                  <div className="text-lg font-bold text-[var(--foreground)] count-up">{circleCount}</div>
                   <div className="text-[11px] text-[var(--muted-strong)]">Circles</div>
                 </>
               ) : (
@@ -194,7 +195,7 @@ export default function MePage() {
               )}
             </Link>
             <div className="text-center py-3 border-l border-[var(--border)]">
-              <div className="text-lg font-bold text-[var(--foreground)]">{topMatch > 0 ? `${topMatch}%` : '—'}</div>
+              <div className="text-lg font-bold text-[var(--foreground)] count-up">{topMatch > 0 ? `${topMatch}%` : '—'}</div>
               <div className="text-[11px] text-[var(--muted-strong)]">Top match</div>
             </div>
           </div>
@@ -378,7 +379,7 @@ export default function MePage() {
       {user && (
         <button
           onClick={() => setShowLogoutModal(true)}
-          className="w-full py-3.5 rounded-2xl text-center text-sm font-semibold text-red-400 hover:bg-red-500/5 transition-colors"
+          className="w-full py-3.5 rounded-2xl text-center text-sm font-semibold text-red-400 hover:bg-red-500/5 transition-colors btn-ripple"
           style={{ background: 'var(--surface)', border: '1px solid var(--error, rgba(239,68,68,0.15))' }}
         >
           Sign Out

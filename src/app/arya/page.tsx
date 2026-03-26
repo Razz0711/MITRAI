@@ -83,7 +83,7 @@ export default function AryaProfilePage() {
   };
 
   return (
-    <div className="max-w-lg mx-auto pb-32 -mt-2 md:-mt-16">
+    <div className="max-w-lg mx-auto pb-32 -mt-2 md:-mt-16 page-enter">
 
       {/* ── Header Banner ── */}
       <div className="relative h-36 overflow-hidden" style={{
@@ -110,7 +110,7 @@ export default function AryaProfilePage() {
       {/* ── Avatar (overlapping banner) — tap to fullscreen ── */}
       <div className="flex justify-center -mt-14 mb-3 relative z-10">
         <div className="relative">
-          <button onClick={() => setIsImageOpen(true)} className="w-28 h-28 rounded-full border-4 border-[var(--background)] shadow-2xl overflow-hidden hover:scale-105 transition-transform">
+          <button onClick={() => setIsImageOpen(true)} className="w-28 h-28 rounded-full border-4 border-[var(--background)] shadow-2xl overflow-hidden avatar-float hover:scale-105 transition-transform">
             <Image
               src={aryaAvatar}
               alt={companionName}
@@ -161,7 +161,7 @@ export default function AryaProfilePage() {
           href="/arya/chat"
           className="flex flex-col items-center gap-1.5 group"
         >
-          <div className="w-14 h-14 rounded-2xl bg-violet-600/15 border border-violet-500/25 flex items-center justify-center text-violet-400 group-hover:bg-violet-600/25 transition-colors">
+          <div className="w-14 h-14 rounded-2xl bg-violet-600/15 border border-violet-500/25 flex items-center justify-center text-violet-400 group-hover:bg-violet-600/25 transition-colors btn-ripple shimmer-hover">
             <MessageSquare size={22} />
           </div>
           <span className="text-[10px] font-semibold text-violet-400">Chat</span>
@@ -170,7 +170,7 @@ export default function AryaProfilePage() {
           href="/arya/call"
           className="flex flex-col items-center gap-1.5 group"
         >
-          <div className="w-14 h-14 rounded-2xl bg-[var(--success)]/15 border border-[var(--success)]/25 flex items-center justify-center text-[var(--success)] group-hover:bg-[var(--success)]/25 transition-colors">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--success)]/15 border border-[var(--success)]/25 flex items-center justify-center text-[var(--success)] group-hover:bg-[var(--success)]/25 transition-colors btn-ripple shimmer-hover">
             <Phone size={22} />
           </div>
           <span className="text-[10px] font-semibold text-[var(--success)]">Call</span>
@@ -179,7 +179,7 @@ export default function AryaProfilePage() {
 
       <div className="px-4 space-y-4">
         {/* ── About Section ── */}
-        <div className="rounded-2xl p-5" style={{ background: 'rgba(17,17,17,0.6)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] mb-2">About</p>
           <p className="text-sm text-[var(--foreground)] leading-relaxed mb-3">
             {isFemaleUser
