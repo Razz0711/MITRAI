@@ -6,6 +6,8 @@ import { AuthProvider } from "@/lib/auth";
 import ThemeProvider from "@/components/ThemeProvider";
 import AppShell from "@/components/AppShell";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import ToastProvider from "@/components/ToastProvider";
+import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -68,13 +70,16 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ThemeProvider>
-            <AppProviders>
-              <AppShell>
-                <ErrorBoundary>
-                  {children}
-                </ErrorBoundary>
-              </AppShell>
-            </AppProviders>
+            <ToastProvider>
+              <AppProviders>
+                <AppShell>
+                  <ErrorBoundary>
+                    {children}
+                  </ErrorBoundary>
+                  <OnboardingWalkthrough />
+                </AppShell>
+              </AppProviders>
+            </ToastProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>
