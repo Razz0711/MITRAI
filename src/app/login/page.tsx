@@ -160,6 +160,8 @@ function LoginPageInner() {
   const [error, setError] = useState('');
   const [parsedEmail, setParsedEmail] = useState<ParsedEmail | null>(null);
   const [emailParseError, setEmailParseError] = useState('');
+  const [loginMode, setLoginMode] = useState<'choice' | 'email'>('choice'); // choice = pick method, email = college email form
+  const [phoneComingSoon, setPhoneComingSoon] = useState(false);
 
   // OTP states
   const [otpStep, setOtpStep] = useState(false);
@@ -425,12 +427,81 @@ function LoginPageInner() {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-3"><MitrrAiLogo size={56} /></div>
           <h1 className="text-xl font-bold text-[var(--foreground)]">
-            {isSignup ? 'Join MitrrAi' : 'Welcome back'}
+            {loginMode === 'choice' ? 'Welcome to MitrrAi' : isSignup ? 'Join MitrrAi' : 'Welcome back'}
           </h1>
           <p className="text-sm text-[var(--muted-strong)] mt-1">
-            {isSignup ? 'Register with your college email' : 'Sign in with your college email'}
+            {loginMode === 'choice' ? 'Your Campus Companion' : isSignup ? 'Register with your college email' : 'Sign in with your college email'}
           </p>
         </div>
+
+        {/* ─── Choice Screen ─── */}
+        {loginMode === 'choice' && (
+          <div className="space-y-3">
+            {/* College Email Option */}
+            <button
+              onClick={() => setLoginMode('email')}
+              className="w-full text-left p-4 rounded-2xl border-2 border-[var(--primary)]/30 bg-[var(--primary)]/5 hover:bg-[var(--primary)]/10 hover:border-[var(--primary)]/50 transition-all group"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">🎓</span>
+                <span className="text-sm font-bold text-[var(--foreground)] group-hover:text-[var(--primary-light)]">I have a college email</span>
+              </div>
+              <p className="text-[11px] text-[var(--muted-strong)] mb-2 ml-10">Unlock ALL features:</p>
+              <div className="flex flex-wrap gap-1.5 ml-10">
+                {['Study Buddy Matching', 'Campus Feed', 'Friends & Chat', 'Arya AI', 'Anon Chat', 'Verified Badge'].map(f => (
+                  <span key={f} className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-[var(--primary)]/10 text-[var(--primary-light)] border border-[var(--primary)]/20">
+                    ✦ {f}
+                  </span>
+                ))}
+              </div>
+            </button>
+
+            {/* Phone Option — Coming Soon */}
+            <button
+              onClick={() => {
+                setPhoneComingSoon(true);
+                setTimeout(() => setPhoneComingSoon(false), 3000);
+              }}
+              className="w-full text-left p-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-light)] transition-all relative overflow-hidden opacity-75"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">📱</span>
+                <span className="text-sm font-bold text-[var(--foreground)]">Continue with phone</span>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20 ml-auto">COMING SOON</span>
+              </div>
+              <p className="text-[11px] text-[var(--muted-strong)] mb-2 ml-10">Explore as a guest:</p>
+              <div className="flex flex-wrap gap-1.5 ml-10">
+                {['Arya AI', 'Anonymous Chat', 'Trending Feed', 'Doubts & Confessions'].map(f => (
+                  <span key={f} className="px-2 py-0.5 rounded-full text-[9px] font-medium bg-white/5 text-[var(--muted-strong)] border border-[var(--border)]">
+                    ✦ {f}
+                  </span>
+                ))}
+              </div>
+            </button>
+
+            {/* Coming Soon Toast */}
+            {phoneComingSoon && (
+              <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-xl bg-amber-500/90 text-white text-xs font-semibold shadow-lg shadow-amber-500/30 animate-slide-down">
+                📱 Phone login coming soon! Use your college email for now.
+              </div>
+            )}
+
+            {/* Bottom hint */}
+            <p className="text-center text-[11px] text-[var(--muted)] mt-4 px-4">
+              💡 Got a <strong className="text-[var(--primary-light)]">.ac.in</strong> email? Choose college email for the full campus experience!
+            </p>
+          </div>
+        )}
+
+        {loginMode === 'email' && (
+        <>
+        {/* Back to choice */}
+        <button
+          onClick={() => setLoginMode('choice')}
+          className="text-xs text-[var(--muted-strong)] hover:text-[var(--foreground)] mb-4 flex items-center gap-1 transition-colors"
+        >
+          ← Back
+        </button>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -635,6 +706,8 @@ function LoginPageInner() {
             Chat with Admin on WhatsApp
           </a>
         </div>
+        </>
+        )}
       </div>
     </div>
   );
