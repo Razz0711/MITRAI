@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bell, BellOff, Users, MessageCircle, MapPin, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Bell, Users, MessageCircle, MapPin, AlertTriangle } from 'lucide-react';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { EmptyStatePreset } from '@/components/EmptyState';
 

@@ -15,7 +15,7 @@ import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { EmptyStatePreset } from '@/components/EmptyState';
 import {
   Bell, X, Filter,
-  MapPin, MessageCircle,
+  MapPin,
   ChevronDown,
 } from 'lucide-react';
 
