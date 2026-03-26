@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 
@@ -84,4 +84,43 @@ export function useVapidSubscription(userId: string | null | undefined) {
 
     setupPush();
   }, [userId]);
+}
+
+// ============================================
+// Original usePushNotifications hook
+// Returns { permission, requestPermission, showNotification }
+// Used by GlobalNotificationPoller for in-app notifications
+// ============================================
+
+export function usePushNotifications() {
+  const [permission, setPermission] = useState<NotificationPermission>(
+    typeof Notification !== 'undefined' ? Notification.permission : 'default'
+  );
+
+  const requestPermission = useCallback(async () => {
+    if (typeof Notification === 'undefined') return;
+    const result = await Notification.requestPermission();
+    setPermission(result);
+  }, []);
+
+  const showNotification = useCallback(
+    (title: string, body: string, options?: { tag?: string; url?: string }) => {
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+      navigator.serviceWorker.ready.then(registration => {
+        registration.showNotification(title, {
+          body,
+          icon: '/logo.jpg',
+          badge: '/logo.jpg',
+          tag: options?.tag || 'mitrrai-notif',
+          data: { url: options?.url || '/home' },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
+      }).catch(() => {
+        new Notification(title, { body, icon: '/logo.jpg' });
+      });
+    },
+    []
+  );
+
+  return { permission, requestPermission, showNotification };
 }
