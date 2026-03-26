@@ -676,6 +676,34 @@ main > div, main > section {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Confetti — emoji flies upward and drifts sideways */
+@keyframes confettiFly {
+  0% { transform: translateY(0) translateX(0) scale(1) rotate(0deg); opacity: 1; }
+  50% { opacity: 1; }
+  100% { transform: translateY(-85vh) translateX(var(--drift, 0px)) scale(0.3) rotate(360deg); opacity: 0; }
+}
+
+/* Typing indicator — bouncing dots */
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Avatar ring — rotating gradient border */
+@keyframes avatarRingRotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Theme toggle — smooth property transition */
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition: background-color 0.4s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

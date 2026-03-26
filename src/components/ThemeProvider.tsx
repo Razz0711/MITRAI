@@ -36,9 +36,17 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
+    // Add transition class for smooth color change
+    document.documentElement.style.setProperty('transition', 'background-color 0.4s ease, color 0.3s ease');
+    document.body.style.setProperty('transition', 'background-color 0.4s ease, color 0.3s ease');
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('mitrrai_theme', next);
+    // Remove transition after animation completes
+    setTimeout(() => {
+      document.documentElement.style.removeProperty('transition');
+      document.body.style.removeProperty('transition');
+    }, 500);
   };
 
   return (
