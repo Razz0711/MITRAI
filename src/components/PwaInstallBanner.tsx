@@ -1,13 +1,7 @@
-// ============================================
-// MitrRAI - PWA Install Banner
-// Always shows on mobile until app is installed
-// Handles Android (native prompt) + iOS (manual steps)
-// ============================================
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Download, Share } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -17,106 +11,91 @@ interface BeforeInstallPromptEvent extends Event {
 export default function PwaInstallBanner() {
   const [show, setShow] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [showIOSSteps, setShowIOSSteps] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
-    // Already running as installed PWA
+    // Already installed as PWA — don't show
     if (
       window.matchMedia('(display-mode: standalone)').matches ||
       (navigator as Navigator & { standalone?: boolean }).standalone === true
-    ) {
-      setInstalled(true);
-      return;
-    }
+    ) return;
 
-    // Detect iOS
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
     setIsIOS(ios);
 
-    // Capture Android native prompt when available
+    // Capture native Android prompt if available
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Show banner immediately — don't wait for beforeinstallprompt
+    // Show immediately
     setShow(true);
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const handleInstall = useCallback(async () => {
+  const handleTap = useCallback(async () => {
     if (deferredPrompt) {
+      // Android native install
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setInstalled(true);
-        setShow(false);
-      }
+      if (outcome === 'accepted') setShow(false);
       setDeferredPrompt(null);
+    } else if (isIOS) {
+      // Toggle iOS step instructions
+      setShowIOSSteps(s => !s);
     }
-  }, [deferredPrompt]);
+    // Android without prompt — tapping does nothing extra (instructions already visible)
+  }, [deferredPrompt, isIOS]);
 
-  const handleDismiss = () => setShow(false); // session-only dismiss
-
-  if (!show || installed) return null;
+  if (!show) return null;
 
   return (
     <div
-      className="fixed bottom-20 left-3 right-3 z-50 max-w-md mx-auto"
+      className="fixed bottom-20 left-3 right-3 z-[999] max-w-md mx-auto"
       style={{ animation: 'slideUpFade 0.4s ease-out' }}
     >
       <div
-        className="rounded-2xl shadow-2xl overflow-hidden"
+        className="rounded-2xl shadow-2xl"
         style={{
-          background: 'linear-gradient(135deg, rgba(124,58,237,0.97), rgba(192,38,211,0.97))',
-          backdropFilter: 'blur(20px)',
-          boxShadow: '0 8px 32px rgba(124,58,237,0.45), 0 0 0 1px rgba(255,255,255,0.12) inset',
+          background: 'linear-gradient(135deg, #7c3aed, #c026d3)',
+          boxShadow: '0 8px 32px rgba(124,58,237,0.5)',
         }}
       >
-        {/* Main row */}
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-            {isIOS ? <Share size={20} className="text-white" /> : <Download size={20} className="text-white" />}
-          </div>
+        {/* Main row — fully tappable */}
+        <button
+          onClick={handleTap}
+          className="w-full flex items-center gap-3 px-4 py-3 text-left active:opacity-80 transition-opacity"
+        >
+          <span className="text-2xl shrink-0">📲</span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white leading-tight">Install MitrrAi App</p>
-            <p className="text-[11px] text-white/75 leading-tight mt-0.5">
-              {isIOS
-                ? 'Tap Share → "Add to Home Screen"'
-                : deferredPrompt
-                  ? 'Add to home screen for the best experience'
-                  : 'Open in Chrome → Menu → "Add to Home Screen"'}
+            <p className="text-sm font-bold text-white">Install MitrrAi App</p>
+            <p className="text-[11px] text-white/75 mt-0.5">
+              {deferredPrompt
+                ? 'Tap here to add to home screen →'
+                : isIOS
+                  ? 'Tap here for install steps →'
+                  : 'Menu (⋮) → "Add to Home Screen"'}
             </p>
           </div>
-
-          {/* Android native install button */}
-          {!isIOS && deferredPrompt && (
-            <button
-              onClick={handleInstall}
-              className="shrink-0 px-3 py-1.5 rounded-xl bg-white text-purple-700 text-xs font-bold hover:bg-white/90 active:scale-95 transition-all"
-            >
-              Install
-            </button>
-          )}
-
-          {/* Dismiss */}
           <button
-            onClick={handleDismiss}
-            className="shrink-0 p-1 rounded-lg text-white/50 hover:text-white transition-colors"
+            onClick={(e) => { e.stopPropagation(); setShow(false); }}
+            className="shrink-0 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center active:bg-white/30"
           >
-            <X size={16} />
+            <X size={14} className="text-white" />
           </button>
-        </div>
+        </button>
 
-        {/* iOS extra hint bar */}
-        {isIOS && (
-          <div className="px-4 pb-3 flex items-center gap-2">
-            <div className="flex-1 h-px bg-white/20" />
-            <span className="text-[10px] text-white/60 shrink-0">↓ tap share icon in your browser</span>
-            <div className="flex-1 h-px bg-white/20" />
+        {/* iOS step-by-step (toggles on tap) */}
+        {isIOS && showIOSSteps && (
+          <div className="px-4 pb-3 space-y-1.5 border-t border-white/20 pt-2">
+            <p className="text-[11px] text-white font-semibold mb-1">How to install on iPhone:</p>
+            <p className="text-[11px] text-white/80">1. Tap the <strong>Share</strong> icon (□↑) in Safari</p>
+            <p className="text-[11px] text-white/80">2. Scroll and tap <strong>"Add to Home Screen"</strong></p>
+            <p className="text-[11px] text-white/80">3. Tap <strong>Add</strong> — done! ✅</p>
           </div>
         )}
       </div>
