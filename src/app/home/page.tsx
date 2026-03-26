@@ -119,17 +119,52 @@ export default function CampusFeedPage() {
       setLocationGranted(false);
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLat(pos.coords.latitude);
-        setUserLng(pos.coords.longitude);
-        setUserLocation('Campus');
-        setLocationGranted(true);
-      },
-      () => {
-        setLocationGranted(false);
-      }
-    );
+    // First check existing permission state (avoid prompting if already decided)
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        if (result.state === 'denied') {
+          // Already denied — don't try, just show the gate with hint visible
+          setLocationGranted(false);
+          // Show blocked hint immediately if element exists
+          setTimeout(() => {
+            const hint = document.getElementById('loc-blocked-hint');
+            if (hint) hint.style.display = 'block';
+          }, 300);
+          return;
+        }
+        // 'granted' or 'prompt' — try to get location
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setUserLat(pos.coords.latitude);
+            setUserLng(pos.coords.longitude);
+            setUserLocation('Campus');
+            setLocationGranted(true);
+          },
+          () => { setLocationGranted(false); }
+        );
+      }).catch(() => {
+        // permissions API not available, fallback to direct call
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setUserLat(pos.coords.latitude);
+            setUserLng(pos.coords.longitude);
+            setUserLocation('Campus');
+            setLocationGranted(true);
+          },
+          () => { setLocationGranted(false); }
+        );
+      });
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLat(pos.coords.latitude);
+          setUserLng(pos.coords.longitude);
+          setUserLocation('Campus');
+          setLocationGranted(true);
+        },
+        () => { setLocationGranted(false); }
+      );
+    }
   }, []);
 
   // Fetch student info from profiles table
@@ -369,11 +404,9 @@ export default function CampusFeedPage() {
                     setLocationGranted(true);
                   },
                   (err) => {
-                    if (err.code === 1) {
-                      // Permission denied — show inline tip instead of alert
-                      const hint = document.getElementById('loc-blocked-hint');
-                      if (hint) { hint.style.display = 'block'; }
-                    }
+                    // Show blocked hint regardless of error code
+                    const hint = document.getElementById('loc-blocked-hint');
+                    if (hint) hint.style.display = 'block';
                     setLocationGranted(false);
                   }
                 );

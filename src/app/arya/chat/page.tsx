@@ -93,31 +93,12 @@ const MessageBubble = memo(function MessageBubble({
               borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
             }}
           >
-            {/* Render markdown images OR selfie placeholder */}
+            {/* Markdown image / selfie — Arya never has a real photo, show fun card */}
             {textContent.includes('![') ? (
-              <div>
-                {textContent.split(/(\!\[.*?\]\(.*?\))/g).map((part, i) => {
-                  const imgMatch = part.match(/\!\[.*?\]\((.*?)\)/);
-                  if (imgMatch) {
-                    // Check if it's a real external URL
-                    const src = imgMatch[1];
-                    const isFakeUrl = !src.startsWith('http') || src.includes('placeholder') || src.includes('example');
-                    if (isFakeUrl) {
-                      // Render a fun selfie card instead
-                      return (
-                        <div key={i} className="flex flex-col items-center justify-center rounded-xl p-4 my-1" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', minWidth: '140px' }}>
-                          <span style={{ fontSize: '48px' }}>🥳</span>
-                          <p className="text-[11px] text-white/60 mt-2">Arya Selfie ✨</p>
-                          <p className="text-[10px] text-white/40">Real photo coming soon!</p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <img key={i} src={src} alt="Arya" className="w-full max-w-[256px] rounded-xl mt-1 mb-1" />
-                    );
-                  }
-                  return part ? <span key={i}>{part}</span> : null;
-                })}
+              <div className="flex flex-col items-center justify-center rounded-xl p-4 my-1" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', minWidth: '140px' }}>
+                <span style={{ fontSize: '48px' }}>🥳</span>
+                <p className="text-[11px] text-white/70 mt-2 font-medium">Arya Selfie ✨</p>
+                <p className="text-[10px] text-white/40">Real photo coming soon!</p>
               </div>
             ) : (
               <p className="whitespace-pre-wrap">{textContent}</p>
@@ -209,19 +190,36 @@ export default function AryaChatPage() {
 
   /* ─── visualViewport keyboard handler ─── */
   useEffect(() => {
+    // Prevent body scroll bleeding into fixed chat container
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+
     const viewport = window.visualViewport;
-    if (!viewport) return;
+    const root = document.getElementById('chat-root');
+    if (!viewport || !root) return ()=>{};
+
     const handleResize = () => {
-      const root = document.getElementById('chat-root');
-      if (!root) return;
-      // Only update height — do NOT touch top (causes jump on some Android browsers)
-      root.style.height = viewport.height + 'px';
-      // Auto-scroll to bottom when keyboard opens
+      // Use transform to follow visual viewport position without layout jump
+      root.style.height = `${viewport.height}px`;
+      root.style.transform = `translateY(${viewport.offsetTop}px)`;
+      // Snap scroll to bottom when keyboard opens
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'instant', block: 'end' }), 50);
     };
+
     viewport.addEventListener('resize', handleResize);
+    viewport.addEventListener('scroll', handleResize);
+    handleResize(); // run once on mount
+
     return () => {
       viewport.removeEventListener('resize', handleResize);
+      viewport.removeEventListener('scroll', handleResize);
+      // Restore body scroll on unmount
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.width = '';
     };
   }, []);
 
