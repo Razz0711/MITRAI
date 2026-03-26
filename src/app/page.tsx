@@ -377,20 +377,6 @@ export default function Home() {
         </div>
       </RevealSection>
 
-      {/* ─── Social Proof ─── */}
-      <section id="social-proof" className="relative z-10 py-10 sm:py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <RevealSection className="text-center mb-8">
-            <span className="inline-block text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--primary-light)] mb-3">What students say</span>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3">Loved by students</h2>
-          </RevealSection>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <RevealSection delay={0}><TestimonialCard quote="Finally an app that actually understands campus life. Arya is like having a bestie who's always free!" author="CS '26" emoji="🎓" color="var(--primary)" /></RevealSection>
-            <RevealSection delay={0.12}><TestimonialCard quote="Anonymous chat at 3 AM during exam week? Life saver for real." author="EE '25" emoji="💡" color="var(--accent)" /></RevealSection>
-            <RevealSection delay={0.24}><TestimonialCard quote="Found my study buddy through matching. We literally topped together!" author="ME '27" emoji="🔥" color="var(--secondary)" /></RevealSection>
-          </div>
-        </div>
-      </section>
 
       {/* ─── Final CTA ─── */}
       <RevealSection className="relative z-10 py-12 sm:py-20">

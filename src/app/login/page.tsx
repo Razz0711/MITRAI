@@ -19,14 +19,15 @@ function WelcomeSplash({ userId, userName }: { userId: string; userName?: string
   const firstName = userName?.split(' ')[0] || 'yaar';
 
   useEffect(() => {
+    // Non-blocking gender fetch — fires in parallel, doesn't delay redirect
     fetch(`/api/students?id=${encodeURIComponent(userId)}`)
       .then(r => r.json())
       .then(d => { if (d.data?.gender) { setGender(d.data.gender); try { localStorage.setItem('mitrrai_user_gender', d.data.gender); } catch {} } })
       .catch(() => {});
 
-    const t1 = setTimeout(() => setShowBubble(true), 400);
-    const t2 = setTimeout(() => setShowText(true), 700);
-    const t3 = setTimeout(() => router.push('/home'), 1800);
+    const t1 = setTimeout(() => setShowBubble(true), 200);
+    const t2 = setTimeout(() => setShowText(true), 400);
+    const t3 = setTimeout(() => router.push('/home'), 1200); // Reduced from 1800ms → 1200ms
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -308,7 +309,8 @@ function LoginPageInner() {
           setOtpVerifying(false);
         } else {
           setOtpLoadingStep('done');
-            try { localStorage.setItem('mitrrai_user_gender', gender); } catch {}
+          try { localStorage.setItem('mitrrai_user_gender', gender); } catch {}
+          router.push('/home'); // Redirect immediately — don't wait for WelcomeSplash
         }
       } else {
         const result = await login(trimmedEmail, password);
@@ -316,7 +318,8 @@ function LoginPageInner() {
           setError(result.error || 'Invalid credentials');
           setOtpVerifying(false);
         } else {
-          setOtpLoadingStep('done'); // keep spinner — WelcomeSplash will take over
+          setOtpLoadingStep('done');
+          router.push('/home'); // Redirect immediately
         }
       }
     } catch (err) {
