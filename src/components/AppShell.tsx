@@ -5,7 +5,6 @@
 
 'use client';
 
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { DesktopHeader, MobileNavbar } from './TopBar';
@@ -15,6 +14,7 @@ import { Sun, Moon } from 'lucide-react';
 import GlobalNotificationPoller from './GlobalNotificationPoller';
 import IncomingCallBanner from './IncomingCallBanner';
 import { useTimeTracker } from '@/hooks/useTimeTracker';
+import MitrrAiLogo from './MitrrAiLogo';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -100,14 +100,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       }}>
         <div className="flex items-center justify-between h-14 px-4 max-w-7xl mx-auto">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <Image
-              src="/logo.jpg"
-              alt="MitrRAI"
-              width={36}
-              height={36}
-              className="h-9 w-auto rounded-xl shadow-lg group-hover:scale-105 transition-transform"
-              priority
-            />
+            <div className="group-hover:scale-105 transition-transform">
+              <MitrrAiLogo size={36} />
+            </div>
             <div className="flex flex-col">
               <span className="text-sm font-bold text-[var(--foreground)] leading-none">MitrRAI</span>
               <span className="text-[11px] text-[var(--muted-strong)] leading-none mt-0.5 hidden sm:block">Campus Companion</span>

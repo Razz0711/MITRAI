@@ -6,9 +6,9 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import MitrrAiLogo from '@/components/MitrrAiLogo';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <Image src="/logo.jpg" alt="MitrRAI" width={56} height={56} className="h-14 w-auto mx-auto mb-4" priority />
+          <MitrrAiLogo size={56} />
           <h1 className="text-xl font-bold text-[var(--foreground)]">Admin Login</h1>
           <p className="text-xs text-[var(--muted)] mt-1">MitrRAI Administration Panel</p>
         </div>
