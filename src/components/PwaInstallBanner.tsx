@@ -19,24 +19,16 @@ export default function PwaInstallBanner() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
+    // Already installed — never show
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
       return;
     }
 
-    // Check if user dismissed before (don't show for 7 days)
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
-    if (dismissed) {
-      const dismissedAt = parseInt(dismissed, 10);
-      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
-    }
-
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Wait 30 seconds before showing banner (don't annoy immediately)
-      setTimeout(() => setShowBanner(true), 30000);
+      setShowBanner(true); // Show immediately — no delay
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -56,7 +48,7 @@ export default function PwaInstallBanner() {
 
   const handleDismiss = () => {
     setShowBanner(false);
-    localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    // Not saving to localStorage — banner will show again next visit
   };
 
   if (!showBanner || isInstalled) return null;
