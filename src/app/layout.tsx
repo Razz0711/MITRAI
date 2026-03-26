@@ -36,6 +36,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: '#0a0a12',
+  interactiveWidget: 'resizes-content',
 };
 
 export const metadata: Metadata = {
@@ -61,16 +62,16 @@ export default function RootLayout({
           __html: `
           (function(){
             function setVh(){
-              var vh=(window.visualViewport?window.visualViewport.height:window.innerHeight)*0.01;
-              document.documentElement.style.setProperty('--vh',vh+'px');
+              var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+              document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
             }
             setVh();
             if(window.visualViewport){
-              window.visualViewport.addEventListener('resize',setVh);
-              window.visualViewport.addEventListener('scroll',setVh);
+              window.visualViewport.addEventListener('resize', setVh);
+              window.visualViewport.addEventListener('scroll', setVh);
             }
-            window.addEventListener('resize',setVh);
-            window.addEventListener('orientationchange',setVh);
+            window.addEventListener('resize', setVh);
+            window.addEventListener('orientationchange', function(){ setTimeout(setVh, 100); });
           })();
         `}} />
       </head>

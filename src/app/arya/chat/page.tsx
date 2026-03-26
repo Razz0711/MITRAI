@@ -692,7 +692,7 @@ export default function AryaChatPage() {
         top: 0,
         left: 0,
         right: 0,
-        bottom: 0,
+        height: 'calc(var(--vh, 1dvh) * 100)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
