@@ -251,8 +251,8 @@ export default function AryaProfilePage() {
       {/* ═══ Pic Change/Remove Sheet ═══ */}
       {showPicSheet && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/60" onClick={() => setShowPicSheet(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] space-y-2" style={{ background: 'var(--surface-solid)', border: '1px solid var(--border)' }}>
+          <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm" onClick={() => setShowPicSheet(false)} />
+          <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 rounded-3xl p-5 space-y-2 max-w-sm mx-auto" style={{ background: 'var(--surface-solid)', border: '1px solid var(--border)' }}>
             <div className="w-10 h-1 rounded-full bg-[var(--muted)]/30 mx-auto mb-3" />
             <p className="text-sm font-bold text-[var(--foreground)] text-center mb-3">{companionName}&apos;s Photo</p>
             <button

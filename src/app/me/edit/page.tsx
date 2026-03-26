@@ -196,7 +196,7 @@ export default function EditProfilePage() {
   const initial = (profile?.name || user?.name || 'S').charAt(0).toUpperCase();
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-4 pb-28">
+    <div className="max-w-lg mx-auto px-4 pb-28" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}

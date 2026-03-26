@@ -101,7 +101,7 @@ export default function MePage() {
   const yearLevel = student?.yearLevel || '';
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-4 space-y-5 pb-28 page-enter">
+    <div className="max-w-lg mx-auto px-4 pb-28 space-y-5 page-enter" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
 
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between">

@@ -245,7 +245,7 @@ export default function CirclesPage() {
         <div className={`flex flex-col flex-1 md:flex-none md:w-72 lg:w-80 md:border-r border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_96%,transparent)] ${selectedCircle ? 'hidden md:flex' : 'flex'}`}>
 
           {/* Header */}
-          <div className="p-4 pb-2 flex items-center gap-2">
+          <div className="pb-2 flex items-center gap-2" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingLeft: '1rem', paddingRight: '1rem' }}>
             <span className="text-xl">🟣</span>
             <h1 className="text-lg font-bold text-[var(--foreground)]">Circles</h1>
           </div>

@@ -44,7 +44,7 @@ export default function HelpPage() {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-4 pb-28">
+    <div className="max-w-lg mx-auto px-4 pb-28" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.back()} className="w-9 h-9 rounded-full bg-[var(--surface)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
           <ArrowLeft size={16} />

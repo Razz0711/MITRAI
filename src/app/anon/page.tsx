@@ -297,13 +297,13 @@ export default function AnonLobbyPage() {
         <div className="ambient-glow" />
 
         {/* Header — Premium */}
-        <div className="text-center mb-6 slide-up">
+        <div className="text-center mb-4 slide-up" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] font-bold mb-1">Safe anonymous space</p>
-          <div className="relative mx-auto mb-4 w-24 h-24" style={{ animation: 'float 3s ease-in-out infinite' }}>
+          <div className="relative mx-auto mb-3 w-16 h-16" style={{ animation: 'float 3s ease-in-out infinite' }}>
             {/* Glow halo */}
-            <div className="absolute inset-0 rounded-full blur-2xl opacity-60" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.7) 0%, rgba(236,72,153,0.3) 60%, transparent 80%)' }} />
-            <div className="relative w-24 h-24 rounded-3xl flex items-center justify-center shadow-2xl shadow-violet-500/30" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.35) 0%, rgba(168,85,247,0.25) 50%, rgba(236,72,153,0.2) 100%)', border: '1px solid rgba(168,85,247,0.3)', backdropFilter: 'blur(12px)' }}>
-              <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <div className="absolute inset-0 rounded-full blur-xl opacity-60" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.7) 0%, rgba(236,72,153,0.3) 60%, transparent 80%)' }} />
+            <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl shadow-violet-500/30" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.35) 0%, rgba(168,85,247,0.25) 50%, rgba(236,72,153,0.2) 100%)', border: '1px solid rgba(168,85,247,0.3)', backdropFilter: 'blur(12px)' }}>
+            <svg width="36" height="36" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="ghostG" x1="10" y1="4" x2="42" y2="48" gradientUnits="userSpaceOnUse">
                     <stop offset="0%" stopColor="#c084fc" />
@@ -323,7 +323,7 @@ export default function AnonLobbyPage() {
               </svg>
             </div>
           </div>
-          <h1 className="text-2xl font-extrabold text-[var(--foreground)] mb-2">
+          <h1 className="text-xl font-extrabold text-[var(--foreground)] mb-1">
             <span className="gradient-text">Anonymous Chat</span>
           </h1>
           <p className="text-[var(--muted)] text-sm max-w-xs mx-auto">
