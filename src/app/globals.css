@@ -748,6 +748,18 @@ main > div, main > section {
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* Chat carousel — slide in from right */
+@keyframes chatSlideIn {
+  from { transform: translateX(30px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Arrow pulse — draw attention */
+@keyframes arrowPulse {
+  0%, 100% { transform: translateY(-50%) scale(1); box-shadow: 0 4px 20px rgba(124,58,237,0.4); }
+  50% { transform: translateY(-50%) scale(1.1); box-shadow: 0 6px 28px rgba(124,58,237,0.6); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

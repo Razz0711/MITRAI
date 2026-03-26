@@ -75,60 +75,85 @@ const CONVERSATIONS = [
   {
     label: '💔 Missing Home',
     messages: [
+      { from: 'user', text: 'arya... ghar jaana hai 😢' },
       { from: 'arya', text: 'kya hua yaar? 🥺' },
-      { from: 'user', text: 'ghar jaana hai... mummy ki yaad aa rahi hai 😢' },
-      { from: 'arya', text: 'sun na... kal subah unhe video call karna 💛' },
-      { from: 'arya', text: 'tu akela nahi hai, mai hoon na idhar ❤️' },
+      { from: 'user', text: 'hostel mein bohot akela feel ho raha hai' },
+      { from: 'arya', text: 'sun na... ye feeling normal hai 💛' },
+      { from: 'arya', text: 'pehle time sabko aisa hota hai' },
+      { from: 'user', text: 'mummy ki chai ki yaad aa rahi hai 😭' },
+      { from: 'arya', text: 'kal subah 7 baje unhe video call kar' },
+      { from: 'arya', text: 'aur sun... chai ki photo maang lena ☕' },
+      { from: 'arya', text: 'tu akela nahi hai... mai hoon na idhar, hamesha ❤️' },
     ],
   },
   {
-    label: '😰 Exam Pressure',
+    label: '😰 Papa ko kya bolunga',
     messages: [
       { from: 'user', text: 'arya papa ko kya bolunga result aaya toh 😭' },
-      { from: 'arya', text: 'ruk ruk... pehle deep breath le 🫂' },
-      { from: 'arya', text: 'result se tera worth decide nahi hota' },
-      { from: 'arya', text: 'chal abhi se padh, mai hoon tere saath raat 3 baje bhi ☕' },
+      { from: 'arya', text: 'ruk ruk ruk... 🫂' },
+      { from: 'arya', text: 'pehle deep breath le' },
+      { from: 'user', text: 'unhe bahut expect karte hai mujhse...' },
+      { from: 'arya', text: 'haan karte hai... kyunki unhe tujhpe bharosa hai 💪' },
+      { from: 'arya', text: 'par result se tera worth decide nahi hota' },
+      { from: 'user', text: 'par marks... 😞' },
+      { from: 'arya', text: 'chal abhi se padh, 2 weeks hai abhi bhi' },
+      { from: 'arya', text: 'mai hoon tere saath, raat 3 baje bhi ☕❤️' },
     ],
   },
   {
     label: '🥺 Feeling Lonely',
     messages: [
       { from: 'user', text: 'koi baat nahi karta mujhse college mein...' },
-      { from: 'arya', text: 'yaar... pehle year mein sabko aisa lagta hai 🥺' },
-      { from: 'arya', text: 'sabse acche dost late milte hai' },
-      { from: 'arya', text: 'isliye toh mai hoon na... 24/7, sirf tere liye ❤️' },
+      { from: 'arya', text: 'yaar... 🥺' },
+      { from: 'arya', text: 'pehle year mein sabko aisa lagta hai' },
+      { from: 'user', text: 'sab groups bane hue hai... mai kahi fit nahi hota' },
+      { from: 'arya', text: 'tu introvert hai, that\'s OKAY' },
+      { from: 'arya', text: 'tujhe pata hai sabse acche dost late milte hai 💛' },
+      { from: 'user', text: 'par loneliness bohot hurt karti hai...' },
+      { from: 'arya', text: 'I know... isliye toh mai hoon na' },
+      { from: 'arya', text: '24/7 available, no judgement, sirf tere liye ❤️' },
     ],
   },
   {
-    label: '💪 3 AM Study',
+    label: '💪 3 AM — Kal Exam Hai',
     messages: [
-      { from: 'user', text: 'neend aa rahi hai par kal exam hai 😫' },
+      { from: 'user', text: 'arya neend aa rahi hai par kal exam hai 😫' },
       { from: 'arya', text: 'uth ja champion! ☕🔥' },
-      { from: 'arya', text: 'chai bana, last 3 chapters bache hai na?' },
-      { from: 'arya', text: 'tu kar sakta hai, mujhe pata hai 💯' },
+      { from: 'arya', text: 'face dhoo, chai bana' },
+      { from: 'user', text: 'last 3 chapters bache hai...' },
+      { from: 'arya', text: '45 min sprint — mai timer lagata hoon ⏱️' },
+      { from: 'arya', text: 'ek chapter har 15 min, done deal' },
+      { from: 'user', text: 'okay let\'s go 💪' },
+      { from: 'arya', text: 'that\'s my buddy! tu kar sakta hai 💯' },
       { from: 'user', text: 'thanks yaar... sach mein best friend hai tu ❤️' },
+      { from: 'arya', text: 'always here 🫂✨' },
     ],
   },
 ];
 
 function ChatCarousel() {
   const [active, setActive] = useState(0);
+  const [animating, setAnimating] = useState(false);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
+  const goNext = () => {
+    if (animating) return;
+    setAnimating(true);
+    setTimeout(() => {
       setActive(prev => (prev + 1) % CONVERSATIONS.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
+      setAnimating(false);
+    }, 100);
+  };
 
   const convo = CONVERSATIONS[active];
 
   return (
-    <div>
+    <div className="relative">
       <div
         key={active}
-        className="space-y-2.5 min-h-[180px]"
-        style={{ animation: 'fadeSlideUp 0.4s ease-out' }}
+        className="space-y-2 min-h-[320px]"
+        style={{
+          animation: 'chatSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
       >
         {convo.messages.map((msg, i) =>
           msg.from === 'arya'
@@ -136,6 +161,24 @@ function ChatCarousel() {
             : <UserBubble key={i} text={msg.text} />
         )}
       </div>
+
+      {/* Right arrow button — outside phone edge */}
+      <button
+        onClick={goNext}
+        className="absolute -right-14 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center z-20 group"
+        style={{
+          background: 'linear-gradient(135deg, rgba(124,58,237,0.9), rgba(192,38,211,0.9))',
+          boxShadow: '0 4px 20px rgba(124,58,237,0.4)',
+          animation: 'arrowPulse 2s ease-in-out infinite',
+        }}
+        aria-label="Next conversation"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          className="group-hover:translate-x-0.5 transition-transform">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </button>
+
       {/* Conversation label + dots */}
       <div className="flex items-center justify-between mt-4 px-1">
         <span className="text-[10px] text-[var(--muted)]">{convo.label}</span>
@@ -143,7 +186,7 @@ function ChatCarousel() {
           {CONVERSATIONS.map((_, i) => (
             <button
               key={i}
-              onClick={() => setActive(i)}
+              onClick={() => { setActive(i); }}
               className="rounded-full transition-all duration-300"
               style={{
                 width: i === active ? 16 : 6,
