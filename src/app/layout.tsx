@@ -41,6 +41,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* PWA manifest */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/logo.jpg" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         {/* visualViewport --vh variable for mobile keyboard */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
