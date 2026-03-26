@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Bell, BellOff, Users, MessageCircle, MapPin, AlertTriangle } from 'lucide-react';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import { EmptyStatePreset } from '@/components/EmptyState';
 
 interface Notification {
   id: string;
@@ -95,13 +96,7 @@ export default function NotificationsPage() {
         {loading && <LoadingSkeleton />}
 
         {!loading && notifications.length === 0 && (
-          <div className="card p-8 text-center space-y-3">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-[var(--surface)] flex items-center justify-center">
-              <BellOff size={28} className="text-[var(--muted)]" />
-            </div>
-            <h3 className="text-lg font-bold text-[var(--foreground)]">All caught up!</h3>
-            <p className="text-sm text-[var(--muted-strong)]">No new notifications. Post something on the feed to get started!</p>
-          </div>
+          <EmptyStatePreset type="notifications" />
         )}
 
         {notifications.map(n => (

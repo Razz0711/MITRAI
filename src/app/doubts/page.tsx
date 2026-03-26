@@ -283,12 +283,15 @@ export default function DoubtsPage() {
 
       {/* Empty state */}
       {doubts.length === 0 ? (
-        <div className="text-center py-16 scale-in">
-          <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-orange-500/15 to-pink-500/15 flex items-center justify-center text-sm font-bold text-[var(--muted)] mb-4" style={{ animation: 'float 3s ease-in-out infinite' }}>
-            Feed
+        <div className="text-center py-16" style={{ animation: 'fadeSlideUp 0.5s ease-out' }}>
+          <div className="relative mb-4 inline-block">
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(244,114,182,0.08))', border: '1px solid rgba(124,58,237,0.12)', animation: 'float 4s ease-in-out infinite' }}>
+              <span className="text-3xl">❓</span>
+            </div>
           </div>
-          <p className="text-sm font-bold text-[var(--foreground)] mb-1">Feed is empty</p>
-          <p className="text-xs text-[var(--muted)] mb-5">Be the first to post — doubts, confessions, hot takes</p>
+          <p className="text-lg font-bold text-[var(--foreground)] mb-1">No doubts yet</p>
+          <p className="text-sm text-[var(--muted)] mb-5">Ask a question or share a confession!</p>
           <button
             onClick={() => setShowAsk(true)}
             className="btn-primary text-xs inline-flex items-center gap-2"

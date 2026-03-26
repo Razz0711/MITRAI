@@ -158,6 +158,48 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ═══════════════════════════════════════════
+   Micro-Animations — Premium Touch Feedback
+   ═══════════════════════════════════════════ */
+
+/* Remove tap highlight on all mobile elements */
+button, a, [role="button"], input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Universal button press feedback */
+button:not(:disabled):active,
+a:active,
+[role="button"]:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Card press feedback */
+.card:active, .card-glass:active, .card-hover:active {
+  transform: scale(0.985);
+  transition: transform 0.15s ease;
+}
+
+/* Tab switching animation */
+.pill-tab, nav a, nav button {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Page content entrance */
+main > div, main > section {
+  animation: pageEnter 0.3s ease-out;
+}
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Smooth list item entrance — stagger via CSS */
+.card + .card { animation-delay: 0.05s; }
+.card + .card + .card { animation-delay: 0.1s; }
+.card + .card + .card + .card { animation-delay: 0.15s; }
+
 @layer components {
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-[var(--primary)] via-[var(--accent)] to-[var(--secondary)];

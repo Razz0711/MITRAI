@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import Avatar from '@/components/Avatar';
 import PostCard from '@/components/PostCard';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
+import { EmptyStatePreset } from '@/components/EmptyState';
 import {
   Bell, X, Filter,
   MapPin, MessageCircle,
@@ -540,13 +541,9 @@ export default function CampusFeedPage() {
 
         {/* ─── Empty State ─── */}
         {!loading && posts.length === 0 && (
-          <div className="card p-8 text-center space-y-3">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center">
-              <MessageCircle size={28} className="text-[var(--primary)]" />
-            </div>
-            <h3 className="text-lg font-bold text-[var(--foreground)]">No posts yet</h3>
-            <p className="text-sm text-[var(--muted-strong)]">Be the first to post! Tag your activity and find people nearby.</p>
-          </div>
+          <EmptyStatePreset type="feed" action={
+            <p className="text-xs text-[var(--muted)]">Tag your activity above and find people nearby! 👆</p>
+          } />
         )}
 
         {/* ─── SOS Posts (always top) ─── */}

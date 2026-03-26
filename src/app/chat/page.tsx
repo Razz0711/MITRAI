@@ -440,12 +440,15 @@ function ChatContent() {
         {/* Thread list */}
         <div className="flex-1 overflow-y-auto">
           {deduped.length === 0 && !showFindPeople ? (
-            <div className="flex flex-col items-center justify-center p-8 mt-16 text-center space-y-4">
-              <div className="w-20 h-20 rounded-3xl bg-[var(--primary)]/10 flex items-center justify-center text-4xl">💬</div>
-              <div>
-                <p className="text-[var(--foreground)] font-bold text-lg mb-1">No chats yet</p>
-                <p className="text-[var(--muted-strong)] text-sm">Find your study buddy or hangout partner</p>
+            <div className="flex flex-col items-center justify-center mt-16">
+              <div className="relative mb-4">
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(244,114,182,0.08))', border: '1px solid rgba(124,58,237,0.12)', animation: 'float 4s ease-in-out infinite' }}>
+                  <span className="text-3xl">💬</span>
+                </div>
               </div>
+              <h3 className="text-lg font-bold text-[var(--foreground)] mb-1">No chats yet</h3>
+              <p className="text-sm text-[var(--muted)] mb-4">Find your study buddy or hangout partner</p>
               <button onClick={openFindPeople} className="px-6 py-2.5 bg-[var(--primary)] text-white font-semibold rounded-xl text-sm transition-transform active:scale-95 shadow-lg shadow-[var(--primary)]/20">Find People</button>
             </div>
           ) : (
