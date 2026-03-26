@@ -369,10 +369,8 @@ export default function CampusFeedPage() {
                     setLocationGranted(true);
                   },
                   (err) => {
-                    if (err.code === 1) {
-                      // Permission denied — show instructions
-                      alert('Location permission is blocked.\n\nTo enable:\n1. Click the 🔒 lock icon in your browser address bar\n2. Find "Location" and set it to "Allow"\n3. Refresh the page');
-                    }
+                    // Silently fail — user already sees the location screen
+                    console.warn('Location denied:', err.code);
                     setLocationGranted(false);
                   }
                 );

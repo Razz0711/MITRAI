@@ -532,9 +532,9 @@ function ChatContent() {
   return (
     <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 'calc(var(--vh, 1dvh) * 100)', background: 'var(--background)', overflow: 'hidden' }}>
       {/* ─── Header ─── */}
-      <div className="shrink-0 flex items-center gap-3 px-4 py-2" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)', paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
-        <button onClick={() => setSelectedChatId(null)} className="text-white p-1 -ml-1 hover:bg-white/10 rounded-full transition-colors">
-          <ArrowLeft size={24} />
+      <div className="shrink-0 flex items-center gap-3 px-4" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)', paddingTop: 'calc(env(safe-area-inset-top) + 0.625rem)', paddingBottom: '0.625rem' }}>
+        <button onClick={() => setSelectedChatId(null)} className="w-9 h-9 rounded-full flex items-center justify-center text-white transition-colors shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }}>
+          <ArrowLeft size={20} />
         </button>
         <div className="relative shrink-0">
           <div className={`w-10 h-10 rounded-full ${headerColor} flex items-center justify-center text-white font-bold text-lg`}>

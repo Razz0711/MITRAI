@@ -384,7 +384,7 @@ export default function CirclesPage() {
         {/* ═══════ CIRCLE DETAIL (right panel) ═══════ */}
         <div className={`${selectedCircle ? 'flex' : 'hidden md:flex'} flex-col flex-1 overflow-y-auto bg-[var(--background)]`}>
           {activeCircle ? (
-            <div className="p-6 max-w-2xl">
+            <div className="max-w-2xl" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingLeft: '1.5rem', paddingRight: '1.5rem', paddingBottom: '1.5rem' }}>
               {/* Mobile back button */}
               <button
                 onClick={() => setSelectedCircle(null)}
