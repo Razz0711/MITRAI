@@ -291,6 +291,7 @@ export default function AnonLobbyPage() {
     <div className="min-h-screen anon-polish relative page-enter">
       <div className="anon-aura anon-aura-1" />
       <div className="anon-aura anon-aura-2" />
+      <div className="anon-aura-3" />
       <div className="flex-1 overflow-y-auto px-4">
         <div className="max-w-2xl mx-auto">
         {/* Ambient glow */}
@@ -299,7 +300,7 @@ export default function AnonLobbyPage() {
         {/* Header — Premium */}
         <div className="text-center mb-4 slide-up" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
           <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] font-bold mb-1">Safe anonymous space</p>
-          <div className="relative mx-auto mb-3 w-16 h-16" style={{ animation: 'float 3s ease-in-out infinite' }}>
+          <div className="relative mx-auto mb-3 w-16 h-16 ghost-float">
             {/* Glow halo */}
             <div className="absolute inset-0 rounded-full blur-xl opacity-60" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.7) 0%, rgba(236,72,153,0.3) 60%, transparent 80%)' }} />
             <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl shadow-violet-500/30" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.35) 0%, rgba(168,85,247,0.25) 50%, rgba(236,72,153,0.2) 100%)', border: '1px solid rgba(168,85,247,0.3)', backdropFilter: 'blur(12px)' }}>
@@ -334,9 +335,9 @@ export default function AnonLobbyPage() {
         {/* Live Stats Bar — Glass */}
         {stats && (
           <div className="flex items-center justify-center gap-3 mb-6 slide-up-stagger-1 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl stat-chip" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="live-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
               </span>
               <span className="text-xs font-semibold text-green-400">
@@ -905,47 +906,177 @@ export default function AnonLobbyPage() {
       </div>
 
       <style jsx>{`
+        /* ── Base ── */
         .anon-polish {
           z-index: 1;
+          background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124,58,237,0.12) 0%, transparent 70%);
         }
 
+        /* ── Animated floating orbs ── */
         .anon-aura {
           position: absolute;
           pointer-events: none;
           border-radius: 999px;
-          filter: blur(58px);
-          opacity: 0.13;
+          filter: blur(70px);
           z-index: 0;
         }
-
         .anon-aura-1 {
-          width: 280px;
-          height: 210px;
-          top: 120px;
-          right: -100px;
-          background: rgba(168, 85, 247, 0.35);
+          width: 340px; height: 260px;
+          top: 60px; right: -120px;
+          background: rgba(168,85,247,0.22);
+          animation: orbDrift1 9s ease-in-out infinite;
         }
-
         .anon-aura-2 {
-          width: 230px;
-          height: 180px;
-          top: 360px;
-          left: -90px;
-          background: rgba(236, 72, 153, 0.24);
+          width: 280px; height: 220px;
+          top: 320px; left: -110px;
+          background: rgba(236,72,153,0.18);
+          animation: orbDrift2 11s ease-in-out infinite;
         }
 
-        @media (max-width: 640px) {
-          .anon-aura {
-            opacity: 0.08;
-          }
+        /* Third orb — bottom right */
+        .anon-aura-3 {
+          position: absolute; pointer-events: none;
+          border-radius: 999px; filter: blur(80px);
+          z-index: 0;
+          width: 200px; height: 200px;
+          bottom: 80px; right: -60px;
+          background: rgba(59,130,246,0.12);
+          animation: orbDrift1 14s ease-in-out infinite reverse;
         }
 
+        @keyframes orbDrift1 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          33% { transform: translate(-18px,-24px) scale(1.06); }
+          66% { transform: translate(14px,16px) scale(0.94); }
+        }
+        @keyframes orbDrift2 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          33% { transform: translate(20px,18px) scale(1.04); }
+          66% { transform: translate(-12px,-20px) scale(0.96); }
+        }
+
+        /* ── Particle grid ── */
+        .ambient-glow {
+          position: absolute; inset: 0; pointer-events: none; z-index: 0;
+          background-image:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='7' cy='7' r='1' fill='rgba(168%2C85%2C247%2C0.2)'/%3E%3Ccircle cx='37' cy='37' r='1' fill='rgba(236%2C72%2C153%2C0.15)'/%3E%3Ccircle cx='52' cy='12' r='0.7' fill='rgba(139%2C92%2C246%2C0.12)'/%3E%3Ccircle cx='22' cy='52' r='0.7' fill='rgba(168%2C85%2C247%2C0.1)'/%3E%3C/svg%3E");
+          background-size: 60px 60px;
+          animation: particleDrift 20s linear infinite;
+        }
+        @keyframes particleDrift {
+          0% { background-position: 0 0; }
+          100% { background-position: 60px 60px; }
+        }
+
+        /* ── Ghost icon ── */
+        .ghost-float {
+          animation: ghostFloat 3.5s ease-in-out infinite;
+          filter: drop-shadow(0 0 16px rgba(168,85,247,0.5));
+        }
+        @keyframes ghostFloat {
+          0%,100% { transform: translateY(0) rotate(-2deg); filter: drop-shadow(0 0 14px rgba(168,85,247,0.4)); }
+          50% { transform: translateY(-8px) rotate(2deg); filter: drop-shadow(0 0 28px rgba(236,72,153,0.6)); }
+        }
+
+        /* ── Live ping dot ── */
+        .live-ping {
+          animation: livePing 1.4s cubic-bezier(0,0,0.2,1) infinite;
+        }
+        @keyframes livePing {
+          0%,100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.6); opacity: 0; }
+        }
+
+        /* ── Room cards ── */
+        .vibe-card {
+          transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .vibe-card:hover { transform: translateY(-2px); }
+        .vibe-card:active { transform: scale(0.97); }
+        .vibe-card-selected {
+          box-shadow: 0 0 0 1px rgba(139,92,246,0.4), 0 4px 24px rgba(139,92,246,0.15);
+        }
+
+        /* ── Card entrance stagger ── */
+        .slide-up { animation: slideUp 0.5s ease both; }
+        .slide-up-stagger-1 { animation: slideUp 0.5s 0.08s ease both; }
+        .stagger-card {
+          animation: slideUp 0.45s ease both;
+          opacity: 0;
+        }
+        @keyframes slideUp {
+          from { transform: translateY(16px); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* ── Stats shimmer ── */
+        .stat-chip {
+          animation: statPop 0.4s ease both;
+        }
+        @keyframes statPop {
+          from { transform: scale(0.88); opacity: 0; }
+          to   { transform: scale(1);    opacity: 1; }
+        }
+
+        /* ── Gradient text ── */
+        .gradient-text {
+          background: linear-gradient(135deg, #c084fc 0%, #f472b6 50%, #818cf8 100%);
+          background-size: 200% 200%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: gradientShift 4s ease-in-out infinite;
+        }
+        @keyframes gradientShift {
+          0%,100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+
+        /* ── Queuing spinner ── */
+        .queue-ring {
+          animation: queueSpin 1.2s linear infinite;
+        }
+        @keyframes queueSpin {
+          to { transform: rotate(360deg); }
+        }
+
+        /* ── Matched state ── */
+        .scale-in { animation: scaleIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+        @keyframes scaleIn {
+          from { transform: scale(0.8); opacity: 0; }
+          to   { transform: scale(1);   opacity: 1; }
+        }
+
+        /* ── Shimmer loading bar ── */
+        @keyframes shimmer {
+          from { width: 0%; }
+          to   { width: 100%; }
+        }
+
+        /* ── Float (used on ghost icon wrapper) ── */
+        @keyframes float {
+          0%,100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+
+        /* ── btn-ripple ── */
+        .btn-ripple { position: relative; overflow: hidden; }
+        .btn-ripple::after {
+          content: ''; position: absolute; inset: 0;
+          background: radial-gradient(circle at center, rgba(255,255,255,0.08) 0%, transparent 70%);
+          opacity: 0; transition: opacity 0.2s;
+        }
+        .btn-ripple:active::after { opacity: 1; }
+
+        /* ── Reduced motion ── */
         @media (prefers-reduced-motion: reduce) {
-          .anon-aura {
-            display: none;
-          }
+          .anon-aura, .ghost-float, .ambient-glow,
+          .live-ping, .gradient-text, .queue-ring { animation: none !important; }
         }
       `}</style>
+
       </div>
     </div>
   );
