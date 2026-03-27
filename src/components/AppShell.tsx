@@ -21,7 +21,7 @@ import { useVapidSubscription } from '@/hooks/usePushNotifications';
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme: _theme } = useTheme(); // kept for potential future use
 
   // Start background tracker
   useTimeTracker();
@@ -115,18 +115,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <span className="text-[11px] text-[var(--muted-strong)] leading-none mt-0.5 hidden sm:block">Campus Companion</span>
             </div>
           </Link>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl hover:bg-[var(--surface-light)] text-[var(--muted)] hover:text-[var(--foreground)] transition-all duration-200"
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-            <Link href="/login" className="btn-primary text-xs py-2 px-5 font-semibold">
+          <Link href="/login" className="btn-primary text-xs py-2 px-5 font-semibold">
               Get Started
             </Link>
-          </div>
         </div>
       </header>
       <main style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top))' }} className="min-h-screen">

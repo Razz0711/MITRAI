@@ -62,18 +62,6 @@ export default function MePage() {
     loadData();
   }, [user, loadData]);
 
-  // Check theme on mount
-  useEffect(() => {
-    const theme = document.documentElement.getAttribute('data-theme');
-    setDarkMode(theme !== 'light');
-  }, []);
-
-  const toggleTheme = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    document.documentElement.setAttribute('data-theme', newMode ? 'dark' : 'light');
-    localStorage.setItem('theme', newMode ? 'dark' : 'light');
-  };
 
   if (loading) {
     return (
@@ -291,23 +279,6 @@ export default function MePage() {
             </div>
             <span className="text-[var(--muted-strong)] text-xs">›</span>
           </Link>
-
-          <div className="h-px bg-[var(--border)]" />
-
-          {/* Switch Theme */}
-          <button onClick={toggleTheme} className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center"><Moon size={18} className="text-amber-400" /></div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-[var(--foreground)]">Switch Theme</p>
-              <p className="text-[11px] text-[var(--muted-strong)]">{darkMode ? 'Dark mode is on' : 'Light mode is on'}</p>
-            </div>
-            {/* Toggle switch */}
-            <div className={`relative w-12 h-7 rounded-full transition-colors ${darkMode ? 'bg-violet-600' : 'bg-white/20'}`}>
-              <div className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0.5'}`} />
-            </div>
-          </button>
-
-
 
           {/* Privacy */}
           <Link href="/me/privacy" className="w-full flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors text-left">

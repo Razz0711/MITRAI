@@ -1,15 +1,13 @@
 // ============================================
-// MitrRAI - Theme Provider (Dark / Light Mode)
+// MitrRAI - Theme Provider (Always Dark)
 // ============================================
 
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-
-type Theme = 'dark' | 'light';
+import { createContext, useContext, useEffect, ReactNode } from 'react';
 
 interface ThemeContextValue {
-  theme: Theme;
+  theme: 'dark';
   toggleTheme: () => void;
 }
 
@@ -23,34 +21,15 @@ export function useTheme() {
 }
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark');
-
-  // Hydrate from localStorage
+  // Always dark — force on mount and clear any saved preference
   useEffect(() => {
-    const saved = localStorage.getItem('mitrrai_theme') as Theme | null;
-    if (saved === 'light' || saved === 'dark') {
-      setTheme(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    }
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.removeItem('mitrrai_theme');
+    localStorage.removeItem('theme');
   }, []);
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    // Add transition class for smooth color change
-    document.documentElement.style.setProperty('transition', 'background-color 0.4s ease, color 0.3s ease');
-    document.body.style.setProperty('transition', 'background-color 0.4s ease, color 0.3s ease');
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('mitrrai_theme', next);
-    // Remove transition after animation completes
-    setTimeout(() => {
-      document.documentElement.style.removeProperty('transition');
-      document.body.style.removeProperty('transition');
-    }, 500);
-  };
-
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme: 'dark', toggleTheme: () => {} }}>
       {children}
     </ThemeContext.Provider>
   );
