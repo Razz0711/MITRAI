@@ -43,7 +43,7 @@ function StickerBubble({ stickerId }: { stickerId: string }) {
 const MessageBubble = memo(function MessageBubble({
   msg,
   onRate,
-  onDelete: _onDelete,
+  onDelete,
   formatTime,
   companionAvatar,
 }: {
@@ -54,6 +54,15 @@ const MessageBubble = memo(function MessageBubble({
   companionAvatar: string;
 }) {
   const isUser = msg.role === 'user';
+  const [showDelete, setShowDelete] = useState(false);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePressStart = () => {
+    pressTimer.current = setTimeout(() => setShowDelete(true), 500);
+  };
+  const handlePressEnd = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+  };
 
   // Parse sticker from content (e.g. "[STICKER:hug]")
   const stickerMatch = msg.content.match(/\[STICKER:([a-z_]+)\]/);
@@ -61,7 +70,31 @@ const MessageBubble = memo(function MessageBubble({
   const textContent = stickerMatch ? msg.content.replace(stickerMatch[0], '').trim() : msg.content;
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-1 ${isUser ? 'msg-sent' : 'msg-received'}`}>
+    <div
+      className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-1 ${isUser ? 'msg-sent' : 'msg-received'} relative`}
+      onTouchStart={handlePressStart}
+      onTouchEnd={handlePressEnd}
+      onTouchMove={handlePressEnd}
+      onMouseDown={handlePressStart}
+      onMouseUp={handlePressEnd}
+      onMouseLeave={handlePressEnd}
+    >
+      {/* Delete overlay */}
+      {showDelete && (
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center"
+          style={{ backdropFilter: 'blur(2px)', background: 'rgba(0,0,0,0.35)', borderRadius: '12px' }}
+          onClick={() => setShowDelete(false)}
+        >
+          <button
+            onClick={e => { e.stopPropagation(); onDelete(msg.id); setShowDelete(false); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            style={{ background: 'rgba(239,68,68,0.9)', border: '1px solid rgba(239,68,68,0.5)' }}
+          >
+            <Trash2 size={14} /> Delete
+          </button>
+        </div>
+      )}
       {/* Arya avatar for received */}
       {!isUser && (
         <Image
