@@ -10,7 +10,6 @@ import { useAuth } from '@/lib/auth';
 import { DesktopHeader, MobileNavbar } from './TopBar';
 import Link from 'next/link';
 import { useTheme } from './ThemeProvider';
-import { Sun, Moon } from 'lucide-react';
 import GlobalNotificationPoller from './GlobalNotificationPoller';
 import IncomingCallBanner from './IncomingCallBanner';
 import { useTimeTracker } from '@/hooks/useTimeTracker';

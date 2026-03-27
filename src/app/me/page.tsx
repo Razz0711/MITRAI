@@ -12,7 +12,7 @@ import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import { StudentProfile } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { X, Star, Globe, Moon, Shield, MessageSquare, HelpCircle, Pencil, Camera, UserPlus, ArrowLeft } from 'lucide-react';
+import { X, Star, Globe, Shield, MessageSquare, HelpCircle, Pencil, Camera, UserPlus, ArrowLeft } from 'lucide-react';
 
 export default function MePage() {
   const { user, logout } = useAuth();
@@ -23,7 +23,6 @@ export default function MePage() {
   const [circleCount, setCircleCount] = useState(0);
   const [topMatch, setTopMatch] = useState(0);
   const [zoomPhoto, setZoomPhoto] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const loadData = useCallback(async () => {

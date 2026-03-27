@@ -830,7 +830,14 @@ export default function AryaChatPage() {
         ref={scrollAreaRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-3 py-3 relative"
-        style={{ overscrollBehavior: 'contain', backgroundImage: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(124,58,237,0.07) 0%, transparent 60%)' }}
+        style={{
+          overscrollBehavior: 'contain',
+          backgroundImage: `
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='7' cy='7' r='1.2' fill='rgba(139%2C92%2C246%2C0.18)'/%3E%3Ccircle cx='37' cy='7' r='1.2' fill='rgba(139%2C92%2C246%2C0.12)'/%3E%3Ccircle cx='22' cy='22' r='1.2' fill='rgba(167%2C139%2C250%2C0.14)'/%3E%3Ccircle cx='52' cy='22' r='1.2' fill='rgba(139%2C92%2C246%2C0.1)'/%3E%3Ccircle cx='7' cy='37' r='1.2' fill='rgba(139%2C92%2C246%2C0.12)'/%3E%3Ccircle cx='37' cy='37' r='1.2' fill='rgba(167%2C139%2C250%2C0.18)'/%3E%3Ccircle cx='22' cy='52' r='1.2' fill='rgba(139%2C92%2C246%2C0.1)'/%3E%3Ccircle cx='52' cy='52' r='1.2' fill='rgba(139%2C92%2C246%2C0.14)'/%3E%3C/svg%3E"),
+            radial-gradient(ellipse 70% 40% at 50% 0%, rgba(124,58,237,0.07) 0%, transparent 60%)
+          `,
+          backgroundSize: '60px 60px, 100% 100%',
+        }}
       >
         {loading && (
           <div className="text-center py-12">
