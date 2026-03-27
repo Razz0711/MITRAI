@@ -93,14 +93,29 @@ const MessageBubble = memo(function MessageBubble({
               borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
             }}
           >
-            {/* Markdown image / selfie — Arya never has a real photo, show fun card */}
-            {textContent.includes('![') ? (
-              <div className="flex flex-col items-center justify-center rounded-xl p-4 my-1" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', minWidth: '140px' }}>
-                <span style={{ fontSize: '48px' }}>🥳</span>
-                <p className="text-[11px] text-white/70 mt-2 font-medium">Arya Selfie ✨</p>
-                <p className="text-[10px] text-white/40">Real photo coming soon!</p>
-              </div>
-            ) : (
+            {/* Selfie / real image from Supabase Storage */}
+            {textContent.includes('![') ? (() => {
+              const imgMatch = textContent.match(/\!\[.*?\]\((https?:\/\/[^)]+)\)/);
+              const src = imgMatch?.[1];
+              return src ? (
+                <div className="my-1 rounded-2xl overflow-hidden" style={{ maxWidth: '220px' }}>
+                  <img
+                    src={src}
+                    alt="Selfie"
+                    className="w-full rounded-2xl object-cover"
+                    onError={e => {
+                      const parent = (e.target as HTMLImageElement).parentElement;
+                      if (parent) parent.innerHTML = '<div style="padding:16px;text-align:center;font-size:40px">🥳<p style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px">Selfie ✨</p></div>';
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center rounded-xl p-4 my-1" style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', minWidth: '140px' }}>
+                  <span style={{ fontSize: '48px' }}>🥳</span>
+                  <p className="text-[11px] text-white/70 mt-2 font-medium">Selfie ✨</p>
+                </div>
+              );
+            })() : (
               <p className="whitespace-pre-wrap">{textContent}</p>
             )}
 
