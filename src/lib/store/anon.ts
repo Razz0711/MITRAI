@@ -518,13 +518,19 @@ export async function toggleRevealConsent(roomId: string, userId: string): Promi
   return { revealed: false, myConsent: newConsent, partnerConsent };
 }
 
-/** Close/leave a room — EPHEMERAL: deletes all messages, members, and the room itself */
+/** Close/leave a room — EPHEMERAL: notifies partner via Realtime, then deletes everything */
 export async function closeAnonRoom(roomId: string): Promise<void> {
-  // 1. Delete all messages (no trace)
+  // 1. Mark room as 'closed' FIRST — Supabase Realtime broadcasts this UPDATE
+  //    to the partner's live subscription so their UI clears immediately
+  await supabase.from('anon_rooms').update({ status: 'closed', closed_at: new Date().toISOString() }).eq('id', roomId);
+
+  // 2. Delete all messages (ephemeral — no trace)
   await supabase.from('anon_messages').delete().eq('room_id', roomId);
-  // 2. Delete all members
+
+  // 3. Delete all members
   await supabase.from('anon_room_members').delete().eq('room_id', roomId);
-  // 3. Delete the room itself
+
+  // 4. Delete the room record itself
   await supabase.from('anon_rooms').delete().eq('id', roomId);
 }
 

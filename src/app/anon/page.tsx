@@ -673,7 +673,9 @@ export default function AnonLobbyPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400">Instant</span>
-                  <span className="text-[9px] text-[var(--muted)]">{stats?.queueByType?.career || 5} active</span>
+                  {(stats?.queueByType?.career ?? 0) > 0 && (
+                    <span className="text-[9px] text-[var(--muted)]">{stats!.queueByType.career} waiting</span>
+                  )}
                 </div>
                 {selectedType === 'career' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
               </button>
@@ -697,7 +699,9 @@ export default function AnonLobbyPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400">Instant</span>
-                  <span className="text-[9px] text-[var(--muted)]">{stats?.queueByType?.confession || 8} active</span>
+                  {(stats?.queueByType?.confession ?? 0) > 0 && (
+                    <span className="text-[9px] text-[var(--muted)]">{stats!.queueByType.confession} waiting</span>
+                  )}
                 </div>
                 {selectedType === 'confession' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
               </button>
@@ -715,7 +719,9 @@ export default function AnonLobbyPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-[13px] font-bold text-white">Dil Ki Baat</h3>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400">{stats?.queueByType?.crush || 2} waiting</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400">
+                      {(stats?.queueByType?.crush ?? 0) > 0 ? `${stats!.queueByType.crush} waiting` : 'Be first'}
+                    </span>
                   </div>
                   <p className="text-[11px] text-[var(--muted)] truncate">Crush, feelings, advice — anonymous love corner.</p>
                 </div>
@@ -738,7 +744,9 @@ export default function AnonLobbyPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-[13px] font-bold text-white">No Filter</h3>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">{stats?.queueByType?.radar || 3} in</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
+                      {(stats?.queueByType?.radar ?? 0) > 0 ? `${stats!.queueByType.radar} in` : 'Be first'}
+                    </span>
                   </div>
                   <p className="text-[11px] text-[var(--muted)] truncate">Say what you actually think. No judgement.</p>
                 </div>

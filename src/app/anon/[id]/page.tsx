@@ -113,6 +113,9 @@ export default function AnonChatRoomPage() {
   const [showMenu, setShowMenu] = useState(false);
   const [error, setError] = useState('');
   const [closed, setClosed] = useState(false);
+  const [partnerLeft, setPartnerLeft] = useState(false);
+  const [countdown, setCountdown] = useState(4);
+  const closingByMe = useRef(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -135,11 +138,12 @@ export default function AnonChatRoomPage() {
     loadRoom();
   }, [user, loadRoom]);
 
-  // Realtime subscription
+  // Realtime subscription — new messages + room status changes
   useEffect(() => {
     if (!roomId) return;
     const channel = supabaseBrowser
       .channel(`anon-room-${roomId}`)
+      // Listen for new messages
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'anon_messages', filter: `room_id=eq.${roomId}` }, (payload) => {
         const row = payload.new;
         const msg: AnonMsg = { id: row.id, roomId: row.room_id, senderId: row.sender_id, alias: row.alias, text: row.text, createdAt: row.created_at };
@@ -151,9 +155,25 @@ export default function AnonChatRoomPage() {
           return [...prev, msg];
         });
       })
+      // Listen for room status → 'closed' (partner left)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'anon_rooms', filter: `id=eq.${roomId}` }, (payload) => {
+        if (payload.new?.status === 'closed' && !closingByMe.current) {
+          setMessages([]);
+          setClosed(true);
+          setPartnerLeft(true);
+          let c = 4;
+          setCountdown(c);
+          const t = setInterval(() => {
+            c -= 1;
+            setCountdown(c);
+            if (c <= 0) { clearInterval(t); router.push('/anon'); }
+          }, 1000);
+        }
+      })
       .subscribe();
     return () => { supabaseBrowser.removeChannel(channel); };
-  }, [playSound, roomId, user?.id]);
+  }, [playSound, roomId, router, user?.id]);
+
 
   // Initial scroll
   useEffect(() => { setTimeout(() => forceScrollToBottom('instant'), 150); }, [forceScrollToBottom]);
@@ -197,9 +217,10 @@ export default function AnonChatRoomPage() {
   };
 
   const handleClose = async () => {
-    if (!confirm('Leave this anonymous chat? Messages will be lost.')) return;
+    closingByMe.current = true;
     await fetch(`/api/anon/${roomId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'close' }) });
     setClosed(true);
+    router.push('/anon');
   };
 
   useEffect(() => {
@@ -231,9 +252,44 @@ export default function AnonChatRoomPage() {
 
   return (
     <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--background)', overflow: 'hidden' }}>
+
+      {/* ─── Partner Left Popup ─── */}
+      {partnerLeft && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 16, padding: 32,
+        }}>
+          <div style={{ fontSize: 56 }}>💨</div>
+          <h3 style={{ fontSize: 22, fontWeight: 700, color: '#fff', textAlign: 'center' }}>
+            Partner left the chat
+          </h3>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', textAlign: 'center', maxWidth: 260 }}>
+            All messages have been deleted. Your conversation is gone forever.
+          </p>
+          {/* Countdown circle */}
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            border: '3px solid rgba(139,92,246,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 24, fontWeight: 700, color: '#a78bfa',
+          }}>
+            {countdown}
+          </div>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>Returning to lobby…</p>
+          <button
+            onClick={() => router.push('/anon')}
+            style={{ marginTop: 8, padding: '12px 28px', borderRadius: 20, background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)', color: '#c4b5fd', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+          >
+            Go Back Now
+          </button>
+        </div>
+      )}
+
       {/* ─── Header ─── */}
       <div className="shrink-0 flex items-center gap-2 px-3 py-2.5" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--glass-border)', paddingTop: 'calc(env(safe-area-inset-top) + 0.625rem)' }}>
-        <button onClick={() => router.push('/anon')} className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition-colors">
+        <button onClick={handleClose} className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition-colors">
           <ArrowLeft size={24} />
         </button>
         <div className="relative shrink-0">
@@ -289,11 +345,15 @@ export default function AnonChatRoomPage() {
         })}
 
         {closed && (
-          <div className="text-center py-4">
-            <p className="text-xs text-red-400 inline-block px-3 py-1 rounded-full" style={{ background: 'var(--surface)' }}>This chat has ended</p>
-            <button onClick={() => router.push('/anon')} className="block mx-auto mt-3 px-4 py-2 bg-purple-600 text-white rounded-xl text-xs">Back to Lobby</button>
+          <div className="text-center py-6 px-4">
+            <p className="text-xs text-red-400 inline-block px-3 py-1.5 rounded-full mb-3" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              💨 Partner left · Messages deleted
+            </p>
+            <p className="text-[11px] text-white/30 mb-3">Redirecting to lobby…</p>
+            <button onClick={() => router.push('/anon')} className="block mx-auto px-5 py-2 bg-purple-600 text-white rounded-xl text-xs font-semibold">Back to Lobby</button>
           </div>
         )}
+
         <div ref={bottomRef} />
       </div>
 
