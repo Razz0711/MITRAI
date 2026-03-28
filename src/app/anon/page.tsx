@@ -173,7 +173,7 @@ export default function AnonLobbyPage() {
     if (aiOfferTimerRef.current) clearTimeout(aiOfferTimerRef.current);
     aiOfferTimerRef.current = setTimeout(() => {
       setShowAiOffer(true);
-    }, 60_000);
+    }, 20_000);
 
     pollRef.current = setInterval(async () => {
       try {
