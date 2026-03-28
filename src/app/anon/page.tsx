@@ -61,6 +61,7 @@ export default function AnonLobbyPage() {
   const [matchDuringAi, setMatchDuringAi] = useState<string | null>(null); // roomId if matched while in AI
   const aiOfferTimerRef = useRef<NodeJS.Timeout | null>(null);
   const aiChatBottomRef = useRef<HTMLDivElement | null>(null);
+  const aiChatActiveRef = useRef(false); // ref copy so polling closure is always fresh
 
   // Check status on mount
   useEffect(() => {
@@ -168,7 +169,7 @@ export default function AnonLobbyPage() {
   const startPolling = useCallback(() => {
     timerRef.current = setInterval(() => setQueueSeconds(s => s + 1), 1000);
 
-    // Offer AI chat after 2 minutes (120s)
+    // Offer AI chat after 30 sec
     if (aiOfferTimerRef.current) clearTimeout(aiOfferTimerRef.current);
     aiOfferTimerRef.current = setTimeout(() => {
       setShowAiOffer(true);
@@ -184,7 +185,7 @@ export default function AnonLobbyPage() {
           if (aiOfferTimerRef.current) clearTimeout(aiOfferTimerRef.current);
           // 🔊 Play match found sound
           playSound('match');
-          if (aiChatActive) {
+          if (aiChatActiveRef.current) {
             // Don't redirect immediately — show banner inside AI chat
             setMatchDuringAi(data.data.roomId);
           } else {
@@ -194,7 +195,7 @@ export default function AnonLobbyPage() {
         }
       } catch { /* keep polling */ }
     }, 3000);
-  }, [playSound, router, aiChatActive]);
+  }, [playSound, router]);
 
   const handleLeaveQueue = async () => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -209,6 +210,7 @@ export default function AnonLobbyPage() {
     setAlias('');
     setQueueSeconds(0);
     setShowAiOffer(false);
+    aiChatActiveRef.current = false;
     setAiChatActive(false);
     setAiMessages([]);
     setMatchDuringAi(null);
@@ -348,615 +350,616 @@ export default function AnonLobbyPage() {
       <div className="anon-aura-3" />
       <div className="flex-1 overflow-y-auto px-4">
         <div className="max-w-2xl mx-auto">
-        {/* Ambient glow */}
-        <div className="ambient-glow" />
+          {/* Ambient glow */}
+          <div className="ambient-glow" />
 
-        {/* Header — Premium */}
-        <div className="text-center mb-4 slide-up" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] font-bold mb-1">Safe anonymous space</p>
-          <div className="relative mx-auto mb-3 w-16 h-16 ghost-float">
-            {/* Glow halo */}
-            <div className="absolute inset-0 rounded-full blur-xl opacity-60" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.7) 0%, rgba(236,72,153,0.3) 60%, transparent 80%)' }} />
-            <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl shadow-violet-500/30" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.35) 0%, rgba(168,85,247,0.25) 50%, rgba(236,72,153,0.2) 100%)', border: '1px solid rgba(168,85,247,0.3)', backdropFilter: 'blur(12px)' }}>
-            <svg width="36" height="36" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="ghostG" x1="10" y1="4" x2="42" y2="48" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#c084fc" />
-                    <stop offset="100%" stopColor="#f472b6" />
-                  </linearGradient>
-                </defs>
-                {/* Ghost body */}
-                <path d="M26 5C16.6 5 9 12.6 9 22v22l5.5-4 5.5 4 5.5-4 5.5 4 5.5-4 5.5 4V22C43 12.6 35.4 5 26 5z" fill="url(#ghostG)" opacity="0.95" />
-                {/* Eyes */}
-                <ellipse cx="20" cy="22" rx="3.5" ry="4" fill="white" />
-                <ellipse cx="32" cy="22" rx="3.5" ry="4" fill="white" />
-                <ellipse cx="21" cy="23" rx="1.8" ry="2" fill="#1a0533" />
-                <ellipse cx="33" cy="23" rx="1.8" ry="2" fill="#1a0533" />
-                {/* Shine dots */}
-                <circle cx="22" cy="21.5" r="0.9" fill="white" opacity="0.8" />
-                <circle cx="34" cy="21.5" r="0.9" fill="white" opacity="0.8" />
-              </svg>
+          {/* Header — Premium */}
+          <div className="text-center mb-4 slide-up" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] font-bold mb-1">Safe anonymous space</p>
+            <div className="relative mx-auto mb-3 w-16 h-16 ghost-float">
+              {/* Glow halo */}
+              <div className="absolute inset-0 rounded-full blur-xl opacity-60" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.7) 0%, rgba(236,72,153,0.3) 60%, transparent 80%)' }} />
+              <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl shadow-violet-500/30" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.35) 0%, rgba(168,85,247,0.25) 50%, rgba(236,72,153,0.2) 100%)', border: '1px solid rgba(168,85,247,0.3)', backdropFilter: 'blur(12px)' }}>
+                <svg width="36" height="36" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="ghostG" x1="10" y1="4" x2="42" y2="48" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#c084fc" />
+                      <stop offset="100%" stopColor="#f472b6" />
+                    </linearGradient>
+                  </defs>
+                  {/* Ghost body */}
+                  <path d="M26 5C16.6 5 9 12.6 9 22v22l5.5-4 5.5 4 5.5-4 5.5 4 5.5-4 5.5 4V22C43 12.6 35.4 5 26 5z" fill="url(#ghostG)" opacity="0.95" />
+                  {/* Eyes */}
+                  <ellipse cx="20" cy="22" rx="3.5" ry="4" fill="white" />
+                  <ellipse cx="32" cy="22" rx="3.5" ry="4" fill="white" />
+                  <ellipse cx="21" cy="23" rx="1.8" ry="2" fill="#1a0533" />
+                  <ellipse cx="33" cy="23" rx="1.8" ry="2" fill="#1a0533" />
+                  {/* Shine dots */}
+                  <circle cx="22" cy="21.5" r="0.9" fill="white" opacity="0.8" />
+                  <circle cx="34" cy="21.5" r="0.9" fill="white" opacity="0.8" />
+                </svg>
+              </div>
             </div>
+            <h1 className="text-xl font-extrabold text-[var(--foreground)] mb-1">
+              <span className="gradient-text">Anonymous Chat</span>
+            </h1>
+            <p className="text-[var(--muted)] text-sm max-w-xs mx-auto">
+              Talk freely with fellow students. No names, no judgments.
+            </p>
           </div>
-          <h1 className="text-xl font-extrabold text-[var(--foreground)] mb-1">
-            <span className="gradient-text">Anonymous Chat</span>
-          </h1>
-          <p className="text-[var(--muted)] text-sm max-w-xs mx-auto">
-            Talk freely with fellow students. No names, no judgments.
-          </p>
-        </div>
 
-        {/* Live Stats Bar — Glass */}
-        {stats && (
-          <div className="flex items-center justify-center gap-3 mb-6 slide-up-stagger-1 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl stat-chip" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
-              <span className="relative flex h-2 w-2">
-                <span className="live-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-              </span>
-              <span className="text-xs font-semibold text-green-400">
-                {stats.activeRooms * 2} chatting
-              </span>
+          {/* Live Stats Bar — Glass */}
+          {stats && (
+            <div className="flex items-center justify-center gap-3 mb-6 slide-up-stagger-1 flex-wrap">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl stat-chip" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
+                <span className="relative flex h-2 w-2">
+                  <span className="live-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                </span>
+                <span className="text-xs font-semibold text-green-400">
+                  {stats.activeRooms * 2} chatting
+                </span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
+                <span className="text-xs font-semibold text-amber-400">
+                  {stats.queueCount} waiting
+                </span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
+                <span className="text-xs font-semibold text-[var(--primary-light)]">
+                  {Object.keys(stats.queueByType || {}).length} room types active
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
-              <span className="text-xs font-semibold text-amber-400">
-                {stats.queueCount} waiting
-              </span>
+          )}
+
+          {/* Loading */}
+          {status === 'loading' && (
+            <div className="text-center py-20">
+              <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-[var(--muted)] text-sm">Checking access and pass status...</p>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', backdropFilter: 'blur(8px)' }}>
-              <span className="text-xs font-semibold text-[var(--primary-light)]">
-                {Object.keys(stats.queueByType || {}).length} room types active
-              </span>
+          )}
+
+          {/* Banned */}
+          {status === 'banned' && (
+            <div className="card p-8 text-center">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-red-500/15 flex items-center justify-center text-sm font-bold text-[var(--error)] mb-4">Banned</div>
+              <h2 className="text-xl font-bold text-[var(--error)] mb-2">You&apos;re Temporarily Banned</h2>
+              <p className="text-[var(--muted)] text-sm mb-2">{banInfo.reason || 'Multiple reports received'}</p>
+              {banInfo.expiresAt && (
+                <p className="text-sm text-[var(--muted)]">
+                  Expires: {new Date(banInfo.expiresAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                </p>
+              )}
+              {!banInfo.expiresAt && <p className="text-sm text-[var(--error)]">This ban is permanent.</p>}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Loading */}
-        {status === 'loading' && (
-          <div className="text-center py-20">
-            <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-[var(--muted)] text-sm">Checking access and pass status...</p>
-          </div>
-        )}
-
-        {/* Banned */}
-        {status === 'banned' && (
-          <div className="card p-8 text-center">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-red-500/15 flex items-center justify-center text-sm font-bold text-[var(--error)] mb-4">Banned</div>
-            <h2 className="text-xl font-bold text-[var(--error)] mb-2">You&apos;re Temporarily Banned</h2>
-            <p className="text-[var(--muted)] text-sm mb-2">{banInfo.reason || 'Multiple reports received'}</p>
-            {banInfo.expiresAt && (
-              <p className="text-sm text-[var(--muted)]">
-                Expires: {new Date(banInfo.expiresAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-              </p>
-            )}
-            {!banInfo.expiresAt && <p className="text-sm text-[var(--error)]">This ban is permanent.</p>}
-          </div>
-        )}
-
-        {/* No Pass — Pricing + Subscribe + Coupon */}
-        {(status === 'no-pass' || status === 'pending-payment') && (
-          <div className="space-y-6">
-            {/* Pending payment notice */}
-            {(status === 'pending-payment' || pendingPayment?.status === 'pending') && (
-              <div className="card p-4 border-2 border-amber-500/30 bg-amber-500/5">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-amber-400">Pending</span>
-                  <div>
-                    <h3 className="text-sm font-semibold text-amber-400">Payment Under Review</h3>
-                    <p className="text-xs text-[var(--muted)]">
-                      Your {pendingPayment?.plan || ''} plan payment is being verified. This usually takes a few hours.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Rejected payment notice */}
-            {pendingPayment?.status === 'rejected' && (
-              <div className="card p-4 border-2 border-red-500/30 bg-red-500/5">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-[var(--error)]">Rejected</span>
-                  <div>
-                    <h3 className="text-sm font-semibold text-[var(--error)]">Payment Rejected</h3>
-                    <p className="text-xs text-[var(--muted)]">
-                      Your previous payment could not be verified. Please try again or use a coupon code.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Teaser */}
-            <div className="card p-8 text-center border-2 border-dashed border-[var(--primary)]/30">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-[var(--primary)]/15 flex items-center justify-center text-sm font-bold text-[var(--foreground)] mb-4">
-                {usedTrial ? 'Expired' : 'Locked'}
-              </div>
-              <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">
-                {usedTrial ? 'Your Free Trial Has Ended' : 'Unlock Anonymous Chat'}
-              </h2>
-              <p className="text-[var(--muted)] text-sm mb-6">
-                {usedTrial
-                  ? 'Your 7-day free trial is over. Subscribe to keep chatting anonymously with fellow students!'
-                  : 'Chat anonymously with fellow students. Vent, confess, get advice — all without revealing your identity.'}
-              </p>
-
-              {/* Pricing tiers with Subscribe buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                {ANON_PRICING.map(tier => (
-                  <div key={tier.plan} className={`p-4 rounded-xl border-2 transition-all flex flex-col ${
-                    tier.plan === 'monthly' 
-                      ? 'border-[var(--primary)] bg-[var(--primary)]/5 sm:scale-105' 
-                      : 'border-[var(--border)]'
-                  }`}>
-                    {tier.plan === 'monthly' && (
-                      <div className="text-[10px] font-bold text-[var(--primary)] mb-1">POPULAR</div>
-                    )}
-                    <div className="text-sm font-semibold text-[var(--foreground)]">{tier.label}</div>
-                    <div className="text-2xl font-bold text-[var(--primary)] mt-1">₹{tier.price}</div>
-                    <div className="text-[10px] text-[var(--muted)] mb-3">{tier.durationDays} days</div>
-                    <button
-                      onClick={() => handleSubscribeClick(tier)}
-                      className={`mt-auto w-full py-2 rounded-lg text-xs font-semibold transition-all ${
-                        tier.plan === 'monthly'
-                          ? 'bg-[var(--primary)] text-white hover:opacity-90'
-                          : 'bg-[var(--surface-light)] text-[var(--foreground)] hover:bg-[var(--primary)] hover:text-white'
-                      }`}
-                    >
-                      Subscribe ₹{tier.price}
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Features */}
-              <div className="grid grid-cols-2 gap-2 text-left text-xs text-[var(--muted)] mb-6">
-                <div className="flex items-center gap-2">• Random matching</div>
-                <div className="flex items-center gap-2">• 5 room types</div>
-                <div className="flex items-center gap-2">• Fun aliases</div>
-                <div className="flex items-center gap-2">• Mutual reveal option</div>
-                <div className="flex items-center gap-2">• Report & block</div>
-                <div className="flex items-center gap-2">• College-verified safe space</div>
-              </div>
-
-              {/* Divider */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-[var(--border)]" />
-                <span className="text-xs text-[var(--muted)]">or use a coupon</span>
-                <div className="flex-1 h-px bg-[var(--border)]" />
-              </div>
-
-              {/* Coupon input */}
-              <div className="flex gap-2 max-w-sm mx-auto">
-                <input
-                  type="text"
-                  value={couponCode}
-                  onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
-                  placeholder="Enter coupon code"
-                  className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
-                  maxLength={30}
-                />
-                <button
-                  onClick={handleRedeemCoupon}
-                  disabled={couponLoading || !couponCode.trim()}
-                  className="btn-primary text-sm px-4 py-2 disabled:opacity-50"
-                >
-                  {couponLoading ? '...' : 'Redeem'}
-                </button>
-              </div>
-              {couponError && <p className="text-[var(--error)] text-xs mt-2">{couponError}</p>}
-              <p className="text-[10px] text-[var(--muted)] mt-3">
-                Get coupon codes from campus events, club activities, or friends!
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* UPI Payment Modal */}
-        {showPayModal && selectedPlan && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !txnLoading && setShowPayModal(false)}>
-            <div className="card p-6 max-w-md w-full space-y-5" onClick={e => e.stopPropagation()}>
-              {!paySuccess ? (
-                <>
-                  <div className="text-center">
-                    <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--primary)]/15 flex items-center justify-center text-sm font-bold text-[var(--foreground)] mb-2">Pay</div>
-                    <h3 className="text-lg font-bold text-[var(--foreground)]">
-                      Pay ₹{selectedPlan.price} for {selectedPlan.label} Plan
-                    </h3>
-                    <p className="text-xs text-[var(--muted)] mt-1">
-                      {selectedPlan.durationDays} days of Anonymous Chat access
-                    </p>
-                  </div>
-
-                  {/* QR Code */}
-                  <div className="flex justify-center mb-4">
-                    <div className="p-3 bg-white rounded-2xl shadow-lg">
-                      <Image
-                        src={getQrImageUrl(selectedPlan.price)}
-                        alt="UPI QR Code"
-                        width={200}
-                        height={200}
-                        className="rounded-xl"
-                        unoptimized
-                        style={{ imageRendering: 'pixelated' }}
-                      />
+          {/* No Pass — Pricing + Subscribe + Coupon */}
+          {(status === 'no-pass' || status === 'pending-payment') && (
+            <div className="space-y-6">
+              {/* Pending payment notice */}
+              {(status === 'pending-payment' || pendingPayment?.status === 'pending') && (
+                <div className="card p-4 border-2 border-amber-500/30 bg-amber-500/5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-amber-400">Pending</span>
+                    <div>
+                      <h3 className="text-sm font-semibold text-amber-400">Payment Under Review</h3>
+                      <p className="text-xs text-[var(--muted)]">
+                        Your {pendingPayment?.plan || ''} plan payment is being verified. This usually takes a few hours.
+                      </p>
                     </div>
                   </div>
-
-                  <div className="text-center mb-4">
-                    <p className="text-xs text-[var(--muted)] mb-1">Scan with any UPI app to pay</p>
-                    <div className="flex items-center justify-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold">UPI</span>
-                      <span className="text-[10px] text-[var(--muted)]">GPay • PhonePe • Paytm • BHIM • Any UPI app</span>
-                    </div>
-                    <div className="mt-2 px-3 py-1.5 rounded-lg bg-[var(--surface-light)] border border-[var(--border)] inline-flex items-center gap-2">
-                      <div>
-                        <p className="text-[10px] text-[var(--muted)]">UPI ID</p>
-                        <p className="text-xs font-mono font-semibold text-[var(--foreground)]">{UPI_CONFIG.upiId}</p>
-                      </div>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(UPI_CONFIG.upiId)}
-                        className="text-xs text-[var(--primary)] hover:underline"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                    <a
-                      href={generateUpiLink(selectedPlan.price)}
-                      className="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-[var(--primary)] hover:underline"
-                    >
-                      Open UPI App Directly
-                    </a>
-                    <p className="text-[10px] text-[var(--muted)] mt-1 md:block hidden">
-                      On desktop: scan the QR code above with any UPI app on your phone, or open your bank&apos;s UPI interface and pay to the UPI ID shown.
-                    </p>
-                  </div>
-
-                  {/* Transaction ID input */}
-                  <div className="mb-3">
-                    <label className="text-xs text-[var(--foreground)] block mb-1 font-medium">
-                      Transaction / UTR ID <span className="text-[var(--error)]">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={txnId}
-                      onChange={e => { setTxnId(e.target.value); setTxnError(''); }}
-                      placeholder="Enter your UPI transaction ID after payment"
-                      className="w-full px-3 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
-                      maxLength={50}
-                    />
-                    {txnError && <p className="text-[var(--error)] text-xs mt-1">{txnError}</p>}
-                    <p className="text-[10px] text-[var(--muted)] mt-1">Find the 12-digit UTR/Reference number in your UPI app payment history</p>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowPayModal(false)}
-                      className="flex-1 py-2.5 rounded-lg text-sm text-[var(--muted)] border border-[var(--border)] hover:bg-[var(--surface-light)] transition-colors"
-                      disabled={txnLoading}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSubmitPayment}
-                      disabled={txnLoading || txnId.trim().length < 4}
-                      className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-[var(--primary)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                      {txnLoading ? 'Submitting...' : 'Submit Payment'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                /* Success state */
-                <div className="text-center py-4">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-green-500/15 flex items-center justify-center text-sm font-bold text-green-400 mb-4">Done</div>
-                  <h3 className="text-lg font-bold text-[var(--success)]">Payment Submitted!</h3>
-                  <p className="text-sm text-[var(--muted)] mt-2 mb-4">
-                    Your payment is being verified. You&apos;ll get access once the admin approves it (usually within a few hours).
-                  </p>
-                  <button
-                    onClick={() => { setShowPayModal(false); setStatus('pending-payment'); }}
-                    className="btn-primary text-sm px-6 py-2"
-                  >
-                    Got it
-                  </button>
                 </div>
               )}
-            </div>
-          </div>
-        )}
 
-        {/* Idle — Vibe Card Selection */}
-        {status === 'idle' && (
-          <div className="space-y-6">
-
-            {isFreeTrial && passInfo.expiresAt && !isOpenAccess && (
-              <div className="rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(20,184,166,0.06))', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-sm">
-                    <strong className="text-emerald-400">{trialGranted ? 'Free Trial Activated!' : 'Free Trial Active'}</strong>
-                    <span className="text-[var(--muted)]"> — {Math.max(0, Math.ceil((new Date(passInfo.expiresAt).getTime() - Date.now()) / 86400000))} days left</span>
-                  </span>
-                </div>
-                <span className="text-xs text-[var(--muted)]">
-                  Expires: {new Date(passInfo.expiresAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-                </span>
-              </div>
-            )}
-
-            {passInfo.plan && !isFreeTrial && !isOpenAccess && (
-              <div className="card p-3 flex items-center justify-between">
-                <span className="text-xs text-[var(--muted)]">
-                  {passInfo.isPro ? 'Pro Subscriber — Anonymous Chat included free!' : `${passInfo.plan.charAt(0).toUpperCase() + passInfo.plan.slice(1)} Pass Active`}
-                </span>
-                <span className="text-xs text-[var(--muted)]">
-                  {passInfo.isPro ? 'Unlimited Access' : `Expires: ${passInfo.expiresAt ? new Date(passInfo.expiresAt).toLocaleDateString('en-IN') : '—'}`}
-                </span>
-              </div>
-            )}
-
-            {/* CHOOSE YOUR VIBE heading */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] flex items-center gap-2">
-                <span className="w-1 h-5 rounded-full bg-gradient-to-b from-[var(--primary)] to-[var(--accent)]" />
-                CHOOSE YOUR VIBE
-              </h2>
-              <span className="text-[10px] text-[var(--muted)]">Tap to select · then find match</span>
-            </div>
-
-            {/* Vibe Tiles — Horizontal compact layout */}
-            <div className="flex flex-col gap-2">
-
-              {/* Placement Talk */}
-              <button
-                onClick={() => setSelectedType('career')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
-                style={{ animationDelay: '0ms',
-                  background: selectedType === 'career' ? 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(234,88,12,0.06))' : 'var(--surface-card, #141414)',
-                  border: selectedType === 'career' ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border)',
-                }}
-              >
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-base shrink-0">📋</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-[13px] font-bold text-white">Placement Talk</h3>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400">🔥 Hot</span>
+              {/* Rejected payment notice */}
+              {pendingPayment?.status === 'rejected' && (
+                <div className="card p-4 border-2 border-red-500/30 bg-red-500/5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-[var(--error)]">Rejected</span>
+                    <div>
+                      <h3 className="text-sm font-semibold text-[var(--error)]">Payment Rejected</h3>
+                      <p className="text-xs text-[var(--muted)]">
+                        Your previous payment could not be verified. Please try again or use a coupon code.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-[var(--muted)] truncate">Offers, anxiety, intern struggles — all of it.</p>
                 </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400">Instant</span>
-                  {(stats?.queueByType?.career ?? 0) > 0 && (
-                    <span className="text-[9px] text-[var(--muted)]">{stats!.queueByType.career} waiting</span>
-                  )}
-                </div>
-                {selectedType === 'career' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
-              </button>
+              )}
 
-              {/* College Gossip */}
-              <button
-                onClick={() => setSelectedType('confession')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
-                style={{ animationDelay: '60ms',
-                  background: selectedType === 'confession' ? 'linear-gradient(135deg, rgba(236,72,153,0.10), rgba(239,68,68,0.06))' : 'var(--surface-card, #141414)',
-                  border: selectedType === 'confession' ? '1px solid rgba(236,72,153,0.4)' : '1px solid var(--border)',
-                }}
-              >
-                <div className="w-10 h-10 rounded-xl bg-pink-500/15 flex items-center justify-center text-base shrink-0">📢</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-[13px] font-bold text-white">College Gossip</h3>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-400">Trending</span>
-                  </div>
-                  <p className="text-[11px] text-[var(--muted)] truncate">What&apos;s happening on campus? Spill it.</p>
+              {/* Teaser */}
+              <div className="card p-8 text-center border-2 border-dashed border-[var(--primary)]/30">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-[var(--primary)]/15 flex items-center justify-center text-sm font-bold text-[var(--foreground)] mb-4">
+                  {usedTrial ? 'Expired' : 'Locked'}
                 </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400">Instant</span>
-                  {(stats?.queueByType?.confession ?? 0) > 0 && (
-                    <span className="text-[9px] text-[var(--muted)]">{stats!.queueByType.confession} waiting</span>
-                  )}
-                </div>
-                {selectedType === 'confession' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
-              </button>
+                <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">
+                  {usedTrial ? 'Your Free Trial Has Ended' : 'Unlock Anonymous Chat'}
+                </h2>
+                <p className="text-[var(--muted)] text-sm mb-6">
+                  {usedTrial
+                    ? 'Your 7-day free trial is over. Subscribe to keep chatting anonymously with fellow students!'
+                    : 'Chat anonymously with fellow students. Vent, confess, get advice — all without revealing your identity.'}
+                </p>
 
-              {/* Dil Ki Baat */}
-              <button
-                onClick={() => setSelectedType('crush')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
-                style={{ animationDelay: '120ms',
-                  background: selectedType === 'crush' ? 'linear-gradient(135deg, rgba(239,68,68,0.10), rgba(236,72,153,0.06))' : 'var(--surface-card, #141414)',
-                  border: selectedType === 'crush' ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--border)',
-                }}
-              >
-                <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-base shrink-0">💗</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-[13px] font-bold text-white">Dil Ki Baat</h3>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400">
-                      {(stats?.queueByType?.crush ?? 0) > 0 ? `${stats!.queueByType.crush} waiting` : 'Be first'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[var(--muted)] truncate">Crush, feelings, advice — anonymous love corner.</p>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)]">~1 min</span>
-                </div>
-                {selectedType === 'crush' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
-              </button>
-
-              {/* No Filter */}
-              <button
-                onClick={() => setSelectedType('radar')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
-                style={{ animationDelay: '180ms',
-                  background: selectedType === 'radar' ? 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(59,130,246,0.06))' : 'var(--surface-card, #141414)',
-                  border: selectedType === 'radar' ? '1px solid rgba(16,185,129,0.4)' : '1px solid var(--border)',
-                }}
-              >
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center text-base shrink-0">🎭</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-[13px] font-bold text-white">No Filter</h3>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
-                      {(stats?.queueByType?.radar ?? 0) > 0 ? `${stats!.queueByType.radar} in` : 'Be first'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[var(--muted)] truncate">Say what you actually think. No judgement.</p>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)]">~2 min</span>
-                </div>
-                {selectedType === 'radar' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
-              </button>
-
-              {/* 3 AM Thoughts */}
-              <button
-                onClick={() => setSelectedType('night_owl')}
-                className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
-                style={{ animationDelay: '240ms',
-                  background: selectedType === 'night_owl' ? 'linear-gradient(135deg, rgba(139,92,246,0.10), rgba(99,102,241,0.06))' : 'var(--surface-card, #141414)',
-                  border: selectedType === 'night_owl' ? '1px solid rgba(139,92,246,0.4)' : '1px solid var(--border)',
-                  opacity: new Date().getHours() >= 23 || new Date().getHours() < 4 ? 1 : 0.6,
-                }}
-              >
-                <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-base shrink-0">🌙</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-[13px] font-bold text-white">3 AM Thoughts</h3>
-                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)]">
-                      {new Date().getHours() >= 23 || new Date().getHours() < 4 ? '● Live' : 'Opens 11PM'}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[var(--muted)] truncate">Can&apos;t sleep? Neither can they. Late night only.</p>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)] font-semibold">11PM-4AM</span>
-                </div>
-                {selectedType === 'night_owl' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
-              </button>
-            </div>
-
-            {/* Find a Random Match CTA */}
-            <button
-              onClick={handleJoinQueue}
-              className="w-full py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:shadow-lg active:scale-[0.98] btn-ripple"
-              style={{
-                background: 'linear-gradient(135deg, #7c3aed, #6d28d9, #a855f7)',
-                backgroundSize: '200% 200%',
-                animation: 'gradientShift 3s ease infinite',
-                boxShadow: '0 4px 30px rgba(124, 58, 237, 0.5)',
-              }}
-            >
-              Find a Random Match
-            </button>
-
-            {/* Footer info */}
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] text-[var(--muted)]">
-                Estimated wait: ~{queueEstimate || 1} min · Matching with a fellow student
-              </p>
-              <p className="text-[10px] text-[var(--muted)]">
-                Be respectful · College email on file
-              </p>
-            </div>
-
-            {/* Upgrade Plans — shown during free trial */}
-            {isFreeTrial && !isOpenAccess && (
-              <div className="space-y-4 mt-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-[var(--border)]" />
-                  <span className="text-xs text-[var(--muted)] font-medium">Upgrade for unlimited access</span>
-                  <div className="flex-1 h-px bg-[var(--border)]" />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Pricing tiers with Subscribe buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
                   {ANON_PRICING.map(tier => (
-                    <div key={tier.plan} className={`p-4 rounded-xl border-2 transition-all flex flex-col ${
-                      tier.plan === 'monthly' ? 'border-[var(--primary)] bg-[var(--primary)]/5 sm:scale-105' : 'border-[var(--border)]'
-                    }`}>
-                      {tier.plan === 'monthly' && <div className="text-[10px] font-bold text-[var(--primary)] mb-1">BEST VALUE</div>}
+                    <div key={tier.plan} className={`p-4 rounded-xl border-2 transition-all flex flex-col ${tier.plan === 'monthly'
+                        ? 'border-[var(--primary)] bg-[var(--primary)]/5 sm:scale-105'
+                        : 'border-[var(--border)]'
+                      }`}>
+                      {tier.plan === 'monthly' && (
+                        <div className="text-[10px] font-bold text-[var(--primary)] mb-1">POPULAR</div>
+                      )}
                       <div className="text-sm font-semibold text-[var(--foreground)]">{tier.label}</div>
                       <div className="text-2xl font-bold text-[var(--primary)] mt-1">₹{tier.price}</div>
                       <div className="text-[10px] text-[var(--muted)] mb-3">{tier.durationDays} days</div>
-                      <button onClick={() => handleSubscribeClick(tier)} className={`mt-auto w-full py-2 rounded-lg text-xs font-semibold transition-all ${
-                        tier.plan === 'monthly' ? 'bg-[var(--primary)] text-white hover:opacity-90' : 'bg-[var(--surface-light)] text-[var(--foreground)] hover:bg-[var(--primary)] hover:text-white'
-                      }`}>Upgrade ₹{tier.price}</button>
+                      <button
+                        onClick={() => handleSubscribeClick(tier)}
+                        className={`mt-auto w-full py-2 rounded-lg text-xs font-semibold transition-all ${tier.plan === 'monthly'
+                            ? 'bg-[var(--primary)] text-white hover:opacity-90'
+                            : 'bg-[var(--surface-light)] text-[var(--foreground)] hover:bg-[var(--primary)] hover:text-white'
+                          }`}
+                      >
+                        Subscribe ₹{tier.price}
+                      </button>
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center gap-3">
+
+                {/* Features */}
+                <div className="grid grid-cols-2 gap-2 text-left text-xs text-[var(--muted)] mb-6">
+                  <div className="flex items-center gap-2">• Random matching</div>
+                  <div className="flex items-center gap-2">• 5 room types</div>
+                  <div className="flex items-center gap-2">• Fun aliases</div>
+                  <div className="flex items-center gap-2">• Mutual reveal option</div>
+                  <div className="flex items-center gap-2">• Report & block</div>
+                  <div className="flex items-center gap-2">• College-verified safe space</div>
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3 mb-4">
                   <div className="flex-1 h-px bg-[var(--border)]" />
                   <span className="text-xs text-[var(--muted)]">or use a coupon</span>
                   <div className="flex-1 h-px bg-[var(--border)]" />
                 </div>
+
+                {/* Coupon input */}
                 <div className="flex gap-2 max-w-sm mx-auto">
-                  <input type="text" value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }} placeholder="Enter coupon code" className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]" maxLength={30} />
-                  <button onClick={handleRedeemCoupon} disabled={couponLoading || !couponCode.trim()} className="btn-primary text-sm px-4 py-2 disabled:opacity-50">{couponLoading ? '...' : 'Redeem'}</button>
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                    placeholder="Enter coupon code"
+                    className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
+                    maxLength={30}
+                  />
+                  <button
+                    onClick={handleRedeemCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="btn-primary text-sm px-4 py-2 disabled:opacity-50"
+                  >
+                    {couponLoading ? '...' : 'Redeem'}
+                  </button>
                 </div>
-                {couponError && <p className="text-[var(--error)] text-xs text-center">{couponError}</p>}
+                {couponError && <p className="text-[var(--error)] text-xs mt-2">{couponError}</p>}
+                <p className="text-[10px] text-[var(--muted)] mt-3">
+                  Get coupon codes from campus events, club activities, or friends!
+                </p>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Queuing — Premium animation */}
-        {status === 'queuing' && (
-          <div className="card p-10 text-center scale-in" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
-            <div className="relative w-24 h-24 mx-auto mb-8 matching-pulse">
-              {/* Outer ring */}
-              <div className="absolute inset-0 rounded-full" style={{ border: '3px solid rgba(124,58,237,0.15)' }} />
-              {/* Spinning gradient ring */}
-              <div className="absolute inset-0 rounded-full animate-spin" style={{
-                border: '3px solid transparent',
-                borderTopColor: 'var(--primary)',
-                borderRightColor: 'var(--accent)',
-                animationDuration: '1.5s',
-              }} />
-              {/* Pulse glow */}
-              <div className="absolute inset-2 rounded-full" style={{
-                background: 'radial-gradient(circle, rgba(124,58,237,0.15), transparent)',
-                animation: 'pulseGlow 2s ease-in-out infinite',
-              }} />
-              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[var(--primary-light)]">Searching</span>
             </div>
-            <h2 className="text-xl font-extrabold text-[var(--foreground)] mb-2">Finding your match...</h2>
-            <p className="text-[var(--muted)] text-sm mb-1">
-              You are <span className="font-mono font-bold gradient-text">{alias}</span>
-            </p>
-            <p className="text-[var(--muted)] text-xs mb-6">
-              {ROOM_TYPES.find(r => r.id === selectedType)?.emoji} {ROOM_TYPES.find(r => r.id === selectedType)?.label}
-            </p>
-            {queueEstimate !== null && (
-              <p className="text-[11px] text-[var(--muted)] mb-2">Typical wait now: ~{queueEstimate} min</p>
-            )}
-            <div className="text-4xl font-mono font-bold text-[var(--foreground)] mb-8 tracking-wider">{formatTime(queueSeconds)}</div>
-            <button
-              onClick={handleLeaveQueue}
-              className="text-sm text-[var(--muted)] hover:text-[var(--error)] transition-all duration-200 px-6 py-2 rounded-xl hover:bg-[var(--error)]/10 btn-ripple"
-            >
-              Cancel & Leave Queue
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* Matched — Celebration */}
-        {status === 'matched' && (
-          <div className="card p-10 text-center scale-in" style={{
-            background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(34,197,94,0.08))',
-            border: '2px solid rgba(34,197,94,0.3)',
-            boxShadow: '0 0 40px rgba(34,197,94,0.15)',
-          }}>
-            <div className="text-2xl font-extrabold text-[var(--success)] mb-4" style={{ animation: 'float 1s ease-in-out infinite' }}>Match Found!</div>
-            <h2 className="text-2xl font-extrabold mb-2">
-              <span className="gradient-text">Match Found!</span>
-            </h2>
-            <p className="text-[var(--muted)] text-sm">Entering your chat room...</p>
-            <div className="mt-4 w-16 h-1 mx-auto rounded-full overflow-hidden bg-[var(--surface-light)]">
-              <div className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--success)]" style={{ animation: 'shimmer 0.8s ease-in-out' }} />
+          {/* UPI Payment Modal */}
+          {showPayModal && selectedPlan && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !txnLoading && setShowPayModal(false)}>
+              <div className="card p-6 max-w-md w-full space-y-5" onClick={e => e.stopPropagation()}>
+                {!paySuccess ? (
+                  <>
+                    <div className="text-center">
+                      <div className="w-14 h-14 mx-auto rounded-2xl bg-[var(--primary)]/15 flex items-center justify-center text-sm font-bold text-[var(--foreground)] mb-2">Pay</div>
+                      <h3 className="text-lg font-bold text-[var(--foreground)]">
+                        Pay ₹{selectedPlan.price} for {selectedPlan.label} Plan
+                      </h3>
+                      <p className="text-xs text-[var(--muted)] mt-1">
+                        {selectedPlan.durationDays} days of Anonymous Chat access
+                      </p>
+                    </div>
+
+                    {/* QR Code */}
+                    <div className="flex justify-center mb-4">
+                      <div className="p-3 bg-white rounded-2xl shadow-lg">
+                        <Image
+                          src={getQrImageUrl(selectedPlan.price)}
+                          alt="UPI QR Code"
+                          width={200}
+                          height={200}
+                          className="rounded-xl"
+                          unoptimized
+                          style={{ imageRendering: 'pixelated' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="text-center mb-4">
+                      <p className="text-xs text-[var(--muted)] mb-1">Scan with any UPI app to pay</p>
+                      <div className="flex items-center justify-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold">UPI</span>
+                        <span className="text-[10px] text-[var(--muted)]">GPay • PhonePe • Paytm • BHIM • Any UPI app</span>
+                      </div>
+                      <div className="mt-2 px-3 py-1.5 rounded-lg bg-[var(--surface-light)] border border-[var(--border)] inline-flex items-center gap-2">
+                        <div>
+                          <p className="text-[10px] text-[var(--muted)]">UPI ID</p>
+                          <p className="text-xs font-mono font-semibold text-[var(--foreground)]">{UPI_CONFIG.upiId}</p>
+                        </div>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(UPI_CONFIG.upiId)}
+                          className="text-xs text-[var(--primary)] hover:underline"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      <a
+                        href={generateUpiLink(selectedPlan.price)}
+                        className="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-[var(--primary)] hover:underline"
+                      >
+                        Open UPI App Directly
+                      </a>
+                      <p className="text-[10px] text-[var(--muted)] mt-1 md:block hidden">
+                        On desktop: scan the QR code above with any UPI app on your phone, or open your bank&apos;s UPI interface and pay to the UPI ID shown.
+                      </p>
+                    </div>
+
+                    {/* Transaction ID input */}
+                    <div className="mb-3">
+                      <label className="text-xs text-[var(--foreground)] block mb-1 font-medium">
+                        Transaction / UTR ID <span className="text-[var(--error)]">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={txnId}
+                        onChange={e => { setTxnId(e.target.value); setTxnError(''); }}
+                        placeholder="Enter your UPI transaction ID after payment"
+                        className="w-full px-3 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]"
+                        maxLength={50}
+                      />
+                      {txnError && <p className="text-[var(--error)] text-xs mt-1">{txnError}</p>}
+                      <p className="text-[10px] text-[var(--muted)] mt-1">Find the 12-digit UTR/Reference number in your UPI app payment history</p>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowPayModal(false)}
+                        className="flex-1 py-2.5 rounded-lg text-sm text-[var(--muted)] border border-[var(--border)] hover:bg-[var(--surface-light)] transition-colors"
+                        disabled={txnLoading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSubmitPayment}
+                        disabled={txnLoading || txnId.trim().length < 4}
+                        className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-[var(--primary)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                      >
+                        {txnLoading ? 'Submitting...' : 'Submit Payment'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  /* Success state */
+                  <div className="text-center py-4">
+                    <div className="w-16 h-16 mx-auto rounded-2xl bg-green-500/15 flex items-center justify-center text-sm font-bold text-green-400 mb-4">Done</div>
+                    <h3 className="text-lg font-bold text-[var(--success)]">Payment Submitted!</h3>
+                    <p className="text-sm text-[var(--muted)] mt-2 mb-4">
+                      Your payment is being verified. You&apos;ll get access once the admin approves it (usually within a few hours).
+                    </p>
+                    <button
+                      onClick={() => { setShowPayModal(false); setStatus('pending-payment'); }}
+                      className="btn-primary text-sm px-6 py-2"
+                    >
+                      Got it
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Idle — Vibe Card Selection */}
+          {status === 'idle' && (
+            <div className="space-y-6">
+
+              {isFreeTrial && passInfo.expiresAt && !isOpenAccess && (
+                <div className="rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(20,184,166,0.06))', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-sm">
+                      <strong className="text-emerald-400">{trialGranted ? 'Free Trial Activated!' : 'Free Trial Active'}</strong>
+                      <span className="text-[var(--muted)]"> — {Math.max(0, Math.ceil((new Date(passInfo.expiresAt).getTime() - Date.now()) / 86400000))} days left</span>
+                    </span>
+                  </div>
+                  <span className="text-xs text-[var(--muted)]">
+                    Expires: {new Date(passInfo.expiresAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                  </span>
+                </div>
+              )}
+
+              {passInfo.plan && !isFreeTrial && !isOpenAccess && (
+                <div className="card p-3 flex items-center justify-between">
+                  <span className="text-xs text-[var(--muted)]">
+                    {passInfo.isPro ? 'Pro Subscriber — Anonymous Chat included free!' : `${passInfo.plan.charAt(0).toUpperCase() + passInfo.plan.slice(1)} Pass Active`}
+                  </span>
+                  <span className="text-xs text-[var(--muted)]">
+                    {passInfo.isPro ? 'Unlimited Access' : `Expires: ${passInfo.expiresAt ? new Date(passInfo.expiresAt).toLocaleDateString('en-IN') : '—'}`}
+                  </span>
+                </div>
+              )}
+
+              {/* CHOOSE YOUR VIBE heading */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)] flex items-center gap-2">
+                  <span className="w-1 h-5 rounded-full bg-gradient-to-b from-[var(--primary)] to-[var(--accent)]" />
+                  CHOOSE YOUR VIBE
+                </h2>
+                <span className="text-[10px] text-[var(--muted)]">Tap to select · then find match</span>
+              </div>
+
+              {/* Vibe Tiles — Horizontal compact layout */}
+              <div className="flex flex-col gap-2">
+
+                {/* Placement Talk */}
+                <button
+                  onClick={() => setSelectedType('career')}
+                  className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                  style={{
+                    animationDelay: '0ms',
+                    background: selectedType === 'career' ? 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(234,88,12,0.06))' : 'var(--surface-card, #141414)',
+                    border: selectedType === 'career' ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border)',
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center text-base shrink-0">📋</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[13px] font-bold text-white">Placement Talk</h3>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400">🔥 Hot</span>
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)] truncate">Offers, anxiety, intern struggles — all of it.</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400">Instant</span>
+                    {(stats?.queueByType?.career ?? 0) > 0 && (
+                      <span className="text-[9px] text-[var(--muted)]">{stats!.queueByType.career} waiting</span>
+                    )}
+                  </div>
+                  {selectedType === 'career' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
+                </button>
+
+                {/* College Gossip */}
+                <button
+                  onClick={() => setSelectedType('confession')}
+                  className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                  style={{
+                    animationDelay: '60ms',
+                    background: selectedType === 'confession' ? 'linear-gradient(135deg, rgba(236,72,153,0.10), rgba(239,68,68,0.06))' : 'var(--surface-card, #141414)',
+                    border: selectedType === 'confession' ? '1px solid rgba(236,72,153,0.4)' : '1px solid var(--border)',
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-pink-500/15 flex items-center justify-center text-base shrink-0">📢</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[13px] font-bold text-white">College Gossip</h3>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-400">Trending</span>
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)] truncate">What&apos;s happening on campus? Spill it.</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400">Instant</span>
+                    {(stats?.queueByType?.confession ?? 0) > 0 && (
+                      <span className="text-[9px] text-[var(--muted)]">{stats!.queueByType.confession} waiting</span>
+                    )}
+                  </div>
+                  {selectedType === 'confession' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
+                </button>
+
+                {/* Dil Ki Baat */}
+                <button
+                  onClick={() => setSelectedType('crush')}
+                  className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                  style={{
+                    animationDelay: '120ms',
+                    background: selectedType === 'crush' ? 'linear-gradient(135deg, rgba(239,68,68,0.10), rgba(236,72,153,0.06))' : 'var(--surface-card, #141414)',
+                    border: selectedType === 'crush' ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--border)',
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-base shrink-0">💗</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[13px] font-bold text-white">Dil Ki Baat</h3>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400">
+                        {(stats?.queueByType?.crush ?? 0) > 0 ? `${stats!.queueByType.crush} waiting` : 'Be first'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)] truncate">Crush, feelings, advice — anonymous love corner.</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)]">~1 min</span>
+                  </div>
+                  {selectedType === 'crush' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
+                </button>
+
+                {/* No Filter */}
+                <button
+                  onClick={() => setSelectedType('radar')}
+                  className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                  style={{
+                    animationDelay: '180ms',
+                    background: selectedType === 'radar' ? 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(59,130,246,0.06))' : 'var(--surface-card, #141414)',
+                    border: selectedType === 'radar' ? '1px solid rgba(16,185,129,0.4)' : '1px solid var(--border)',
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center text-base shrink-0">🎭</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[13px] font-bold text-white">No Filter</h3>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
+                        {(stats?.queueByType?.radar ?? 0) > 0 ? `${stats!.queueByType.radar} in` : 'Be first'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)] truncate">Say what you actually think. No judgement.</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)]">~2 min</span>
+                  </div>
+                  {selectedType === 'radar' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
+                </button>
+
+                {/* 3 AM Thoughts */}
+                <button
+                  onClick={() => setSelectedType('night_owl')}
+                  className="relative flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-200 stagger-card"
+                  style={{
+                    animationDelay: '240ms',
+                    background: selectedType === 'night_owl' ? 'linear-gradient(135deg, rgba(139,92,246,0.10), rgba(99,102,241,0.06))' : 'var(--surface-card, #141414)',
+                    border: selectedType === 'night_owl' ? '1px solid rgba(139,92,246,0.4)' : '1px solid var(--border)',
+                    opacity: new Date().getHours() >= 23 || new Date().getHours() < 4 ? 1 : 0.6,
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-base shrink-0">🌙</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[13px] font-bold text-white">3 AM Thoughts</h3>
+                      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)]">
+                        {new Date().getHours() >= 23 || new Date().getHours() < 4 ? '● Live' : 'Opens 11PM'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--muted)] truncate">Can&apos;t sleep? Neither can they. Late night only.</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[var(--surface-light)] text-[var(--muted)] font-semibold">11PM-4AM</span>
+                  </div>
+                  {selectedType === 'night_owl' && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[10px]">✓</span></div>}
+                </button>
+              </div>
+
+              {/* Find a Random Match CTA */}
+              <button
+                onClick={handleJoinQueue}
+                className="w-full py-4 rounded-2xl text-white font-bold text-base transition-all duration-200 hover:shadow-lg active:scale-[0.98] btn-ripple"
+                style={{
+                  background: 'linear-gradient(135deg, #7c3aed, #6d28d9, #a855f7)',
+                  backgroundSize: '200% 200%',
+                  animation: 'gradientShift 3s ease infinite',
+                  boxShadow: '0 4px 30px rgba(124, 58, 237, 0.5)',
+                }}
+              >
+                Find a Random Match
+              </button>
+
+              {/* Footer info */}
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] text-[var(--muted)]">
+                  Estimated wait: ~{queueEstimate || 1} min · Matching with a fellow student
+                </p>
+                <p className="text-[10px] text-[var(--muted)]">
+                  Be respectful · College email on file
+                </p>
+              </div>
+
+              {/* Upgrade Plans — shown during free trial */}
+              {isFreeTrial && !isOpenAccess && (
+                <div className="space-y-4 mt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                    <span className="text-xs text-[var(--muted)] font-medium">Upgrade for unlimited access</span>
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {ANON_PRICING.map(tier => (
+                      <div key={tier.plan} className={`p-4 rounded-xl border-2 transition-all flex flex-col ${tier.plan === 'monthly' ? 'border-[var(--primary)] bg-[var(--primary)]/5 sm:scale-105' : 'border-[var(--border)]'
+                        }`}>
+                        {tier.plan === 'monthly' && <div className="text-[10px] font-bold text-[var(--primary)] mb-1">BEST VALUE</div>}
+                        <div className="text-sm font-semibold text-[var(--foreground)]">{tier.label}</div>
+                        <div className="text-2xl font-bold text-[var(--primary)] mt-1">₹{tier.price}</div>
+                        <div className="text-[10px] text-[var(--muted)] mb-3">{tier.durationDays} days</div>
+                        <button onClick={() => handleSubscribeClick(tier)} className={`mt-auto w-full py-2 rounded-lg text-xs font-semibold transition-all ${tier.plan === 'monthly' ? 'bg-[var(--primary)] text-white hover:opacity-90' : 'bg-[var(--surface-light)] text-[var(--foreground)] hover:bg-[var(--primary)] hover:text-white'
+                          }`}>Upgrade ₹{tier.price}</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                    <span className="text-xs text-[var(--muted)]">or use a coupon</span>
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                  </div>
+                  <div className="flex gap-2 max-w-sm mx-auto">
+                    <input type="text" value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }} placeholder="Enter coupon code" className="flex-1 px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] text-sm placeholder:text-[var(--muted)]" maxLength={30} />
+                    <button onClick={handleRedeemCoupon} disabled={couponLoading || !couponCode.trim()} className="btn-primary text-sm px-4 py-2 disabled:opacity-50">{couponLoading ? '...' : 'Redeem'}</button>
+                  </div>
+                  {couponError && <p className="text-[var(--error)] text-xs text-center">{couponError}</p>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Queuing — Premium animation */}
+          {status === 'queuing' && (
+            <div className="card p-10 text-center scale-in" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
+              <div className="relative w-24 h-24 mx-auto mb-8 matching-pulse">
+                {/* Outer ring */}
+                <div className="absolute inset-0 rounded-full" style={{ border: '3px solid rgba(124,58,237,0.15)' }} />
+                {/* Spinning gradient ring */}
+                <div className="absolute inset-0 rounded-full animate-spin" style={{
+                  border: '3px solid transparent',
+                  borderTopColor: 'var(--primary)',
+                  borderRightColor: 'var(--accent)',
+                  animationDuration: '1.5s',
+                }} />
+                {/* Pulse glow */}
+                <div className="absolute inset-2 rounded-full" style={{
+                  background: 'radial-gradient(circle, rgba(124,58,237,0.15), transparent)',
+                  animation: 'pulseGlow 2s ease-in-out infinite',
+                }} />
+                <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[var(--primary-light)]">Searching</span>
+              </div>
+              <h2 className="text-xl font-extrabold text-[var(--foreground)] mb-2">Finding your match...</h2>
+              <p className="text-[var(--muted)] text-sm mb-1">
+                You are <span className="font-mono font-bold gradient-text">{alias}</span>
+              </p>
+              <p className="text-[var(--muted)] text-xs mb-6">
+                {ROOM_TYPES.find(r => r.id === selectedType)?.emoji} {ROOM_TYPES.find(r => r.id === selectedType)?.label}
+              </p>
+              {queueEstimate !== null && (
+                <p className="text-[11px] text-[var(--muted)] mb-2">Typical wait now: ~{queueEstimate} min</p>
+              )}
+              <div className="text-4xl font-mono font-bold text-[var(--foreground)] mb-8 tracking-wider">{formatTime(queueSeconds)}</div>
+              <button
+                onClick={handleLeaveQueue}
+                className="text-sm text-[var(--muted)] hover:text-[var(--error)] transition-all duration-200 px-6 py-2 rounded-xl hover:bg-[var(--error)]/10 btn-ripple"
+              >
+                Cancel & Leave Queue
+              </button>
+            </div>
+          )}
+
+          {/* Matched — Celebration */}
+          {status === 'matched' && (
+            <div className="card p-10 text-center scale-in" style={{
+              background: 'linear-gradient(135deg, rgba(124,58,237,0.08), rgba(34,197,94,0.08))',
+              border: '2px solid rgba(34,197,94,0.3)',
+              boxShadow: '0 0 40px rgba(34,197,94,0.15)',
+            }}>
+              <div className="text-2xl font-extrabold text-[var(--success)] mb-4" style={{ animation: 'float 1s ease-in-out infinite' }}>Match Found!</div>
+              <h2 className="text-2xl font-extrabold mb-2">
+                <span className="gradient-text">Match Found!</span>
+              </h2>
+              <p className="text-[var(--muted)] text-sm">Entering your chat room...</p>
+              <div className="mt-4 w-16 h-1 mx-auto rounded-full overflow-hidden bg-[var(--surface-light)]">
+                <div className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--success)]" style={{ animation: 'shimmer 0.8s ease-in-out' }} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── AI Offer Popup (after 2 min in queue) ── */}
@@ -968,7 +971,7 @@ export default function AnonLobbyPage() {
               <p className="text-[var(--muted)] text-sm mb-1">No match yet in your <span className="font-bold text-[var(--primary-light)]">{ROOM_TYPES.find(r => r.id === selectedType)?.label}</span> room.</p>
               <p className="text-[var(--muted)] text-xs mb-5">Want to chat with Arya in the meantime? Queue keeps running! 🔍</p>
               <button
-                onClick={() => { setShowAiOffer(false); setAiChatActive(true); }}
+                onClick={() => { setShowAiOffer(false); aiChatActiveRef.current = true; setAiChatActive(true); }}
                 className="w-full py-3 rounded-2xl font-bold text-white mb-3 btn-ripple"
                 style={{ background: 'linear-gradient(135deg, var(--primary), var(--accent))' }}
               >
@@ -998,7 +1001,7 @@ export default function AnonLobbyPage() {
                 </p>
               </div>
               <button
-                onClick={() => setAiChatActive(false)}
+                onClick={() => { aiChatActiveRef.current = false; setAiChatActive(false); }}
                 className="text-[var(--muted)] hover:text-white transition-colors text-xl px-2"
               >×</button>
             </div>
