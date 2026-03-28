@@ -801,16 +801,30 @@ export default function AryaChatPage() {
               >
                 {[
                   { icon: Share2, label: 'Share App', color: 'text-white', action: () => {
-                    window.open(`https://wa.me/?text=${encodeURIComponent(`Hey! Chat with ${companionName} AI on MitrrAi \nhttps://mitrrai.vercel.app`)}`, '_blank');
                     setShowHeaderMenu(false);
+                    const shareText = `Hey! Chat with ${companionName} AI on MitrrAi \nhttps://mitrrai.in`;
+                    if (navigator.share) {
+                      navigator.share({ title: 'MitrrAi', text: shareText }).catch(() => {});
+                    } else {
+                      window.location.href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+                    }
                   }},
-                  { icon: Star, label: 'Rate Us', color: 'text-white', action: () => { router.push('/feedback'); setShowHeaderMenu(false); }},
+                  { icon: Star, label: 'Rate Us', color: 'text-white', action: () => {
+                    setShowHeaderMenu(false);
+                    router.push('/feedback');
+                  }},
                   { icon: MessageCircle, label: 'Contact Us', color: 'text-white', action: () => {
-                    window.open('https://wa.me/917061001946?text=Hi%2C%20I%20have%20a%20query%20about%20MitrrAi', '_blank');
                     setShowHeaderMenu(false);
+                    window.location.href = 'https://wa.me/917061001946?text=Hi%2C%20I%20have%20a%20query%20about%20MitrrAi';
                   }},
-                  { icon: Crown, label: 'Subscription', color: 'text-white', action: () => { router.push('/subscription'); setShowHeaderMenu(false); }},
-                  { icon: Trash2, label: 'Clear Chat', color: 'text-red-400', action: () => { setShowHeaderMenu(false); setClearConfirm(true); }},
+                  { icon: Crown, label: 'Subscription', color: 'text-white', action: () => {
+                    setShowHeaderMenu(false);
+                    router.push('/subscription');
+                  }},
+                  { icon: Trash2, label: 'Clear Chat', color: 'text-red-400', action: () => {
+                    setShowHeaderMenu(false);
+                    setTimeout(() => setClearConfirm(true), 100);
+                  }},
                 ].map(item => (
                   <button key={item.label} onClick={item.action}
                     className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium ${item.color} active:bg-white/10 transition-colors`}
@@ -929,8 +943,8 @@ export default function AryaChatPage() {
 
       {/* ─── Clear Chat Confirmation ─── */}
       {clearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setClearConfirm(false)}>
-          <div className="absolute inset-0 bg-black/60" />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={() => setClearConfirm(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative w-72 rounded-2xl p-5 space-y-4" style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }} onClick={e => e.stopPropagation()}>
             <div className="text-center">
               <div className="w-12 h-12 mx-auto rounded-full bg-red-500/15 flex items-center justify-center mb-3">
