@@ -101,6 +101,7 @@ export default function CampusFeedPage() {
   const [pendingLat, setPendingLat] = useState<number | null>(null);
   const [pendingLng, setPendingLng] = useState<number | null>(null);
   const [locLoading, setLocLoading] = useState(false);
+  const [locError, setLocError] = useState(false);
   const [showLocUpdateBanner, setShowLocUpdateBanner] = useState(false);
   const [newDetectedLat, setNewDetectedLat] = useState<number | null>(null);
   const [newDetectedLng, setNewDetectedLng] = useState<number | null>(null);
@@ -140,7 +141,7 @@ export default function CampusFeedPage() {
         navigator.permissions.query({ name: 'geolocation' }).then((r) => {
           if (r.state === 'denied') {
             setLocationGranted(false);
-            setTimeout(() => { const h = document.getElementById('loc-blocked-hint'); if (h) h.style.display = 'block'; }, 300);
+            setLocError(true);
           } else {
             setLocationGranted(null); // show Allow Location screen
           }
@@ -474,19 +475,10 @@ export default function CampusFeedPage() {
         </div>
       )}
 
-      {/* ── Location Gate Overlay (null = loading, false = denied/not-yet-asked) ── */}
+      {/* ── Location Gate Overlay ── */}
       {locationGranted !== true && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center px-6" style={{ background: 'var(--background)' }}>
-          {locationGranted === null ? (
-            /* Loading state */
-            <div className="text-center space-y-3 px-6">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-green-500/15 flex items-center justify-center animate-pulse">
-                <MapPin size={28} className="text-green-400" />
-              </div>
-              <p className="text-sm text-[var(--muted)]">Checking location access...</p>
-            </div>
-          ) : (
-            /* Grant location screen */
+            {/* Grant location screen */}
             <div className="card p-8 text-center space-y-5 max-w-sm w-full">
               <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center" style={{ animation: 'float 4s ease-in-out infinite' }}>
                 <MapPin size={36} className="text-green-400" />
@@ -499,21 +491,35 @@ export default function CampusFeedPage() {
               </div>
               <div className="space-y-3">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setLocLoading(true);
+                    setLocError(false);
+
+                    // Check if permission is already denied before trying
+                    if (navigator.permissions) {
+                      try {
+                        const perm = await navigator.permissions.query({ name: 'geolocation' });
+                        if (perm.state === 'denied') {
+                          setLocLoading(false);
+                          setLocError(true);
+                          return;
+                        }
+                      } catch { /* ignore — proceed with getCurrentPosition */ }
+                    }
+
                     navigator.geolocation.getCurrentPosition(
                       (pos) => {
                         setLocLoading(false);
+                        setLocError(false);
                         setPendingLat(pos.coords.latitude);
                         setPendingLng(pos.coords.longitude);
                         setShowMapModal(true);
                       },
                       (_err) => {
                         setLocLoading(false);
-                        const hint = document.getElementById('loc-blocked-hint');
-                        if (hint) hint.style.display = 'block';
+                        setLocError(true);
                       },
-                      { timeout: 10000 }
+                      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
                     );
                   }}
                   disabled={locLoading}
@@ -529,15 +535,26 @@ export default function CampusFeedPage() {
                 >
                   Skip for now →
                 </button>
-                <p id="loc-blocked-hint" className="text-[11px] text-amber-400 text-center leading-relaxed" style={{ display: 'none' }}>
-                  📍 Location blocked. Open <strong>Chrome → ⋮ Menu → Settings → Site Settings → Location</strong> → find this site → tap Allow → come back &amp; refresh.
-                </p>
+                {locError && (
+                  <div className="p-3 rounded-xl text-center space-y-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                    <p className="text-xs text-amber-400 font-semibold">📍 Location access is blocked</p>
+                    <p className="text-[11px] text-amber-400/80 leading-relaxed">
+                      Open <strong className="text-amber-300">Chrome → ⋮ Menu → Settings → Site Settings → Location</strong> → find this site → tap <strong className="text-amber-300">Allow</strong> → come back &amp; refresh.
+                    </p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="mt-1 px-4 py-1.5 rounded-lg text-[11px] font-semibold text-amber-300 transition-colors"
+                      style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}
+                    >
+                      🔄 I&apos;ve enabled it — Refresh
+                    </button>
+                  </div>
+                )}
                 <p className="text-[10px] text-[var(--muted)] leading-relaxed">
                   Your location is only used to show nearby campus posts. We don&apos;t track or store your movement.
                 </p>
               </div>
             </div>
-          )}
         </div>
       )}
 
