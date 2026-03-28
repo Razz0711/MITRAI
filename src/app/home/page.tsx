@@ -101,6 +101,9 @@ export default function CampusFeedPage() {
   const [pendingLat, setPendingLat] = useState<number | null>(null);
   const [pendingLng, setPendingLng] = useState<number | null>(null);
   const [locLoading, setLocLoading] = useState(false);
+  const [showLocUpdateBanner, setShowLocUpdateBanner] = useState(false);
+  const [newDetectedLat, setNewDetectedLat] = useState<number | null>(null);
+  const [newDetectedLng, setNewDetectedLng] = useState<number | null>(null);
 
   // Filters (viewer side)
   const [filterCat, setFilterCat] = useState('all');
@@ -117,58 +120,59 @@ export default function CampusFeedPage() {
 
   const feedRef = useRef<HTMLDivElement>(null);
 
-  // Geolocation — mandatory for feed
+  // ── Smart Location Logic ──────────────────────────────────────────────
+  // On first visit: show Allow Location screen
+  // On repeat visits: silently get GPS, compare with saved
+  //   < 500m away → auto-grant (no prompt)
+  //   > 500m away → subtle banner "Location changed?"
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocationGranted(false);
-      return;
-    }
-    // First check existing permission state (avoid prompting if already decided)
-    if (navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        if (result.state === 'denied') {
-          // Already denied — don't try, just show the gate with hint visible
-          setLocationGranted(false);
-          // Show blocked hint immediately if element exists
-          setTimeout(() => {
-            const hint = document.getElementById('loc-blocked-hint');
-            if (hint) hint.style.display = 'block';
-          }, 300);
-          return;
-        }
-        // 'granted' or 'prompt' — try to get location
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setUserLat(pos.coords.latitude);
-            setUserLng(pos.coords.longitude);
-            setUserLocation('Campus');
-            setLocationGranted(true);
-          },
-          () => { setLocationGranted(false); }
-        );
-      }).catch(() => {
-        // permissions API not available, fallback to direct call
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setUserLat(pos.coords.latitude);
-            setUserLng(pos.coords.longitude);
-            setUserLocation('Campus');
-            setLocationGranted(true);
-          },
-          () => { setLocationGranted(false); }
-        );
-      });
-    } else {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserLat(pos.coords.latitude);
-          setUserLng(pos.coords.longitude);
-          setUserLocation('Campus');
-          setLocationGranted(true);
-        },
+    if (!navigator.geolocation) { setLocationGranted(false); return; }
+
+    const saved = localStorage.getItem('campus_loc');
+
+    if (!saved) {
+      // First time — check browser permission state
+      const tryGet = () => navigator.geolocation.getCurrentPosition(
+        () => { /* don't auto-grant — wait for user to tap Allow */ setLocationGranted(null); },
         () => { setLocationGranted(false); }
       );
+      if (navigator.permissions) {
+        navigator.permissions.query({ name: 'geolocation' }).then((r) => {
+          if (r.state === 'denied') {
+            setLocationGranted(false);
+            setTimeout(() => { const h = document.getElementById('loc-blocked-hint'); if (h) h.style.display = 'block'; }, 300);
+          } else {
+            setLocationGranted(null); // show Allow Location screen
+          }
+        }).catch(() => setLocationGranted(null));
+      } else {
+        tryGet();
+      }
+      return;
     }
+
+    // Repeat visit — load saved location immediately
+    const { lat: savedLat, lng: savedLng } = JSON.parse(saved);
+    setUserLat(savedLat);
+    setUserLng(savedLng);
+    setUserLocation('Campus');
+    setLocationGranted(true);
+
+    // Silently check current GPS in background
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const dist = haversineDistance(savedLat, savedLng, pos.coords.latitude, pos.coords.longitude);
+        if (dist > 500) {
+          // Moved > 500m — show subtle update banner
+          setNewDetectedLat(pos.coords.latitude);
+          setNewDetectedLng(pos.coords.longitude);
+          setShowLocUpdateBanner(true);
+        }
+        // < 500m — stay quiet, user is same campus
+      },
+      () => { /* silent fail — keep using saved location */ },
+      { timeout: 8000, maximumAge: 60000 }
+    );
   }, []);
 
   // Fetch student info from profiles table
@@ -445,37 +449,55 @@ export default function CampusFeedPage() {
   return (
     <div className="min-h-screen pb-4">
 
+
       {/* ── Map Confirm Modal ── */}
       {showMapModal && pendingLat && pendingLng && (
-        <div className="fixed inset-0 z-[99] flex flex-col" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="fixed inset-0 z-[99] flex flex-col" style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)' }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}>
             <div>
-              <h2 className="text-white font-bold text-base">Your Location</h2>
-              <p className="text-[11px] text-white/50">Auto-detected · Tap confirm to use this</p>
+              <h2 className="text-white font-bold text-base">📍 Your Location Detected</h2>
+              <p className="text-[11px] text-white/50">Verify your location below</p>
             </div>
             <button onClick={() => setShowMapModal(false)} className="text-white/50 hover:text-white text-2xl px-2">×</button>
           </div>
 
-          {/* Map */}
-          <div className="flex-1 relative">
-            <iframe
-              title="location-map"
-              width="100%"
-              height="100%"
-              style={{ border: 'none' }}
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${pendingLng - 0.005},${pendingLat - 0.005},${pendingLng + 0.005},${pendingLat + 0.005}&layer=mapnik&marker=${pendingLat},${pendingLng}`}
-              allowFullScreen
-            />
-            {/* Center pin overlay */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none">
-              <div className="text-3xl drop-shadow-lg">📍</div>
+          {/* Static Map Image — no iframe, no CSP issues */}
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl overflow-hidden relative" style={{ border: '2px solid rgba(34,197,94,0.3)' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://staticmap.openstreetmap.de/staticmap.php?center=${pendingLat},${pendingLng}&zoom=16&size=400x280&maptype=mapnik&markers=${pendingLat},${pendingLng},red-pushpin`}
+                alt="Your detected location on map"
+                className="w-full object-cover"
+                style={{ minHeight: 200 }}
+                onError={(e) => {
+                  // Fallback if staticmap unavailable
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+              {/* Pin overlay */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="text-4xl drop-shadow-2xl" style={{ marginTop: '-20px' }}>📍</div>
+              </div>
             </div>
           </div>
 
+          {/* Open in native maps */}
+          <div className="text-center pb-2">
+            <a
+              href={`https://maps.google.com/?q=${pendingLat},${pendingLng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-blue-400 underline"
+            >
+              Open in Google Maps ↗
+            </a>
+          </div>
+
           {/* Coords + Confirm */}
-          <div className="px-4 py-4 border-t border-white/10" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
+          <div className="px-4 py-4 border-t border-white/10" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
             <p className="text-[11px] text-white/40 text-center mb-3">
-              {pendingLat.toFixed(5)}, {pendingLng.toFixed(5)}
+              {pendingLat.toFixed(5)}°N, {pendingLng.toFixed(5)}°E
             </p>
             <button
               onClick={() => {
@@ -484,19 +506,45 @@ export default function CampusFeedPage() {
                 setUserLocation('Campus');
                 setLocationGranted(true);
                 setShowMapModal(false);
+                // Save to localStorage so we don't ask again
+                localStorage.setItem('campus_loc', JSON.stringify({ lat: pendingLat, lng: pendingLng }));
               }}
-              className="w-full py-3 rounded-2xl font-bold text-white text-sm"
+              className="w-full py-3 rounded-2xl font-bold text-white text-sm mb-2"
               style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 20px rgba(34,197,94,0.3)' }}
             >
-              ✅ Confirm Location
+              ✅ Yes, this is my location
             </button>
             <button
               onClick={() => setShowMapModal(false)}
-              className="w-full py-2 text-xs text-white/40 hover:text-white/70 transition-colors mt-1"
+              className="w-full py-2 text-xs text-white/40 hover:text-white/70 transition-colors"
             >
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── 500m Location Update Banner ── */}
+      {showLocUpdateBanner && newDetectedLat && newDetectedLng && (
+        <div className="fixed bottom-20 left-4 right-4 z-50 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-xl" style={{ background: 'rgba(30,30,40,0.95)', border: '1px solid rgba(34,197,94,0.3)', backdropFilter: 'blur(16px)' }}>
+          <span className="text-xl">📍</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white leading-tight">You&apos;ve moved!</p>
+            <p className="text-[11px] text-white/50">New location detected. Update?</p>
+          </div>
+          <button
+            onClick={() => {
+              setUserLat(newDetectedLat);
+              setUserLng(newDetectedLng);
+              localStorage.setItem('campus_loc', JSON.stringify({ lat: newDetectedLat, lng: newDetectedLng }));
+              setShowLocUpdateBanner(false);
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold text-white flex-shrink-0"
+            style={{ background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)' }}
+          >
+            Update
+          </button>
+          <button onClick={() => setShowLocUpdateBanner(false)} className="text-white/40 hover:text-white text-lg px-1">×</button>
         </div>
       )}
 
