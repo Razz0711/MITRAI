@@ -782,62 +782,69 @@ export default function AryaChatPage() {
           <Phone size={18} />
         </button>
         {/* Menu */}
-        <div className="relative">
-          <button onClick={() => setShowHeaderMenu(!showHeaderMenu)} className="p-2 rounded-xl text-white/60 hover:text-white transition-colors">
-            <MoreVertical size={18} />
-          </button>
-          {showHeaderMenu && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowHeaderMenu(false)} />
-              <div
-                className="absolute right-0 z-50 w-52 rounded-2xl py-2 shadow-2xl"
-                style={{
-                  top: 'calc(100% + 8px)',
-                  background: '#1e1e2e',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-                }}
-                onClick={e => e.stopPropagation()}
-              >
-                {[
-                  { icon: Share2, label: 'Share App', color: 'text-white', action: () => {
-                    setShowHeaderMenu(false);
-                    const shareText = `Hey! Chat with ${companionName} AI on MitrrAi \nhttps://mitrrai.in`;
-                    if (navigator.share) {
-                      navigator.share({ title: 'MitrrAi', text: shareText }).catch(() => {});
-                    } else {
-                      window.location.href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
-                    }
-                  }},
-                  { icon: Star, label: 'Rate Us', color: 'text-white', action: () => {
-                    setShowHeaderMenu(false);
-                    router.push('/feedback');
-                  }},
-                  { icon: MessageCircle, label: 'Contact Us', color: 'text-white', action: () => {
-                    setShowHeaderMenu(false);
-                    window.location.href = 'https://wa.me/917061001946?text=Hi%2C%20I%20have%20a%20query%20about%20MitrrAi';
-                  }},
-                  { icon: Crown, label: 'Subscription', color: 'text-white', action: () => {
-                    setShowHeaderMenu(false);
-                    router.push('/subscription');
-                  }},
-                  { icon: Trash2, label: 'Clear Chat', color: 'text-red-400', action: () => {
-                    setShowHeaderMenu(false);
-                    setTimeout(() => setClearConfirm(true), 100);
-                  }},
-                ].map(item => (
-                  <button key={item.label} onClick={item.action}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium ${item.color} active:bg-white/10 transition-colors`}
-                    style={{ WebkitTapHighlightColor: 'transparent' }}
-                  >
-                    <item.icon size={16} className="opacity-70 shrink-0" /> {item.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        <button onClick={() => setShowHeaderMenu(!showHeaderMenu)} className="p-2 rounded-xl text-white/60 hover:text-white transition-colors">
+          <MoreVertical size={18} />
+        </button>
       </div>
+
+      {/* ─── Header Menu (fixed overlay — outside header to avoid stacking issues) ─── */}
+      {showHeaderMenu && (
+        <>
+          {/* Backdrop — closes menu on tap */}
+          <div
+            className="fixed inset-0 z-[998]"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+            onClick={() => setShowHeaderMenu(false)}
+          />
+          {/* Menu dropdown */}
+          <div
+            className="fixed right-3 z-[999] w-52 rounded-2xl py-1.5 overflow-hidden"
+            style={{
+              top: 'calc(env(safe-area-inset-top) + 3.2rem)',
+              background: '#1a1a2e',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+            }}
+          >
+            {[
+              { icon: Share2, label: 'Share App', color: 'text-white', action: () => {
+                setShowHeaderMenu(false);
+                const shareText = `Hey! Chat with ${companionName} AI on MitrrAi \nhttps://mitrrai.in`;
+                if (navigator.share) {
+                  navigator.share({ title: 'MitrrAi', text: shareText }).catch(() => {});
+                } else {
+                  window.location.href = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+                }
+              }},
+              { icon: Star, label: 'Rate Us', color: 'text-white', action: () => {
+                setShowHeaderMenu(false);
+                router.push('/feedback');
+              }},
+              { icon: MessageCircle, label: 'Contact Us', color: 'text-white', action: () => {
+                setShowHeaderMenu(false);
+                window.location.href = 'https://wa.me/917061001946?text=Hi%2C%20I%20have%20a%20query%20about%20MitrrAi';
+              }},
+              { icon: Crown, label: 'Subscription', color: 'text-white', action: () => {
+                setShowHeaderMenu(false);
+                router.push('/subscription');
+              }},
+              { icon: Trash2, label: 'Clear Chat', color: 'text-red-400', action: () => {
+                setShowHeaderMenu(false);
+                setTimeout(() => setClearConfirm(true), 150);
+              }},
+            ].map((item, i) => (
+              <button
+                key={item.label}
+                onClick={item.action}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium ${item.color} active:bg-white/10 transition-colors ${i < 4 ? 'border-b border-white/5' : ''}`}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <item.icon size={16} className="opacity-60 shrink-0" /> {item.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* ─── Messages Area ─── */}
       <div
