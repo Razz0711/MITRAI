@@ -373,78 +373,6 @@ export default function CampusFeedPage() {
 
   if (!user) return null;
 
-  // ─── Location Permission Gate ───
-  if (locationGranted === null) {
-    // Still loading permission state
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-3 px-6">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-green-500/15 flex items-center justify-center animate-pulse">
-            <MapPin size={28} className="text-green-400" />
-          </div>
-          <p className="text-sm text-[var(--muted)]">Checking location access...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (locationGranted === false) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6">
-        <div className="card p-8 text-center space-y-5 max-w-sm mx-auto">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center" style={{ animation: 'float 4s ease-in-out infinite' }}>
-            <MapPin size={36} className="text-green-400" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">Enable Location Access</h2>
-            <p className="text-sm text-[var(--muted-strong)] leading-relaxed">
-              Campus Feed needs your location to show posts from your campus and nearby colleges.
-            </p>
-          </div>
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                setLocLoading(true);
-                navigator.geolocation.getCurrentPosition(
-                  (pos) => {
-                    setLocLoading(false);
-                    setPendingLat(pos.coords.latitude);
-                    setPendingLng(pos.coords.longitude);
-                    setShowMapModal(true);
-                  },
-                  (_err) => {
-                    setLocLoading(false);
-                    const hint = document.getElementById('loc-blocked-hint');
-                    if (hint) hint.style.display = 'block';
-                    setLocationGranted(false);
-                  },
-                  { timeout: 10000 }
-                );
-              }}
-              disabled={locLoading}
-              className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              {locLoading ? '📡 Detecting...' : '📍 Allow Location'}
-            </button>
-            <button
-              onClick={() => setLocationGranted(true)}
-              className="w-full py-2.5 rounded-xl text-[var(--muted-strong)] text-xs hover:text-[var(--foreground)] transition-colors cursor-pointer"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              Skip for now →
-            </button>
-            <p id="loc-blocked-hint" className="text-[11px] text-amber-400 text-center leading-relaxed" style={{ display: 'none' }}>
-              📍 Location blocked. Open <strong>Chrome → ⋮ Menu → Settings → Site Settings → Location</strong> → find this site → tap Allow → come back &amp; refresh.
-            </p>
-            <p className="text-[10px] text-[var(--muted)] leading-relaxed">
-              Your location is only used to show nearby campus posts. We don&apos;t track or store your movement.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen pb-4">
@@ -543,6 +471,73 @@ export default function CampusFeedPage() {
             Update
           </button>
           <button onClick={() => setShowLocUpdateBanner(false)} className="text-white/40 hover:text-white text-lg px-1">×</button>
+        </div>
+      )}
+
+      {/* ── Location Gate Overlay (null = loading, false = denied/not-yet-asked) ── */}
+      {locationGranted !== true && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center px-6" style={{ background: 'var(--background)' }}>
+          {locationGranted === null ? (
+            /* Loading state */
+            <div className="text-center space-y-3 px-6">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-green-500/15 flex items-center justify-center animate-pulse">
+                <MapPin size={28} className="text-green-400" />
+              </div>
+              <p className="text-sm text-[var(--muted)]">Checking location access...</p>
+            </div>
+          ) : (
+            /* Grant location screen */
+            <div className="card p-8 text-center space-y-5 max-w-sm w-full">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center" style={{ animation: 'float 4s ease-in-out infinite' }}>
+                <MapPin size={36} className="text-green-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">Enable Location Access</h2>
+                <p className="text-sm text-[var(--muted-strong)] leading-relaxed">
+                  Campus Feed needs your location to show posts from your campus and nearby colleges.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setLocLoading(true);
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        setLocLoading(false);
+                        setPendingLat(pos.coords.latitude);
+                        setPendingLng(pos.coords.longitude);
+                        setShowMapModal(true);
+                      },
+                      (_err) => {
+                        setLocLoading(false);
+                        const hint = document.getElementById('loc-blocked-hint');
+                        if (hint) hint.style.display = 'block';
+                      },
+                      { timeout: 10000 }
+                    );
+                  }}
+                  disabled={locLoading}
+                  className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                >
+                  {locLoading ? '📡 Detecting...' : '📍 Allow Location'}
+                </button>
+                <button
+                  onClick={() => setLocationGranted(true)}
+                  className="w-full py-2.5 rounded-xl text-[var(--muted-strong)] text-xs hover:text-[var(--foreground)] transition-colors cursor-pointer"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                >
+                  Skip for now →
+                </button>
+                <p id="loc-blocked-hint" className="text-[11px] text-amber-400 text-center leading-relaxed" style={{ display: 'none' }}>
+                  📍 Location blocked. Open <strong>Chrome → ⋮ Menu → Settings → Site Settings → Location</strong> → find this site → tap Allow → come back &amp; refresh.
+                </p>
+                <p className="text-[10px] text-[var(--muted)] leading-relaxed">
+                  Your location is only used to show nearby campus posts. We don&apos;t track or store your movement.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
