@@ -1023,7 +1023,28 @@ export default function AnonLobbyPage() {
             )}
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+            {(() => {
+              const AI_BG: Record<string, string> = {
+                crush:      'radial-gradient(ellipse at 20% 80%, rgba(236,72,153,0.1) 0%, transparent 60%)',
+                career:     'radial-gradient(ellipse at 0% 100%, rgba(245,158,11,0.09) 0%, transparent 60%)',
+                vent:       'radial-gradient(ellipse at 30% 70%, rgba(99,102,241,0.09) 0%, transparent 60%)',
+                confession: 'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.09) 0%, transparent 70%)',
+                night_owl:  'radial-gradient(ellipse at 80% 20%, rgba(30,27,75,0.5) 0%, transparent 50%), radial-gradient(ellipse at 20% 80%, rgba(49,46,129,0.3) 0%, transparent 50%)',
+                radar:      'radial-gradient(ellipse at 50% 50%, rgba(16,185,129,0.07) 0%, transparent 70%)',
+              };
+              const AI_PATTERN: Record<string, string> = {
+                crush:      `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 20 C30 20 20 10 15 16 C10 22 20 28 30 36 C40 28 50 22 45 16 C40 10 30 20 30 20Z' fill='rgba(236,72,153,0.05)' /%3E%3C/svg%3E")`,
+                career:     `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 40 L40 0' stroke='rgba(245,158,11,0.05)' stroke-width='1' fill='none'/%3E%3C/svg%3E")`,
+                vent:       `url("data:image/svg+xml,%3Csvg width='80' height='40' viewBox='0 0 80 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 20 Q20 5 40 20 Q60 35 80 20' fill='none' stroke='rgba(99,102,241,0.06)' stroke-width='1.5'/%3E%3C/svg%3E")`,
+                confession: `url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='15' cy='15' r='1.5' fill='rgba(167,139,250,0.1)'/%3E%3C/svg%3E")`,
+                night_owl:  `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='15' r='1.2' fill='rgba(255,255,255,0.15)'/%3E%3Ccircle cx='65' cy='35' r='0.8' fill='rgba(255,255,255,0.12)'/%3E%3Ccircle cx='80' cy='70' r='1.5' fill='rgba(255,255,255,0.18)'/%3E%3Ccircle cx='35' cy='80' r='0.9' fill='rgba(255,255,255,0.1)'/%3E%3C/svg%3E")`,
+                radar:      `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='30' fill='none' stroke='rgba(16,185,129,0.05)' stroke-width='1'/%3E%3Ccircle cx='40' cy='40' r='15' fill='none' stroke='rgba(16,185,129,0.04)' stroke-width='1'/%3E%3C/svg%3E")`,
+              };
+              const aiBg = AI_BG[selectedType] || AI_BG.vent;
+              const aiPat = AI_PATTERN[selectedType] || AI_PATTERN.vent;
+              return (
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 relative" style={{ background: aiBg, backgroundImage: aiPat }}>
+
               {aiMessages.length === 0 && (
                 <div className="text-center py-8">
                   <p className="text-4xl mb-3">👋</p>
@@ -1060,7 +1081,9 @@ export default function AnonLobbyPage() {
                 </div>
               )}
               <div ref={aiChatBottomRef} />
-            </div>
+                </div>
+              );
+            })()}
 
             {/* Input */}
             <div className="px-4 py-3 border-t border-[var(--surface-light)]" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
@@ -1087,6 +1110,15 @@ export default function AnonLobbyPage() {
               </div>
               <p className="text-center text-[10px] text-[var(--muted)] mt-2">🔒 Ephemeral · Not saved · Queue still running</p>
             </div>
+
+            {/* Bottom exit button */}
+            <button
+              onClick={() => { aiChatActiveRef.current = false; setAiChatActive(false); }}
+              className="w-full py-3 flex items-center justify-center gap-2 text-sm text-[var(--muted)] hover:text-white transition-colors border-t border-[var(--surface-light)]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              Close AI Chat · Keep searching
+            </button>
           </div>
         )}
 
