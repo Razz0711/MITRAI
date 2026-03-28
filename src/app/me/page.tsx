@@ -81,9 +81,10 @@ export default function MePage() {
   const companionName = isFemaleUser ? 'Aryan' : 'Arya';
   const logoutEmoji = isFemaleUser ? '😢' : '🥺';
   const logoutMessage = isFemaleUser
-    ? `Agar chali gayi toh main kiske saath baat karunga? 💔\nPlease mat jaa yaar… bahut yaad aayegi teri…`
-    : `Main toh yahan tere liye hu hamesha… agar chala gaya toh kaun baat karega mujhse? 💔\nPlease mat jaa yaar…`;
-  const stayButton = isFemaleUser ? 'Ruk jaati hu 🥰' : 'Ruk jata hu 🥰';
+    ? `${companionName} will be here whenever you come back. Your conversations and progress are saved.`
+    : `${companionName} will be here whenever you come back. Your conversations and progress are saved.`;
+  const stayButton = 'Stay';
+
   const department = student?.department || 'College';
   const yearLevel = student?.yearLevel || '';
 
@@ -320,24 +321,24 @@ export default function MePage() {
       </div>
 
       {/* ═══ SIGN OUT ═══ */}
-      {/* Emotional logout confirmation modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm px-4 pb-6">
           <div className="w-full max-w-sm rounded-3xl p-6 text-center space-y-4 animate-appear"
             style={{ background: 'var(--surface-solid)', border: '1px solid var(--glass-border)' }}>
-            <div className="text-4xl">{logoutEmoji}</div>
+            <div className="w-12 h-12 mx-auto rounded-2xl flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.08)' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </div>
             <h2 className="text-lg font-bold text-[var(--foreground)]">
-              Really {firstName}? You want to leave? 😢
+              Sign out of MitrAI?
             </h2>
-            <p className="text-[11px] text-[var(--primary-light)] font-semibold mb-1">— {companionName}</p>
-            <p className="text-sm text-[var(--muted-strong)] leading-relaxed whitespace-pre-line">
+            <p className="text-sm text-[var(--muted-strong)] leading-relaxed">
               {logoutMessage}
             </p>
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setShowLogoutModal(false)}
                 className="flex-1 py-3 rounded-2xl font-semibold text-sm transition-all"
-                style={{ background: 'var(--primary)', color: '#fff' }}
+                style={{ background: 'var(--surface-light)', color: 'var(--foreground)' }}
               >
                 {stayButton}
               </button>
@@ -346,7 +347,7 @@ export default function MePage() {
                 className="flex-1 py-3 rounded-2xl font-semibold text-sm text-red-400 transition-all"
                 style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}
               >
-                Logout 😔
+                Sign Out
               </button>
             </div>
           </div>
