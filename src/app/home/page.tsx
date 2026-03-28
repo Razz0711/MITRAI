@@ -502,37 +502,54 @@ export default function CampusFeedPage() {
                     setLocLoading(true);
                     setLocError(false);
 
-                    // Helper: open map with fallback campus location
-                    const openWithFallback = () => {
+                    // Helper: open map with given coordinates
+                    const openMap = (lat: number, lng: number, isFallback: boolean) => {
                       setLocLoading(false);
-                      // Default: SVNIT Surat campus center
-                      setPendingLat(21.1648);
-                      setPendingLng(72.7868);
-                      setLocError(true);
+                      setPendingLat(lat);
+                      setPendingLng(lng);
+                      setLocError(isFallback);
                       setShowMapModal(true);
                     };
 
-                    // Check if permission is already denied — skip waiting for timeout
+                    // IP-based geolocation fallback (city-level accuracy)
+                    const tryIpLocation = async () => {
+                      try {
+                        const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(6000) });
+                        const data = await res.json();
+                        if (data.latitude && data.longitude) {
+                          openMap(data.latitude, data.longitude, true);
+                          return;
+                        }
+                      } catch { /* ignore */ }
+                      // Last resort: hardcoded SVNIT Surat
+                      openMap(21.1648, 72.7868, true);
+                    };
+
+                    // Retry GPS without high accuracy
+                    const tryLowAccuracy = () => {
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => openMap(pos.coords.latitude, pos.coords.longitude, false),
+                        () => tryIpLocation(),
+                        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+                      );
+                    };
+
+                    // Check if permission is already denied — skip GPS entirely
                     if (navigator.permissions) {
                       try {
                         const perm = await navigator.permissions.query({ name: 'geolocation' });
                         if (perm.state === 'denied') {
-                          openWithFallback();
+                          await tryIpLocation();
                           return;
                         }
                       } catch { /* ignore — proceed with getCurrentPosition */ }
                     }
 
+                    // Try GPS: high accuracy first, then low accuracy, then IP fallback
                     navigator.geolocation.getCurrentPosition(
-                      (pos) => {
-                        setLocLoading(false);
-                        setLocError(false);
-                        setPendingLat(pos.coords.latitude);
-                        setPendingLng(pos.coords.longitude);
-                        setShowMapModal(true);
-                      },
-                      () => openWithFallback(),
-                      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+                      (pos) => openMap(pos.coords.latitude, pos.coords.longitude, false),
+                      () => tryLowAccuracy(),
+                      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
                     );
                   }}
                   disabled={locLoading}
