@@ -20,27 +20,66 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
-/* ─── Map Picker Modal (Leaflet) ─── */
-function MapPickerModal({ lat, lng, locSource, onConfirm, onClose }: {
-  lat: number; lng: number;
-  locSource: 'gps' | 'ip' | 'default' | null;
+/* ─── Map Picker Modal (Leaflet + auto GPS) ─── */
+function MapPickerModal({ onConfirm, onClose }: {
   onConfirm: (lat: number, lng: number) => void;
   onClose: () => void;
 }) {
+  // Default: SVNIT Surat campus
+  const DEFAULT_LAT = 21.1648;
+  const DEFAULT_LNG = 72.7868;
+
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
-  const [pinLat, setPinLat] = useState(lat);
-  const [pinLng, setPinLng] = useState(lng);
+  const leafletRef = useRef<typeof L | null>(null);
+  const [pinLat, setPinLat] = useState(DEFAULT_LAT);
+  const [pinLng, setPinLng] = useState(DEFAULT_LNG);
   const [mapReady, setMapReady] = useState(false);
+  const [detecting, setDetecting] = useState(true);
+  const [gpsFound, setGpsFound] = useState(false);
 
+  // Move map + marker to a location with animation
+  const flyTo = useCallback((lat: number, lng: number) => {
+    setPinLat(lat);
+    setPinLng(lng);
+    if (leafletMap.current) leafletMap.current.flyTo([lat, lng], 17, { duration: 1.2 });
+    if (markerRef.current) markerRef.current.setLatLng([lat, lng]);
+  }, []);
+
+  // GPS detection — runs after map is ready
+  const detectLocation = useCallback(() => {
+    if (!navigator.geolocation) { setDetecting(false); return; }
+    setDetecting(true);
+    setGpsFound(false);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        flyTo(pos.coords.latitude, pos.coords.longitude);
+        setDetecting(false);
+        setGpsFound(true);
+      },
+      () => {
+        // GPS failed — try IP fallback
+        fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) })
+          .then(r => r.json())
+          .then(data => {
+            if (data.latitude && data.longitude) flyTo(data.latitude, data.longitude);
+          })
+          .catch(() => {})
+          .finally(() => setDetecting(false));
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
+    );
+  }, [flyTo]);
+
+  // Init Leaflet map
   useEffect(() => {
     if (!mapRef.current || leafletMap.current) return;
-
     let cancelled = false;
 
     (async () => {
-      const L = (await import('leaflet')).default;
+      const Leaf = (await import('leaflet')).default;
+      leafletRef.current = Leaf;
 
       // Leaflet CSS
       if (!document.getElementById('leaflet-css')) {
@@ -49,76 +88,69 @@ function MapPickerModal({ lat, lng, locSource, onConfirm, onClose }: {
         link.rel = 'stylesheet';
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
         document.head.appendChild(link);
-        await new Promise(r => setTimeout(r, 200)); // let CSS load
+        await new Promise(r => setTimeout(r, 300));
       }
-
       if (cancelled || !mapRef.current) return;
 
-      const map = L.map(mapRef.current, {
-        center: [lat, lng],
-        zoom: 16,
+      const map = Leaf.map(mapRef.current, {
+        center: [DEFAULT_LAT, DEFAULT_LNG],
+        zoom: 15,
         zoomControl: false,
         attributionControl: false,
       });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      Leaf.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
       }).addTo(map);
 
-      // Custom green marker icon
-      const icon = L.divIcon({
-        html: '<div style="font-size:36px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4))">📍</div>',
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
+      const icon = Leaf.divIcon({
+        html: '<div style="font-size:40px;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));line-height:1">📍</div>',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
         className: '',
       });
 
-      const marker = L.marker([lat, lng], { icon, draggable: true }).addTo(map);
+      const marker = Leaf.marker([DEFAULT_LAT, DEFAULT_LNG], { icon, draggable: true }).addTo(map);
       markerRef.current = marker;
 
-      // When user drags the marker, update coordinates
       marker.on('dragend', () => {
         const pos = marker.getLatLng();
         setPinLat(pos.lat);
         setPinLng(pos.lng);
       });
 
-      // When user taps/clicks the map, move marker there
       map.on('click', (e: L.LeafletMouseEvent) => {
         marker.setLatLng(e.latlng);
         setPinLat(e.latlng.lat);
         setPinLng(e.latlng.lng);
       });
 
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
-
+      Leaf.control.zoom({ position: 'bottomright' }).addTo(map);
       leafletMap.current = map;
       setMapReady(true);
-
-      // Fix tiles not loading fully
       setTimeout(() => map.invalidateSize(), 300);
     })();
 
     return () => {
       cancelled = true;
-      if (leafletMap.current) {
-        leafletMap.current.remove();
-        leafletMap.current = null;
-      }
+      if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null; }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Start GPS detection once map is ready
+  useEffect(() => {
+    if (mapReady) detectLocation();
+  }, [mapReady, detectLocation]);
 
   return (
     <div className="fixed inset-0 z-[99] flex flex-col" style={{ background: '#000' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}>
         <div>
-          <h2 className="text-white font-bold text-base">
-            {locSource === 'gps' ? '📍 Location Detected' : '📍 Set Your Location'}
-          </h2>
+          <h2 className="text-white font-bold text-base">📍 Set Your Location</h2>
           <p className="text-[11px] text-white/50">
-            {locSource === 'gps' ? 'Drag pin or tap map to adjust' : 'Drag pin or tap to set your location'}
+            {detecting ? 'Detecting your location...' : gpsFound ? 'GPS location found — drag pin to adjust' : 'Drag pin or tap map to set location'}
           </p>
         </div>
         <button onClick={onClose} className="text-white/50 hover:text-white text-2xl px-2">×</button>
@@ -127,18 +159,49 @@ function MapPickerModal({ lat, lng, locSource, onConfirm, onClose }: {
       {/* Map */}
       <div className="flex-1 relative">
         <div ref={mapRef} className="absolute inset-0" />
+
+        {/* Loading overlay */}
         {!mapReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black">
             <div className="text-center space-y-2">
               <div className="w-10 h-10 border-2 border-green-400 border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-white/60 text-xs">Loading map...</p>
             </div>
           </div>
         )}
-        {/* Coordinate pill */}
-        <div className="absolute top-3 left-3 z-[999] px-3 py-1.5 rounded-full text-[11px] font-mono text-white" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
-          {pinLat.toFixed(5)}°N, {pinLng.toFixed(5)}°E
-        </div>
+
+        {/* GPS detecting banner */}
+        {mapReady && detecting && (
+          <div className="absolute top-3 left-3 right-3 z-[999] flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+            <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin shrink-0" />
+            <p className="text-white text-xs font-medium">Detecting your GPS location...</p>
+          </div>
+        )}
+
+        {/* Coordinate pill (shown after detecting) */}
+        {mapReady && !detecting && (
+          <div className="absolute top-3 left-3 z-[999] px-3 py-1.5 rounded-full text-[11px] font-mono text-white" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
+            {pinLat.toFixed(5)}°N, {pinLng.toFixed(5)}°E
+          </div>
+        )}
+
+        {/* Locate Me button */}
+        {mapReady && !detecting && (
+          <button
+            onClick={detectLocation}
+            className="absolute top-3 right-3 z-[999] w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+            style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}
+            title="Detect my location"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="4" />
+              <line x1="12" y1="2" x2="12" y2="6" />
+              <line x1="12" y1="18" x2="12" y2="22" />
+              <line x1="2" y1="12" x2="6" y2="12" />
+              <line x1="18" y1="12" x2="22" y2="12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Bottom: Confirm */}
@@ -237,10 +300,6 @@ export default function CampusFeedPage() {
   const [userLocation, setUserLocation] = useState('Campus');
   const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
-  const [pendingLat, setPendingLat] = useState<number | null>(null);
-  const [pendingLng, setPendingLng] = useState<number | null>(null);
-  const [locLoading, setLocLoading] = useState(false);
-  const [locSource, setLocSource] = useState<'gps' | 'ip' | 'default' | null>(null);
   const [showLocUpdateBanner, setShowLocUpdateBanner] = useState(false);
   const [newDetectedLat, setNewDetectedLat] = useState<number | null>(null);
   const [newDetectedLng, setNewDetectedLng] = useState<number | null>(null);
@@ -518,11 +577,8 @@ export default function CampusFeedPage() {
 
 
       {/* ── Map Confirm Modal ── */}
-      {showMapModal && pendingLat && pendingLng && (
+      {showMapModal && (
         <MapPickerModal
-          lat={pendingLat}
-          lng={pendingLng}
-          locSource={locSource}
           onConfirm={(lat, lng) => {
             setUserLat(lat);
             setUserLng(lng);
@@ -575,65 +631,11 @@ export default function CampusFeedPage() {
               </div>
               <div className="space-y-3">
                 <button
-                  onClick={async () => {
-                    setLocLoading(true);
-                    setLocSource(null);
-
-                    // Helper: open map with given coordinates
-                    const openMap = (lat: number, lng: number, source: 'gps' | 'ip' | 'default') => {
-                      setLocLoading(false);
-                      setPendingLat(lat);
-                      setPendingLng(lng);
-                      setLocSource(source);
-                      setShowMapModal(true);
-                    };
-
-                    // IP-based geolocation fallback (city-level accuracy)
-                    const tryIpLocation = async () => {
-                      try {
-                        const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(6000) });
-                        const data = await res.json();
-                        if (data.latitude && data.longitude) {
-                          openMap(data.latitude, data.longitude, 'ip');
-                          return;
-                        }
-                      } catch { /* ignore */ }
-                      // Last resort: hardcoded SVNIT Surat
-                      openMap(21.1648, 72.7868, 'default');
-                    };
-
-                    // Retry GPS without high accuracy
-                    const tryLowAccuracy = () => {
-                      navigator.geolocation.getCurrentPosition(
-                        (pos) => openMap(pos.coords.latitude, pos.coords.longitude, 'gps'),
-                        () => tryIpLocation(),
-                        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-                      );
-                    };
-
-                    // Check if permission is already denied — skip GPS entirely
-                    if (navigator.permissions) {
-                      try {
-                        const perm = await navigator.permissions.query({ name: 'geolocation' });
-                        if (perm.state === 'denied') {
-                          await tryIpLocation();
-                          return;
-                        }
-                      } catch { /* ignore — proceed with getCurrentPosition */ }
-                    }
-
-                    // Try GPS: high accuracy first, then low accuracy, then IP fallback
-                    navigator.geolocation.getCurrentPosition(
-                      (pos) => openMap(pos.coords.latitude, pos.coords.longitude, 'gps'),
-                      () => tryLowAccuracy(),
-                      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-                    );
-                  }}
-                  disabled={locLoading}
-                  className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
+                  onClick={() => setShowMapModal(true)}
+                  className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-[0.98] transition-all cursor-pointer"
                   style={{ WebkitTapHighlightColor: 'transparent' }}
                 >
-                  {locLoading ? '📡 Detecting...' : '📍 Allow Location'}
+                  📍 Allow Location
                 </button>
                 <button
                   onClick={() => setLocationGranted(true)}
