@@ -292,7 +292,6 @@ export default function AnonLobbyPage() {
       <div className="anon-aura anon-aura-1" />
       <div className="anon-aura anon-aura-2" />
       <div className="anon-aura-3" />
-      <div className="anon-aura-3" />
       <div className="flex-1 overflow-y-auto px-4">
         <div className="max-w-2xl mx-auto">
         {/* Ambient glow */}
