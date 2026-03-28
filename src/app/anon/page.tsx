@@ -52,6 +52,16 @@ export default function AnonLobbyPage() {
   const [paySuccess, setPaySuccess] = useState(false);
   const [pendingPayment, setPendingPayment] = useState<{ plan: string; createdAt: string; status: string } | null>(null);
 
+  // ── Ephemeral Anon-AI chat state (no DB, RAM only) ──────────────────────
+  const [showAiOffer, setShowAiOffer] = useState(false);
+  const [aiChatActive, setAiChatActive] = useState(false);
+  const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [matchDuringAi, setMatchDuringAi] = useState<string | null>(null); // roomId if matched while in AI
+  const aiOfferTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const aiChatBottomRef = useRef<HTMLDivElement | null>(null);
+
   // Check status on mount
   useEffect(() => {
     if (!user) return;
@@ -157,6 +167,13 @@ export default function AnonLobbyPage() {
 
   const startPolling = useCallback(() => {
     timerRef.current = setInterval(() => setQueueSeconds(s => s + 1), 1000);
+
+    // Offer AI chat after 2 minutes (120s)
+    if (aiOfferTimerRef.current) clearTimeout(aiOfferTimerRef.current);
+    aiOfferTimerRef.current = setTimeout(() => {
+      setShowAiOffer(true);
+    }, 120_000);
+
     pollRef.current = setInterval(async () => {
       try {
         const res = await fetch('/api/anon?check=poll');
@@ -164,18 +181,25 @@ export default function AnonLobbyPage() {
         if (data.success && data.data.matched) {
           if (pollRef.current) clearInterval(pollRef.current);
           if (timerRef.current) clearInterval(timerRef.current);
+          if (aiOfferTimerRef.current) clearTimeout(aiOfferTimerRef.current);
           // 🔊 Play match found sound
           playSound('match');
-          setStatus('matched');
-          setTimeout(() => router.push(`/anon/${data.data.roomId}`), 800);
+          if (aiChatActive) {
+            // Don't redirect immediately — show banner inside AI chat
+            setMatchDuringAi(data.data.roomId);
+          } else {
+            setStatus('matched');
+            setTimeout(() => router.push(`/anon/${data.data.roomId}`), 800);
+          }
         }
       } catch { /* keep polling */ }
     }, 3000);
-  }, [playSound, router]);
+  }, [playSound, router, aiChatActive]);
 
   const handleLeaveQueue = async () => {
     if (pollRef.current) clearInterval(pollRef.current);
     if (timerRef.current) clearInterval(timerRef.current);
+    if (aiOfferTimerRef.current) clearTimeout(aiOfferTimerRef.current);
     await fetch('/api/anon', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -184,6 +208,36 @@ export default function AnonLobbyPage() {
     setStatus('idle');
     setAlias('');
     setQueueSeconds(0);
+    setShowAiOffer(false);
+    setAiChatActive(false);
+    setAiMessages([]);
+    setMatchDuringAi(null);
+  };
+
+  // ── Ephemeral AI send message ────────────────────────────────────────────
+  const handleAiSend = async () => {
+    const text = aiInput.trim();
+    if (!text || aiLoading) return;
+    const userMsg = { role: 'user' as const, content: text };
+    const newMessages = [...aiMessages, userMsg];
+    setAiMessages(newMessages);
+    setAiInput('');
+    setAiLoading(true);
+    setTimeout(() => aiChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    try {
+      const res = await fetch('/api/anon/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages, roomType: selectedType }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAiMessages(prev => [...prev, { role: 'assistant', content: data.data.reply }]);
+        setTimeout(() => aiChatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      }
+    } catch { /* ignore */ } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleRedeemCoupon = async () => {
@@ -904,6 +958,135 @@ export default function AnonLobbyPage() {
           </div>
         )}
         </div>
+
+        {/* ── AI Offer Popup (after 2 min in queue) ── */}
+        {showAiOffer && !aiChatActive && status === 'queuing' && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center pb-6 px-4" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+            <div className="w-full max-w-sm rounded-3xl p-6 text-center scale-in" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.25), rgba(236,72,153,0.15))', border: '1px solid rgba(168,85,247,0.3)', backdropFilter: 'blur(20px)' }}>
+              <div className="text-4xl mb-3">👻</div>
+              <h3 className="text-lg font-extrabold text-white mb-1">Still searching...</h3>
+              <p className="text-[var(--muted)] text-sm mb-1">No match yet in your <span className="font-bold text-[var(--primary-light)]">{ROOM_TYPES.find(r => r.id === selectedType)?.label}</span> room.</p>
+              <p className="text-[var(--muted)] text-xs mb-5">Want to chat with Arya in the meantime? Queue keeps running! 🔍</p>
+              <button
+                onClick={() => { setShowAiOffer(false); setAiChatActive(true); }}
+                className="w-full py-3 rounded-2xl font-bold text-white mb-3 btn-ripple"
+                style={{ background: 'linear-gradient(135deg, var(--primary), var(--accent))' }}
+              >
+                ✨ Talk to Arya while waiting
+              </button>
+              <button
+                onClick={() => setShowAiOffer(false)}
+                className="w-full py-2 text-sm text-[var(--muted)] hover:text-white transition-colors"
+              >
+                Keep waiting silently
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Ephemeral AI Chat Drawer ── */}
+        {aiChatActive && status === 'queuing' && (
+          <div className="fixed inset-0 z-40 flex flex-col" style={{ background: 'var(--background)' }}>
+            {/* Header */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--surface-light)]" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.3), rgba(236,72,153,0.2))' }}>👻</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white">Arya · {ROOM_TYPES.find(r => r.id === selectedType)?.label} Mode</p>
+                <p className="text-[10px] text-[var(--muted)] flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
+                  Still searching for a real match...
+                </p>
+              </div>
+              <button
+                onClick={() => setAiChatActive(false)}
+                className="text-[var(--muted)] hover:text-white transition-colors text-xl px-2"
+              >×</button>
+            </div>
+
+            {/* Match found banner */}
+            {matchDuringAi && (
+              <div className="mx-4 mt-3 p-3 rounded-2xl flex items-center gap-3 scale-in" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(124,58,237,0.15))', border: '1px solid rgba(34,197,94,0.4)' }}>
+                <span className="text-2xl">🎉</span>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-[var(--success)]">Real match found!</p>
+                  <p className="text-xs text-[var(--muted)]">A real student is waiting for you</p>
+                </div>
+                <button
+                  onClick={() => router.push(`/anon/${matchDuringAi}`)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-white btn-ripple"
+                  style={{ background: 'var(--success)' }}
+                >Join →</button>
+              </div>
+            )}
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+              {aiMessages.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-4xl mb-3">👋</p>
+                  <p className="text-sm text-[var(--muted)]">Arya is in <span className="font-bold text-[var(--primary-light)]">{ROOM_TYPES.find(r => r.id === selectedType)?.label}</span> mode</p>
+                  <p className="text-xs text-[var(--muted)] mt-1">This chat is private & temporary — nothing is saved</p>
+                </div>
+              )}
+              {aiMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {msg.role === 'assistant' && (
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm mr-2 flex-shrink-0 mt-1" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.3), rgba(236,72,153,0.2))' }}>👻</div>
+                  )}
+                  <div
+                    className="max-w-[78%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap"
+                    style={msg.role === 'user'
+                      ? { background: 'linear-gradient(135deg, var(--primary), var(--accent))', color: 'white', borderBottomRightRadius: '6px' }
+                      : { background: 'var(--surface-light)', color: 'var(--foreground)', borderBottomLeftRadius: '6px' }
+                    }
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {aiLoading && (
+                <div className="flex justify-start">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm mr-2 flex-shrink-0" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.3), rgba(236,72,153,0.2))' }}>👻</div>
+                  <div className="px-4 py-3 rounded-2xl" style={{ background: 'var(--surface-light)', borderBottomLeftRadius: '6px' }}>
+                    <div className="flex gap-1 items-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={aiChatBottomRef} />
+            </div>
+
+            {/* Input */}
+            <div className="px-4 py-3 border-t border-[var(--surface-light)]" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+              <div className="flex gap-2 items-end">
+                <textarea
+                  value={aiInput}
+                  onChange={e => setAiInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAiSend(); } }}
+                  placeholder="Type something..."
+                  rows={1}
+                  className="flex-1 resize-none rounded-2xl px-4 py-3 text-sm outline-none"
+                  style={{ background: 'var(--surface-light)', color: 'var(--foreground)', maxHeight: '120px' }}
+                />
+                <button
+                  onClick={handleAiSend}
+                  disabled={!aiInput.trim() || aiLoading}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all btn-ripple disabled:opacity-40"
+                  style={{ background: 'linear-gradient(135deg, var(--primary), var(--accent))' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-center text-[10px] text-[var(--muted)] mt-2">🔒 Ephemeral · Not saved · Queue still running</p>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
