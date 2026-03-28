@@ -20,24 +20,31 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
-/* ─── Map Picker Modal (Leaflet + auto GPS) ─── */
+/* ─── Map Picker Modal (Leaflet + GPS + Search) ─── */
+interface SearchResult { display_name: string; lat: string; lon: string; }
+
 function MapPickerModal({ onConfirm, onClose }: {
   onConfirm: (lat: number, lng: number) => void;
   onClose: () => void;
 }) {
-  // Default: SVNIT Surat campus
   const DEFAULT_LAT = 21.1648;
   const DEFAULT_LNG = 72.7868;
 
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
-  const leafletRef = useRef<typeof L | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pinLat, setPinLat] = useState(DEFAULT_LAT);
   const [pinLng, setPinLng] = useState(DEFAULT_LNG);
   const [mapReady, setMapReady] = useState(false);
   const [detecting, setDetecting] = useState(true);
   const [gpsFound, setGpsFound] = useState(false);
+
+  // Search state
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
   // Move map + marker to a location with animation
   const flyTo = useCallback((lat: number, lng: number) => {
@@ -47,7 +54,7 @@ function MapPickerModal({ onConfirm, onClose }: {
     if (markerRef.current) markerRef.current.setLatLng([lat, lng]);
   }, []);
 
-  // GPS detection — runs after map is ready
+  // GPS detection
   const detectLocation = useCallback(() => {
     if (!navigator.geolocation) { setDetecting(false); return; }
     setDetecting(true);
@@ -59,18 +66,34 @@ function MapPickerModal({ onConfirm, onClose }: {
         setGpsFound(true);
       },
       () => {
-        // GPS failed — try IP fallback
         fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) })
           .then(r => r.json())
-          .then(data => {
-            if (data.latitude && data.longitude) flyTo(data.latitude, data.longitude);
-          })
+          .then(data => { if (data.latitude && data.longitude) flyTo(data.latitude, data.longitude); })
           .catch(() => {})
           .finally(() => setDetecting(false));
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 }
     );
   }, [flyTo]);
+
+  // Search places via Nominatim
+  const searchPlaces = useCallback((q: string) => {
+    if (q.length < 2) { setResults([]); setShowResults(false); return; }
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=in`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const data: SearchResult[] = await res.json();
+        setResults(data);
+        setShowResults(data.length > 0);
+      } catch { setResults([]); }
+      setSearching(false);
+    }, 400); // debounce 400ms
+  }, []);
 
   // Init Leaflet map
   useEffect(() => {
@@ -79,9 +102,7 @@ function MapPickerModal({ onConfirm, onClose }: {
 
     (async () => {
       const Leaf = (await import('leaflet')).default;
-      leafletRef.current = Leaf;
 
-      // Leaflet CSS
       if (!document.getElementById('leaflet-css')) {
         const link = document.createElement('link');
         link.id = 'leaflet-css';
@@ -99,15 +120,11 @@ function MapPickerModal({ onConfirm, onClose }: {
         attributionControl: false,
       });
 
-      Leaf.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-      }).addTo(map);
+      Leaf.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
       const icon = Leaf.divIcon({
         html: '<div style="font-size:40px;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));line-height:1">📍</div>',
-        iconSize: [40, 40],
-        iconAnchor: [20, 40],
-        className: '',
+        iconSize: [40, 40], iconAnchor: [20, 40], className: '',
       });
 
       const marker = Leaf.marker([DEFAULT_LAT, DEFAULT_LNG], { icon, draggable: true }).addTo(map);
@@ -115,14 +132,11 @@ function MapPickerModal({ onConfirm, onClose }: {
 
       marker.on('dragend', () => {
         const pos = marker.getLatLng();
-        setPinLat(pos.lat);
-        setPinLng(pos.lng);
+        setPinLat(pos.lat); setPinLng(pos.lng);
       });
-
       map.on('click', (e: L.LeafletMouseEvent) => {
         marker.setLatLng(e.latlng);
-        setPinLat(e.latlng.lat);
-        setPinLng(e.latlng.lng);
+        setPinLat(e.latlng.lat); setPinLng(e.latlng.lng);
       });
 
       Leaf.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -131,33 +145,67 @@ function MapPickerModal({ onConfirm, onClose }: {
       setTimeout(() => map.invalidateSize(), 300);
     })();
 
-    return () => {
-      cancelled = true;
-      if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null; }
-    };
+    return () => { cancelled = true; if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null; } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Start GPS detection once map is ready
-  useEffect(() => {
-    if (mapReady) detectLocation();
-  }, [mapReady, detectLocation]);
+  useEffect(() => { if (mapReady) detectLocation(); }, [mapReady, detectLocation]);
 
   return (
     <div className="fixed inset-0 z-[99] flex flex-col" style={{ background: '#000' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}>
-        <div>
-          <h2 className="text-white font-bold text-base">📍 Set Your Location</h2>
-          <p className="text-[11px] text-white/50">
-            {detecting ? 'Detecting your location...' : gpsFound ? 'GPS location found — drag pin to adjust' : 'Drag pin or tap map to set location'}
-          </p>
-        </div>
+      {/* Header with close */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-black" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
+        <h2 className="text-white font-bold text-base">📍 Set Your Location</h2>
         <button onClick={onClose} className="text-white/50 hover:text-white text-2xl px-2">×</button>
       </div>
 
+      {/* Search bar */}
+      <div className="px-3 pb-2 bg-black relative z-[1001]">
+        <div className="relative">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); searchPlaces(e.target.value); }}
+            onFocus={() => results.length > 0 && setShowResults(true)}
+            placeholder="Search for your college, hostel, area..."
+            className="w-full py-2.5 pl-9 pr-9 rounded-xl text-sm text-white placeholder:text-white/40 outline-none"
+            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+          />
+          {/* Search icon */}
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          {/* Clear button */}
+          {query && (
+            <button onClick={() => { setQuery(''); setResults([]); setShowResults(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white text-sm">✕</button>
+          )}
+          {searching && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+          )}
+        </div>
+
+        {/* Search results dropdown */}
+        {showResults && results.length > 0 && (
+          <div className="absolute left-3 right-3 top-full mt-1 rounded-xl overflow-hidden shadow-2xl" style={{ background: 'rgba(20,20,30,0.98)', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '240px', overflowY: 'auto' }}>
+            {results.map((r, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  flyTo(parseFloat(r.lat), parseFloat(r.lon));
+                  setQuery(r.display_name.split(',').slice(0, 2).join(', '));
+                  setShowResults(false);
+                }}
+                className="w-full text-left px-3 py-2.5 flex items-start gap-2 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+              >
+                <span className="text-green-400 text-sm mt-0.5 shrink-0">📍</span>
+                <span className="text-white/80 text-xs leading-relaxed line-clamp-2">{r.display_name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Map */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative" onClick={() => setShowResults(false)}>
         <div ref={mapRef} className="absolute inset-0" />
 
         {/* Loading overlay */}
@@ -172,13 +220,13 @@ function MapPickerModal({ onConfirm, onClose }: {
 
         {/* GPS detecting banner */}
         {mapReady && detecting && (
-          <div className="absolute top-3 left-3 right-3 z-[999] flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+          <div className="absolute top-3 left-3 right-14 z-[999] flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
             <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin shrink-0" />
-            <p className="text-white text-xs font-medium">Detecting your GPS location...</p>
+            <p className="text-white text-xs font-medium">Detecting GPS...</p>
           </div>
         )}
 
-        {/* Coordinate pill (shown after detecting) */}
+        {/* Coordinate pill */}
         {mapReady && !detecting && (
           <div className="absolute top-3 left-3 z-[999] px-3 py-1.5 rounded-full text-[11px] font-mono text-white" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
             {pinLat.toFixed(5)}°N, {pinLng.toFixed(5)}°E
@@ -186,26 +234,34 @@ function MapPickerModal({ onConfirm, onClose }: {
         )}
 
         {/* Locate Me button */}
-        {mapReady && !detecting && (
+        {mapReady && (
           <button
             onClick={detectLocation}
-            className="absolute top-3 right-3 z-[999] w-10 h-10 rounded-full flex items-center justify-center shadow-lg"
+            disabled={detecting}
+            className="absolute top-3 right-3 z-[999] w-10 h-10 rounded-full flex items-center justify-center shadow-lg disabled:opacity-50"
             style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}
             title="Detect my location"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="4" />
-              <line x1="12" y1="2" x2="12" y2="6" />
-              <line x1="12" y1="18" x2="12" y2="22" />
-              <line x1="2" y1="12" x2="6" y2="12" />
-              <line x1="18" y1="12" x2="22" y2="12" />
-            </svg>
+            {detecting ? (
+              <div className="w-5 h-5 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={gpsFound ? '#22c55e' : '#fff'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4" />
+                <line x1="12" y1="2" x2="12" y2="6" />
+                <line x1="12" y1="18" x2="12" y2="22" />
+                <line x1="2" y1="12" x2="6" y2="12" />
+                <line x1="18" y1="12" x2="22" y2="12" />
+              </svg>
+            )}
           </button>
         )}
       </div>
 
-      {/* Bottom: Confirm */}
-      <div className="px-4 py-4 border-t border-white/10 bg-black" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+      {/* Bottom: Status + Confirm */}
+      <div className="px-4 py-3 border-t border-white/10 bg-black" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+        <p className="text-[11px] text-white/40 text-center mb-2">
+          {detecting ? 'Detecting...' : gpsFound ? '✅ GPS location detected' : 'Drag pin, tap map, or search above'}
+        </p>
         <button
           onClick={() => onConfirm(pinLat, pinLng)}
           className="w-full py-3.5 rounded-2xl font-bold text-white text-sm mb-2"
