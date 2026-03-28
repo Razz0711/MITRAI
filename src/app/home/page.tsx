@@ -96,7 +96,11 @@ export default function CampusFeedPage() {
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [userLocation, setUserLocation] = useState('Campus');
-  const [locationGranted, setLocationGranted] = useState<boolean | null>(null); // null = loading, false = denied, true = granted
+  const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [pendingLat, setPendingLat] = useState<number | null>(null);
+  const [pendingLng, setPendingLng] = useState<number | null>(null);
+  const [locLoading, setLocLoading] = useState(false);
 
   // Filters (viewer side)
   const [filterCat, setFilterCat] = useState('all');
@@ -396,25 +400,28 @@ export default function CampusFeedPage() {
           <div className="space-y-3">
             <button
               onClick={() => {
+                setLocLoading(true);
                 navigator.geolocation.getCurrentPosition(
                   (pos) => {
-                    setUserLat(pos.coords.latitude);
-                    setUserLng(pos.coords.longitude);
-                    setUserLocation('Campus');
-                    setLocationGranted(true);
+                    setLocLoading(false);
+                    setPendingLat(pos.coords.latitude);
+                    setPendingLng(pos.coords.longitude);
+                    setShowMapModal(true);
                   },
                   (_err) => {
-                    // Show blocked hint regardless of error code
+                    setLocLoading(false);
                     const hint = document.getElementById('loc-blocked-hint');
                     if (hint) hint.style.display = 'block';
                     setLocationGranted(false);
-                  }
+                  },
+                  { timeout: 10000 }
                 );
               }}
-              className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-[0.98] transition-all cursor-pointer"
+              disabled={locLoading}
+              className="w-full py-3 rounded-xl bg-green-500 text-white text-sm font-bold shadow-lg shadow-green-500/30 hover:bg-green-600 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-60"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              📍 Allow Location
+              {locLoading ? '📡 Detecting...' : '📍 Allow Location'}
             </button>
             <button
               onClick={() => setLocationGranted(true)}
@@ -437,6 +444,62 @@ export default function CampusFeedPage() {
 
   return (
     <div className="min-h-screen pb-4">
+
+      {/* ── Map Confirm Modal ── */}
+      {showMapModal && pendingLat && pendingLng && (
+        <div className="fixed inset-0 z-[99] flex flex-col" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <div>
+              <h2 className="text-white font-bold text-base">Your Location</h2>
+              <p className="text-[11px] text-white/50">Auto-detected · Tap confirm to use this</p>
+            </div>
+            <button onClick={() => setShowMapModal(false)} className="text-white/50 hover:text-white text-2xl px-2">×</button>
+          </div>
+
+          {/* Map */}
+          <div className="flex-1 relative">
+            <iframe
+              title="location-map"
+              width="100%"
+              height="100%"
+              style={{ border: 'none' }}
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${pendingLng - 0.005},${pendingLat - 0.005},${pendingLng + 0.005},${pendingLat + 0.005}&layer=mapnik&marker=${pendingLat},${pendingLng}`}
+              allowFullScreen
+            />
+            {/* Center pin overlay */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none">
+              <div className="text-3xl drop-shadow-lg">📍</div>
+            </div>
+          </div>
+
+          {/* Coords + Confirm */}
+          <div className="px-4 py-4 border-t border-white/10" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)' }}>
+            <p className="text-[11px] text-white/40 text-center mb-3">
+              {pendingLat.toFixed(5)}, {pendingLng.toFixed(5)}
+            </p>
+            <button
+              onClick={() => {
+                setUserLat(pendingLat);
+                setUserLng(pendingLng);
+                setUserLocation('Campus');
+                setLocationGranted(true);
+                setShowMapModal(false);
+              }}
+              className="w-full py-3 rounded-2xl font-bold text-white text-sm"
+              style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 20px rgba(34,197,94,0.3)' }}
+            >
+              ✅ Confirm Location
+            </button>
+            <button
+              onClick={() => setShowMapModal(false)}
+              className="w-full py-2 text-xs text-white/40 hover:text-white/70 transition-colors mt-1"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ─── Header ─── */}
       <div className="sticky top-0 z-40 px-4 py-3" style={{
         paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
