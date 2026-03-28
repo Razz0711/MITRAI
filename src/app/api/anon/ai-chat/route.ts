@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     ];
 
     const completion = await xai.chat.completions.create({
-      model: 'grok-3-mini-fast',
+      model: 'grok-4-1-fast-non-reasoning',
       messages: apiMessages,
       max_tokens: 300,
       temperature: 0.85,
