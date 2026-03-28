@@ -7,6 +7,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import type L from 'leaflet';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import Avatar from '@/components/Avatar';
@@ -18,6 +19,144 @@ import {
   MapPin,
   ChevronDown,
 } from 'lucide-react';
+
+/* ─── Map Picker Modal (Leaflet) ─── */
+function MapPickerModal({ lat, lng, locSource, onConfirm, onClose }: {
+  lat: number; lng: number;
+  locSource: 'gps' | 'ip' | 'default' | null;
+  onConfirm: (lat: number, lng: number) => void;
+  onClose: () => void;
+}) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const leafletMap = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const [pinLat, setPinLat] = useState(lat);
+  const [pinLng, setPinLng] = useState(lng);
+  const [mapReady, setMapReady] = useState(false);
+
+  useEffect(() => {
+    if (!mapRef.current || leafletMap.current) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const L = (await import('leaflet')).default;
+
+      // Leaflet CSS
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+        await new Promise(r => setTimeout(r, 200)); // let CSS load
+      }
+
+      if (cancelled || !mapRef.current) return;
+
+      const map = L.map(mapRef.current, {
+        center: [lat, lng],
+        zoom: 16,
+        zoomControl: false,
+        attributionControl: false,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Custom green marker icon
+      const icon = L.divIcon({
+        html: '<div style="font-size:36px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4))">📍</div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+        className: '',
+      });
+
+      const marker = L.marker([lat, lng], { icon, draggable: true }).addTo(map);
+      markerRef.current = marker;
+
+      // When user drags the marker, update coordinates
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        setPinLat(pos.lat);
+        setPinLng(pos.lng);
+      });
+
+      // When user taps/clicks the map, move marker there
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        marker.setLatLng(e.latlng);
+        setPinLat(e.latlng.lat);
+        setPinLng(e.latlng.lng);
+      });
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      leafletMap.current = map;
+      setMapReady(true);
+
+      // Fix tiles not loading fully
+      setTimeout(() => map.invalidateSize(), 300);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (leafletMap.current) {
+        leafletMap.current.remove();
+        leafletMap.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[99] flex flex-col" style={{ background: '#000' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}>
+        <div>
+          <h2 className="text-white font-bold text-base">
+            {locSource === 'gps' ? '📍 Location Detected' : '📍 Set Your Location'}
+          </h2>
+          <p className="text-[11px] text-white/50">
+            {locSource === 'gps' ? 'Drag pin or tap map to adjust' : 'Drag pin or tap to set your location'}
+          </p>
+        </div>
+        <button onClick={onClose} className="text-white/50 hover:text-white text-2xl px-2">×</button>
+      </div>
+
+      {/* Map */}
+      <div className="flex-1 relative">
+        <div ref={mapRef} className="absolute inset-0" />
+        {!mapReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <div className="text-center space-y-2">
+              <div className="w-10 h-10 border-2 border-green-400 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-white/60 text-xs">Loading map...</p>
+            </div>
+          </div>
+        )}
+        {/* Coordinate pill */}
+        <div className="absolute top-3 left-3 z-[999] px-3 py-1.5 rounded-full text-[11px] font-mono text-white" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
+          {pinLat.toFixed(5)}°N, {pinLng.toFixed(5)}°E
+        </div>
+      </div>
+
+      {/* Bottom: Confirm */}
+      <div className="px-4 py-4 border-t border-white/10 bg-black" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+        <button
+          onClick={() => onConfirm(pinLat, pinLng)}
+          className="w-full py-3.5 rounded-2xl font-bold text-white text-sm mb-2"
+          style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 20px rgba(34,197,94,0.3)' }}
+        >
+          ✅ Confirm Location
+        </button>
+        <button onClick={onClose} className="w-full py-2 text-xs text-white/40 hover:text-white/70 transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /* ─── constants ─── */
 const CATEGORIES = [
@@ -380,71 +519,20 @@ export default function CampusFeedPage() {
 
       {/* ── Map Confirm Modal ── */}
       {showMapModal && pendingLat && pendingLng && (
-        <div className="fixed inset-0 z-[99] flex flex-col" style={{ background: 'rgba(0,0,0,0.95)' }}>
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}>
-            <div>
-              <h2 className="text-white font-bold text-base">
-                {locSource === 'gps' ? '📍 Location Detected' : locSource === 'ip' ? '📍 Approximate Location' : '📍 Campus Location'}
-              </h2>
-              <p className="text-[11px] text-white/50">
-                {locSource === 'gps' ? 'Your GPS location on the map' : locSource === 'ip' ? 'Detected via network — verify on map' : 'Default campus — verify on map'}
-              </p>
-            </div>
-            <button onClick={() => setShowMapModal(false)} className="text-white/50 hover:text-white text-2xl px-2">×</button>
-          </div>
-
-          {/* Embedded OpenStreetMap */}
-          <div className="flex-1 relative">
-            <iframe
-              title="Location Map"
-              width="100%"
-              height="100%"
-              style={{ border: 0, display: 'block' }}
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${pendingLng - 0.008},${pendingLat - 0.005},${pendingLng + 0.008},${pendingLat + 0.005}&layer=mapnik&marker=${pendingLat},${pendingLng}`}
-              allowFullScreen
-            />
-            {/* Coordinate pill overlay on map */}
-            <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-              <div className="px-3 py-1.5 rounded-full text-[11px] font-mono text-white" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
-                {pendingLat.toFixed(5)}°N, {pendingLng.toFixed(5)}°E
-              </div>
-              {locSource !== 'gps' && (
-                <div className="px-3 py-1.5 rounded-full text-[10px] font-semibold" style={{
-                  background: locSource === 'ip' ? 'rgba(59,130,246,0.8)' : 'rgba(245,158,11,0.8)',
-                  color: 'white',
-                  backdropFilter: 'blur(8px)',
-                }}>
-                  {locSource === 'ip' ? '~ Approximate' : '~ Default'}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Bottom: Confirm buttons */}
-          <div className="px-4 py-4 border-t border-white/10" style={{ background: 'rgba(0,0,0,0.9)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-            <button
-              onClick={() => {
-                setUserLat(pendingLat);
-                setUserLng(pendingLng);
-                setUserLocation('Campus');
-                setLocationGranted(true);
-                setShowMapModal(false);
-                localStorage.setItem('campus_loc', JSON.stringify({ lat: pendingLat, lng: pendingLng }));
-              }}
-              className="w-full py-3 rounded-2xl font-bold text-white text-sm mb-2"
-              style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 20px rgba(34,197,94,0.3)' }}
-            >
-              {locSource === 'gps' ? '✅ Yes, this is my location' : '✅ Confirm this location'}
-            </button>
-            <button
-              onClick={() => setShowMapModal(false)}
-              className="w-full py-2 text-xs text-white/40 hover:text-white/70 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <MapPickerModal
+          lat={pendingLat}
+          lng={pendingLng}
+          locSource={locSource}
+          onConfirm={(lat, lng) => {
+            setUserLat(lat);
+            setUserLng(lng);
+            setUserLocation('Campus');
+            setLocationGranted(true);
+            setShowMapModal(false);
+            localStorage.setItem('campus_loc', JSON.stringify({ lat, lng }));
+          }}
+          onClose={() => setShowMapModal(false)}
+        />
       )}
 
       {/* ── 500m Location Update Banner ── */}
