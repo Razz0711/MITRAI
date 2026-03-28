@@ -380,70 +380,49 @@ export default function CampusFeedPage() {
 
       {/* ── Map Confirm Modal ── */}
       {showMapModal && pendingLat && pendingLng && (
-        <div className="fixed inset-0 z-[99] flex flex-col" style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)' }}>
+        <div className="fixed inset-0 z-[99] flex flex-col" style={{ background: 'rgba(0,0,0,0.95)' }}>
+          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}>
             <div>
-              <h2 className="text-white font-bold text-base">📍 Your Location Detected</h2>
-              <p className="text-[11px] text-white/50">Verify your location below</p>
+              <h2 className="text-white font-bold text-base">
+                {locSource === 'gps' ? '📍 Location Detected' : locSource === 'ip' ? '📍 Approximate Location' : '📍 Campus Location'}
+              </h2>
+              <p className="text-[11px] text-white/50">
+                {locSource === 'gps' ? 'Your GPS location on the map' : locSource === 'ip' ? 'Detected via network — verify on map' : 'Default campus — verify on map'}
+              </p>
             </div>
             <button onClick={() => setShowMapModal(false)} className="text-white/50 hover:text-white text-2xl px-2">×</button>
           </div>
 
-          {/* Location card — zero external deps, always renders */}
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(16,185,129,0.05))', border: '1.5px solid rgba(34,197,94,0.25)' }}>
-              {/* Source info banner */}
-              {locSource === 'ip' && (
-                <div className="mb-4 p-2.5 rounded-xl text-center" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)' }}>
-                  <p className="text-[11px] text-blue-400 leading-relaxed">
-                    Detected via your network. Approximate location — verify below.
-                  </p>
+          {/* Embedded OpenStreetMap */}
+          <div className="flex-1 relative">
+            <iframe
+              title="Location Map"
+              width="100%"
+              height="100%"
+              style={{ border: 0, display: 'block' }}
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${pendingLng - 0.008},${pendingLat - 0.005},${pendingLng + 0.008},${pendingLat + 0.005}&layer=mapnik&marker=${pendingLat},${pendingLng}`}
+              allowFullScreen
+            />
+            {/* Coordinate pill overlay on map */}
+            <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+              <div className="px-3 py-1.5 rounded-full text-[11px] font-mono text-white" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
+                {pendingLat.toFixed(5)}°N, {pendingLng.toFixed(5)}°E
+              </div>
+              {locSource !== 'gps' && (
+                <div className="px-3 py-1.5 rounded-full text-[10px] font-semibold" style={{
+                  background: locSource === 'ip' ? 'rgba(59,130,246,0.8)' : 'rgba(245,158,11,0.8)',
+                  color: 'white',
+                  backdropFilter: 'blur(8px)',
+                }}>
+                  {locSource === 'ip' ? '~ Approximate' : '~ Default'}
                 </div>
               )}
-              {locSource === 'default' && (
-                <div className="mb-4 p-2.5 rounded-xl text-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                  <p className="text-[11px] text-amber-400 leading-relaxed">
-                    Could not detect location. Showing default campus. Enable GPS in browser settings for accuracy.
-                  </p>
-                </div>
-              )}
-              {/* Pulsing pin */}
-              <div className="relative inline-flex items-center justify-center mb-5">
-                <div className="w-20 h-20 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', animation: 'pulseGlow 2s ease-in-out infinite' }} />
-                <div className="absolute text-5xl">📍</div>
-              </div>
-              <h3 className="text-white font-bold text-lg mb-1">
-                {locSource === 'gps' ? 'Location Detected!' : locSource === 'ip' ? 'Approximate Location' : 'Campus Location'}
-              </h3>
-              <p className="text-white/50 text-xs mb-4">
-                {locSource === 'gps' ? 'Your device GPS has pinpointed your location' : locSource === 'ip' ? 'Detected from your network — confirm if correct' : 'Default SVNIT Surat campus — confirm if correct'}
-              </p>
-
-              {/* Coordinates */}
-              <div className="rounded-xl px-4 py-3 mb-4 text-left" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-[10px] text-white/30 mb-1">COORDINATES</p>
-                <p className="text-white font-mono text-sm">{pendingLat.toFixed(5)}° N</p>
-                <p className="text-white font-mono text-sm">{pendingLng.toFixed(5)}° E</p>
-              </div>
-
-              {/* Open in Maps */}
-              <a
-                href={`https://maps.google.com/?q=${pendingLat},${pendingLng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1.5 text-xs text-green-400 font-medium py-2 rounded-xl transition-colors"
-                style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}
-              >
-                🗺️ View on Google Maps ↗
-              </a>
             </div>
           </div>
 
-          {/* Coords + Confirm */}
-          <div className="px-4 py-4 border-t border-white/10" style={{ background: 'var(--glass-bg)', backdropFilter: 'blur(20px)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-            <p className="text-[11px] text-white/40 text-center mb-3">
-              {pendingLat.toFixed(5)}°N, {pendingLng.toFixed(5)}°E
-            </p>
+          {/* Bottom: Confirm buttons */}
+          <div className="px-4 py-4 border-t border-white/10" style={{ background: 'rgba(0,0,0,0.9)', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
             <button
               onClick={() => {
                 setUserLat(pendingLat);
@@ -451,7 +430,6 @@ export default function CampusFeedPage() {
                 setUserLocation('Campus');
                 setLocationGranted(true);
                 setShowMapModal(false);
-                // Save to localStorage so we don't ask again
                 localStorage.setItem('campus_loc', JSON.stringify({ lat: pendingLat, lng: pendingLng }));
               }}
               className="w-full py-3 rounded-2xl font-bold text-white text-sm mb-2"
