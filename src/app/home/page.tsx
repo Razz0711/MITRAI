@@ -83,16 +83,25 @@ function MapPickerModal({ onConfirm, onClose }: {
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
+        // Bias results toward Surat/Gujarat area for better campus results
+        const params = new URLSearchParams({
+          q,
+          format: 'json',
+          limit: '6',
+          countrycodes: 'in',
+          viewbox: '72.7,21.1,72.9,21.25', // Surat area bounding box
+          bounded: '0', // prefer but don't strictly limit
+        });
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=in`,
+          `https://nominatim.openstreetmap.org/search?${params}`,
           { headers: { 'Accept-Language': 'en' } }
         );
         const data: SearchResult[] = await res.json();
         setResults(data);
-        setShowResults(data.length > 0);
-      } catch { setResults([]); }
+        setShowResults(true); // always show — will display "no results" if empty
+      } catch { setResults([]); setShowResults(true); }
       setSearching(false);
-    }, 400); // debounce 400ms
+    }, 400);
   }, []);
 
   // Init Leaflet map
@@ -184,9 +193,9 @@ function MapPickerModal({ onConfirm, onClose }: {
         </div>
 
         {/* Search results dropdown */}
-        {showResults && results.length > 0 && (
-          <div className="absolute left-3 right-3 top-full mt-1 rounded-xl overflow-hidden shadow-2xl" style={{ background: 'rgba(20,20,30,0.98)', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '240px', overflowY: 'auto' }}>
-            {results.map((r, i) => (
+        {showResults && !searching && (
+          <div className="absolute left-3 right-3 mt-1 rounded-xl overflow-hidden shadow-2xl" style={{ background: 'rgba(15,15,25,0.98)', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '260px', overflowY: 'auto', zIndex: 1002 }}>
+            {results.length > 0 ? results.map((r, i) => (
               <button
                 key={i}
                 onClick={() => {
@@ -194,12 +203,17 @@ function MapPickerModal({ onConfirm, onClose }: {
                   setQuery(r.display_name.split(',').slice(0, 2).join(', '));
                   setShowResults(false);
                 }}
-                className="w-full text-left px-3 py-2.5 flex items-start gap-2 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                className="w-full text-left px-3 py-2.5 flex items-start gap-2 active:bg-white/10 transition-colors border-b border-white/5 last:border-0"
               >
                 <span className="text-green-400 text-sm mt-0.5 shrink-0">📍</span>
                 <span className="text-white/80 text-xs leading-relaxed line-clamp-2">{r.display_name}</span>
               </button>
-            ))}
+            )) : (
+              <div className="px-3 py-4 text-center">
+                <p className="text-white/40 text-xs">No results found</p>
+                <p className="text-white/25 text-[10px] mt-1">Try a simpler name like &quot;SVNIT Surat&quot; or &quot;Ichchhanath&quot;</p>
+              </div>
+            )}
           </div>
         )}
       </div>
