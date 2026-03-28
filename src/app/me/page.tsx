@@ -76,10 +76,10 @@ export default function MePage() {
   }
 
   const fullName = student?.name || user?.name || 'Student';
-  const firstName = fullName.split(' ')[0];
+  const _firstName = fullName.split(' ')[0];
   const isFemaleUser = student?.gender === 'Female';
   const companionName = isFemaleUser ? 'Aryan' : 'Arya';
-  const logoutEmoji = isFemaleUser ? '😢' : '🥺';
+  const _logoutEmoji = isFemaleUser ? '😢' : '🥺';
   const logoutMessage = isFemaleUser
     ? `${companionName} will be here whenever you come back. Your conversations and progress are saved.`
     : `${companionName} will be here whenever you come back. Your conversations and progress are saved.`;
