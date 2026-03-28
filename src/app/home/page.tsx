@@ -21,7 +21,21 @@ import {
 } from 'lucide-react';
 
 /* ─── Map Picker Modal (Leaflet + GPS + Search) ─── */
-interface SearchResult { display_name: string; lat: string; lon: string; }
+interface SearchResult { display_name: string; lat: number; lon: number; }
+
+// Convert Photon feature to our SearchResult format
+function photonToResults(data: { features?: Array<{ geometry: { coordinates: number[] }; properties: Record<string, string> }> }): SearchResult[] {
+  if (!data.features) return [];
+  return data.features.map(f => {
+    const p = f.properties;
+    const parts = [p.name, p.street, p.district, p.city, p.state].filter(Boolean);
+    return {
+      display_name: parts.join(', '),
+      lat: f.geometry.coordinates[1],
+      lon: f.geometry.coordinates[0],
+    };
+  });
+}
 
 function MapPickerModal({ onConfirm, onClose }: {
   onConfirm: (lat: number, lng: number) => void;
@@ -83,25 +97,22 @@ function MapPickerModal({ onConfirm, onClose }: {
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        // Bias results toward Surat/Gujarat area for better campus results
+        // Photon — better fuzzy search, biased toward SVNIT Surat area
         const params = new URLSearchParams({
           q,
-          format: 'json',
+          lat: '21.1648',
+          lon: '72.7868',
           limit: '6',
-          countrycodes: 'in',
-          viewbox: '72.7,21.1,72.9,21.25', // Surat area bounding box
-          bounded: '0', // prefer but don't strictly limit
+          lang: 'en',
         });
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?${params}`,
-          { headers: { 'Accept-Language': 'en' } }
-        );
-        const data: SearchResult[] = await res.json();
-        setResults(data);
-        setShowResults(true); // always show — will display "no results" if empty
+        const res = await fetch(`https://photon.komoot.io/api/?${params}`);
+        const data = await res.json();
+        const parsed = photonToResults(data);
+        setResults(parsed);
+        setShowResults(true);
       } catch { setResults([]); setShowResults(true); }
       setSearching(false);
-    }, 400);
+    }, 350);
   }, []);
 
   // Init Leaflet map
@@ -199,7 +210,7 @@ function MapPickerModal({ onConfirm, onClose }: {
               <button
                 key={i}
                 onClick={() => {
-                  flyTo(parseFloat(r.lat), parseFloat(r.lon));
+                  flyTo(r.lat, r.lon);
                   setQuery(r.display_name.split(',').slice(0, 2).join(', '));
                   setShowResults(false);
                 }}

@@ -28,7 +28,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://*.supabase.co https://api.qrserver.com https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.x.ai https://ipapi.co https://nominatim.openstreetmap.org; frame-src 'self' https://meet.jit.si https://8x8.vc; object-src 'none'; base-uri 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://*.supabase.co https://api.qrserver.com https://*.tile.openstreetmap.org https://unpkg.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.x.ai https://ipapi.co https://nominatim.openstreetmap.org https://photon.komoot.io; frame-src 'self' https://meet.jit.si https://8x8.vc; object-src 'none'; base-uri 'self';",
           },
         ],
       },
