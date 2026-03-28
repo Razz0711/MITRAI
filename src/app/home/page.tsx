@@ -101,7 +101,7 @@ export default function CampusFeedPage() {
   const [pendingLat, setPendingLat] = useState<number | null>(null);
   const [pendingLng, setPendingLng] = useState<number | null>(null);
   const [locLoading, setLocLoading] = useState(false);
-  const [locError, setLocError] = useState(false);
+  const [locSource, setLocSource] = useState<'gps' | 'ip' | 'default' | null>(null);
   const [showLocUpdateBanner, setShowLocUpdateBanner] = useState(false);
   const [newDetectedLat, setNewDetectedLat] = useState<number | null>(null);
   const [newDetectedLng, setNewDetectedLng] = useState<number | null>(null);
@@ -392,11 +392,18 @@ export default function CampusFeedPage() {
           {/* Location card — zero external deps, always renders */}
           <div className="flex-1 flex items-center justify-center p-6">
             <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(16,185,129,0.05))', border: '1.5px solid rgba(34,197,94,0.25)' }}>
-              {/* GPS blocked banner */}
-              {locError && (
+              {/* Source info banner */}
+              {locSource === 'ip' && (
+                <div className="mb-4 p-2.5 rounded-xl text-center" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)' }}>
+                  <p className="text-[11px] text-blue-400 leading-relaxed">
+                    Detected via your network. Approximate location — verify below.
+                  </p>
+                </div>
+              )}
+              {locSource === 'default' && (
                 <div className="mb-4 p-2.5 rounded-xl text-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
                   <p className="text-[11px] text-amber-400 leading-relaxed">
-                    GPS blocked — showing default campus location. You can confirm or enable GPS in browser settings.
+                    Could not detect location. Showing default campus. Enable GPS in browser settings for accuracy.
                   </p>
                 </div>
               )}
@@ -405,8 +412,12 @@ export default function CampusFeedPage() {
                 <div className="w-20 h-20 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', animation: 'pulseGlow 2s ease-in-out infinite' }} />
                 <div className="absolute text-5xl">📍</div>
               </div>
-              <h3 className="text-white font-bold text-lg mb-1">{locError ? 'Campus Location' : 'Location Detected!'}</h3>
-              <p className="text-white/50 text-xs mb-4">{locError ? 'Default SVNIT Surat campus — confirm if correct' : 'Your device GPS has pinpointed your location'}</p>
+              <h3 className="text-white font-bold text-lg mb-1">
+                {locSource === 'gps' ? 'Location Detected!' : locSource === 'ip' ? 'Approximate Location' : 'Campus Location'}
+              </h3>
+              <p className="text-white/50 text-xs mb-4">
+                {locSource === 'gps' ? 'Your device GPS has pinpointed your location' : locSource === 'ip' ? 'Detected from your network — confirm if correct' : 'Default SVNIT Surat campus — confirm if correct'}
+              </p>
 
               {/* Coordinates */}
               <div className="rounded-xl px-4 py-3 mb-4 text-left" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -446,7 +457,7 @@ export default function CampusFeedPage() {
               className="w-full py-3 rounded-2xl font-bold text-white text-sm mb-2"
               style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 20px rgba(34,197,94,0.3)' }}
             >
-              {locError ? '✅ Yes, use this location' : '✅ Yes, this is my location'}
+              {locSource === 'gps' ? '✅ Yes, this is my location' : '✅ Confirm this location'}
             </button>
             <button
               onClick={() => setShowMapModal(false)}
@@ -500,14 +511,14 @@ export default function CampusFeedPage() {
                 <button
                   onClick={async () => {
                     setLocLoading(true);
-                    setLocError(false);
+                    setLocSource(null);
 
                     // Helper: open map with given coordinates
-                    const openMap = (lat: number, lng: number, isFallback: boolean) => {
+                    const openMap = (lat: number, lng: number, source: 'gps' | 'ip' | 'default') => {
                       setLocLoading(false);
                       setPendingLat(lat);
                       setPendingLng(lng);
-                      setLocError(isFallback);
+                      setLocSource(source);
                       setShowMapModal(true);
                     };
 
@@ -517,18 +528,18 @@ export default function CampusFeedPage() {
                         const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(6000) });
                         const data = await res.json();
                         if (data.latitude && data.longitude) {
-                          openMap(data.latitude, data.longitude, true);
+                          openMap(data.latitude, data.longitude, 'ip');
                           return;
                         }
                       } catch { /* ignore */ }
                       // Last resort: hardcoded SVNIT Surat
-                      openMap(21.1648, 72.7868, true);
+                      openMap(21.1648, 72.7868, 'default');
                     };
 
                     // Retry GPS without high accuracy
                     const tryLowAccuracy = () => {
                       navigator.geolocation.getCurrentPosition(
-                        (pos) => openMap(pos.coords.latitude, pos.coords.longitude, false),
+                        (pos) => openMap(pos.coords.latitude, pos.coords.longitude, 'gps'),
                         () => tryIpLocation(),
                         { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
                       );
@@ -547,7 +558,7 @@ export default function CampusFeedPage() {
 
                     // Try GPS: high accuracy first, then low accuracy, then IP fallback
                     navigator.geolocation.getCurrentPosition(
-                      (pos) => openMap(pos.coords.latitude, pos.coords.longitude, false),
+                      (pos) => openMap(pos.coords.latitude, pos.coords.longitude, 'gps'),
                       () => tryLowAccuracy(),
                       { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
                     );
