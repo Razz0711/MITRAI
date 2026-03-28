@@ -461,37 +461,35 @@ export default function CampusFeedPage() {
             <button onClick={() => setShowMapModal(false)} className="text-white/50 hover:text-white text-2xl px-2">×</button>
           </div>
 
-          {/* Static Map Image — no iframe, no CSP issues */}
-          <div className="flex-1 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl overflow-hidden relative" style={{ border: '2px solid rgba(34,197,94,0.3)' }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://staticmap.openstreetmap.de/staticmap.php?center=${pendingLat},${pendingLng}&zoom=16&size=400x280&maptype=mapnik&markers=${pendingLat},${pendingLng},red-pushpin`}
-                alt="Your detected location on map"
-                className="w-full object-cover"
-                style={{ minHeight: 200 }}
-                onError={(e) => {
-                  // Fallback if staticmap unavailable
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-              {/* Pin overlay */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-4xl drop-shadow-2xl" style={{ marginTop: '-20px' }}>📍</div>
+          {/* Location card — zero external deps, always renders */}
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(16,185,129,0.05))', border: '1.5px solid rgba(34,197,94,0.25)' }}>
+              {/* Pulsing pin */}
+              <div className="relative inline-flex items-center justify-center mb-5">
+                <div className="w-20 h-20 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', animation: 'pulseGlow 2s ease-in-out infinite' }} />
+                <div className="absolute text-5xl">📍</div>
               </div>
-            </div>
-          </div>
+              <h3 className="text-white font-bold text-lg mb-1">Location Detected!</h3>
+              <p className="text-white/50 text-xs mb-4">Your device GPS has pinpointed your location</p>
 
-          {/* Open in native maps */}
-          <div className="text-center pb-2">
-            <a
-              href={`https://maps.google.com/?q=${pendingLat},${pendingLng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[11px] text-blue-400 underline"
-            >
-              Open in Google Maps ↗
-            </a>
+              {/* Coordinates */}
+              <div className="rounded-xl px-4 py-3 mb-4 text-left" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <p className="text-[10px] text-white/30 mb-1">COORDINATES</p>
+                <p className="text-white font-mono text-sm">{pendingLat.toFixed(5)}° N</p>
+                <p className="text-white font-mono text-sm">{pendingLng.toFixed(5)}° E</p>
+              </div>
+
+              {/* Open in Maps */}
+              <a
+                href={`https://maps.google.com/?q=${pendingLat},${pendingLng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 text-xs text-green-400 font-medium py-2 rounded-xl transition-colors"
+                style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}
+              >
+                🗺️ View on Google Maps ↗
+              </a>
+            </div>
           </div>
 
           {/* Coords + Confirm */}
