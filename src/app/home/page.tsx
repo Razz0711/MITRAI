@@ -505,9 +505,9 @@ export default function CampusFeedPage() {
                     // Helper: open map with fallback campus location
                     const openWithFallback = () => {
                       setLocLoading(false);
-                      // Default: SVNIT Surat campus
-                      setPendingLat(21.1649);
-                      setPendingLng(72.7844);
+                      // Default: SVNIT Surat campus center
+                      setPendingLat(21.1648);
+                      setPendingLng(72.7868);
                       setLocError(true);
                       setShowMapModal(true);
                     };
