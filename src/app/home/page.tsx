@@ -141,7 +141,6 @@ export default function CampusFeedPage() {
         navigator.permissions.query({ name: 'geolocation' }).then((r) => {
           if (r.state === 'denied') {
             setLocationGranted(false);
-            setLocError(true);
           } else {
             setLocationGranted(null); // show Allow Location screen
           }
@@ -393,13 +392,21 @@ export default function CampusFeedPage() {
           {/* Location card — zero external deps, always renders */}
           <div className="flex-1 flex items-center justify-center p-6">
             <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(16,185,129,0.05))', border: '1.5px solid rgba(34,197,94,0.25)' }}>
+              {/* GPS blocked banner */}
+              {locError && (
+                <div className="mb-4 p-2.5 rounded-xl text-center" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                  <p className="text-[11px] text-amber-400 leading-relaxed">
+                    GPS blocked — showing default campus location. You can confirm or enable GPS in browser settings.
+                  </p>
+                </div>
+              )}
               {/* Pulsing pin */}
               <div className="relative inline-flex items-center justify-center mb-5">
                 <div className="w-20 h-20 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', animation: 'pulseGlow 2s ease-in-out infinite' }} />
                 <div className="absolute text-5xl">📍</div>
               </div>
-              <h3 className="text-white font-bold text-lg mb-1">Location Detected!</h3>
-              <p className="text-white/50 text-xs mb-4">Your device GPS has pinpointed your location</p>
+              <h3 className="text-white font-bold text-lg mb-1">{locError ? 'Campus Location' : 'Location Detected!'}</h3>
+              <p className="text-white/50 text-xs mb-4">{locError ? 'Default SVNIT Surat campus — confirm if correct' : 'Your device GPS has pinpointed your location'}</p>
 
               {/* Coordinates */}
               <div className="rounded-xl px-4 py-3 mb-4 text-left" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -439,7 +446,7 @@ export default function CampusFeedPage() {
               className="w-full py-3 rounded-2xl font-bold text-white text-sm mb-2"
               style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', boxShadow: '0 4px 20px rgba(34,197,94,0.3)' }}
             >
-              ✅ Yes, this is my location
+              {locError ? '✅ Yes, use this location' : '✅ Yes, this is my location'}
             </button>
             <button
               onClick={() => setShowMapModal(false)}
@@ -495,13 +502,22 @@ export default function CampusFeedPage() {
                     setLocLoading(true);
                     setLocError(false);
 
-                    // Check if permission is already denied before trying
+                    // Helper: open map with fallback campus location
+                    const openWithFallback = () => {
+                      setLocLoading(false);
+                      // Default: SVNIT Surat campus
+                      setPendingLat(21.1649);
+                      setPendingLng(72.7844);
+                      setLocError(true);
+                      setShowMapModal(true);
+                    };
+
+                    // Check if permission is already denied — skip waiting for timeout
                     if (navigator.permissions) {
                       try {
                         const perm = await navigator.permissions.query({ name: 'geolocation' });
                         if (perm.state === 'denied') {
-                          setLocLoading(false);
-                          setLocError(true);
+                          openWithFallback();
                           return;
                         }
                       } catch { /* ignore — proceed with getCurrentPosition */ }
@@ -515,10 +531,7 @@ export default function CampusFeedPage() {
                         setPendingLng(pos.coords.longitude);
                         setShowMapModal(true);
                       },
-                      (_err) => {
-                        setLocLoading(false);
-                        setLocError(true);
-                      },
+                      () => openWithFallback(),
                       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
                     );
                   }}
@@ -535,21 +548,6 @@ export default function CampusFeedPage() {
                 >
                   Skip for now →
                 </button>
-                {locError && (
-                  <div className="p-3 rounded-xl text-center space-y-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
-                    <p className="text-xs text-amber-400 font-semibold">📍 Location access is blocked</p>
-                    <p className="text-[11px] text-amber-400/80 leading-relaxed">
-                      Open <strong className="text-amber-300">Chrome → ⋮ Menu → Settings → Site Settings → Location</strong> → find this site → tap <strong className="text-amber-300">Allow</strong> → come back &amp; refresh.
-                    </p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="mt-1 px-4 py-1.5 rounded-lg text-[11px] font-semibold text-amber-300 transition-colors"
-                      style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}
-                    >
-                      🔄 I&apos;ve enabled it — Refresh
-                    </button>
-                  </div>
-                )}
                 <p className="text-[10px] text-[var(--muted)] leading-relaxed">
                   Your location is only used to show nearby campus posts. We don&apos;t track or store your movement.
                 </p>
