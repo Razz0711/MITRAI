@@ -250,6 +250,36 @@ export default function AnonChatRoomPage() {
   const isRevealed = data.room.status === 'revealed';
   const canReveal = messages.length >= 10 && !isRevealed;
 
+  // ── Category-specific chat backgrounds ──────────────────────────────────
+  const CHAT_BACKGROUNDS: Record<string, { gradient: string; pattern: string }> = {
+    crush: {
+      gradient: 'radial-gradient(ellipse at 20% 80%, rgba(236,72,153,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(251,113,133,0.1) 0%, transparent 60%)',
+      pattern: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 20 C30 20 20 10 15 16 C10 22 20 28 30 36 C40 28 50 22 45 16 C40 10 30 20 30 20Z' fill='rgba(236,72,153,0.06)' /%3E%3C/svg%3E")`,
+    },
+    career: {
+      gradient: 'radial-gradient(ellipse at 0% 100%, rgba(245,158,11,0.1) 0%, transparent 60%), radial-gradient(ellipse at 100% 0%, rgba(251,191,36,0.07) 0%, transparent 60%)',
+      pattern: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='40' height='40' fill='none'/%3E%3Cpath d='M0 40 L40 0' stroke='rgba(245,158,11,0.05)' stroke-width='1'/%3E%3Cpath d='M-40 40 L0 0' stroke='rgba(245,158,11,0.05)' stroke-width='1'/%3E%3Cpath d='M40 40 L80 0' stroke='rgba(245,158,11,0.05)' stroke-width='1'/%3E%3C/svg%3E")`,
+    },
+    vent: {
+      gradient: 'radial-gradient(ellipse at 30% 70%, rgba(99,102,241,0.1) 0%, transparent 60%), radial-gradient(ellipse at 70% 30%, rgba(139,92,246,0.08) 0%, transparent 60%)',
+      pattern: `url("data:image/svg+xml,%3Csvg width='80' height='40' viewBox='0 0 80 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 20 Q20 5 40 20 Q60 35 80 20' fill='none' stroke='rgba(99,102,241,0.07)' stroke-width='1.5'/%3E%3C/svg%3E")`,
+    },
+    confession: {
+      gradient: 'radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.1) 0%, transparent 70%)',
+      pattern: `url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='15' cy='15' r='1.5' fill='rgba(167,139,250,0.12)'/%3E%3C/svg%3E")`,
+    },
+    night_owl: {
+      gradient: 'radial-gradient(ellipse at 80% 20%, rgba(30,27,75,0.6) 0%, transparent 50%), radial-gradient(ellipse at 20% 80%, rgba(49,46,129,0.4) 0%, transparent 50%)',
+      pattern: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='15' r='1.2' fill='rgba(255,255,255,0.18)'/%3E%3Ccircle cx='65' cy='35' r='0.8' fill='rgba(255,255,255,0.14)'/%3E%3Ccircle cx='80' cy='70' r='1.5' fill='rgba(255,255,255,0.2)'/%3E%3Ccircle cx='35' cy='80' r='0.9' fill='rgba(255,255,255,0.12)'/%3E%3Ccircle cx='50' cy='55' r='0.6' fill='rgba(255,255,255,0.1)'/%3E%3Ccircle cx='90' cy='10' r='1' fill='rgba(255,255,255,0.16)'/%3E%3C/svg%3E")`,
+    },
+    radar: {
+      gradient: 'radial-gradient(ellipse at 50% 50%, rgba(16,185,129,0.08) 0%, transparent 70%)',
+      pattern: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='30' fill='none' stroke='rgba(16,185,129,0.06)' stroke-width='1'/%3E%3Ccircle cx='40' cy='40' r='20' fill='none' stroke='rgba(16,185,129,0.05)' stroke-width='1'/%3E%3Ccircle cx='40' cy='40' r='10' fill='none' stroke='rgba(16,185,129,0.04)' stroke-width='1'/%3E%3C/svg%3E")`,
+    },
+  };
+  const bg = CHAT_BACKGROUNDS[data.room.roomType] || CHAT_BACKGROUNDS.vent;
+
+
   return (
     <div id="chat-root" className="flex flex-col" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--background)', overflow: 'hidden' }}>
 
@@ -315,6 +345,15 @@ export default function AnonChatRoomPage() {
             </button>
           )}
           {isRevealed && <span className="text-[11px] px-2 py-1 rounded-lg bg-green-500/20 text-green-400">✓ Revealed</span>}
+          {/* Exit button */}
+          <button
+            onClick={handleClose}
+            className="text-[11px] px-2.5 py-1 rounded-lg font-semibold transition-colors"
+            style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}
+          >
+            Exit
+          </button>
+
           <div className="relative" ref={menuRef}>
             <button onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-xl text-white/65 hover:text-white transition-colors">
               <MoreVertical size={18} />
@@ -331,7 +370,11 @@ export default function AnonChatRoomPage() {
       </div>
 
       {/* ─── Messages ─── */}
-      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-3 py-3" style={{ overscrollBehavior: 'contain' }}>
+      <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-3 py-3" style={{ overscrollBehavior: 'contain', background: bg.gradient, backgroundImage: `${bg.gradient.includes('url') ? '' : ''}, ${bg.pattern}` }}>
+        {/* Background overlay */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, background: bg.gradient, backgroundImage: bg.pattern }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+
         {/* System message */}
         <div className="text-center py-3 mb-2">
           <p className="text-[11px] text-white/65 inline-block px-3 py-1 rounded-full" style={{ background: 'var(--surface)' }}>
@@ -355,6 +398,7 @@ export default function AnonChatRoomPage() {
         )}
 
         <div ref={bottomRef} />
+        </div>{/* end relative z-1 wrapper */}
       </div>
 
       {/* ─── Input Bar ─── */}
