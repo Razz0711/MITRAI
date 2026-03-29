@@ -132,6 +132,7 @@ const MessageBubble = memo(function MessageBubble({
               const src = imgMatch?.[1];
               return src ? (
                 <div className="my-1 rounded-2xl overflow-hidden" style={{ maxWidth: '220px' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
                     alt="Selfie"

@@ -99,6 +99,7 @@ export function useTimeTracker() {
       // It's covered by the interval/unload. We just attribute the last seconds to the old route.
       recordElapsed(); 
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, pathname]);
 
   // Window hide/unload handlers
@@ -129,6 +130,7 @@ export function useTimeTracker() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, pathname]);
 
 }

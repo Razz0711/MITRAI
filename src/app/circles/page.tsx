@@ -715,6 +715,7 @@ export default function CirclesPage() {
         setRequestError(data.error || 'Failed to send request');
       }
     } catch (err) {
+      console.error('Failed to send request:', err);
       setRequestError('Network error');
     } finally {
       setRequestSending(false);

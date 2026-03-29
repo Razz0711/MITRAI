@@ -293,7 +293,7 @@ export default function AryaCallPage() {
             border: '3px solid rgba(139,92,246,0.3)',
           }}>
             {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div style={{ width: '100%', height: '100%', backgroundImage: `url(${avatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
             ) : (
               <div style={{
                 width: '100%', height: '100%',
