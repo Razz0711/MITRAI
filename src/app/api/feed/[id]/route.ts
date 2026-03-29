@@ -6,12 +6,26 @@
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
+import nodemailer from 'nodemailer';
 import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 import { deletePost, toggleReaction } from '@/lib/store/feed';
 import { supabase } from '@/lib/store/core';
 
 export const dynamic = 'force-dynamic';
+
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: (process.env.SMTP_EMAIL || '').trim(),
+      pass: (process.env.SMTP_APP_PASSWORD || '').trim(),
+    },
+    connectionTimeout: 4000,
+  });
+}
 
 // GET /api/feed/[id]?action=imin_users   → who clicked "I'm in" (post author only)
 // GET /api/feed/[id]?action=comments     → comments on the post
@@ -201,7 +215,28 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
          let messageText = `⚠️ **System Alert**: Someone has reported your anonymous post for inappropriate content.\n\nYou have received ${reportCount} total reports.`;
          
          if (reportCount >= 5) {
-            messageText += `\n\n🚨 **URGENT WARNING**: You have reached 5 reports. Your account is now flagged and facing an imminent ban. Please adhere to the community guidelines immediately!`;
+            messageText += `\n\n🚨 **URGENT WARNING**: You have reached 5 reports. Your account has been flagged for admin review. Pending admin approval, your account might be suspended rapidly. Please adhere to the community guidelines.`;
+            
+            // Send email to admin
+            try {
+               const adminEmail = (process.env.SMTP_EMAIL || '').trim();
+               if (adminEmail) {
+                  const t = createTransporter();
+                  await t.sendMail({
+                     from: `"MitrRAI Safety" <${adminEmail}>`,
+                     to: adminEmail,
+                     subject: `🚨 MitrRAI: User reached 5 reports!`,
+                     html: `
+                        <h3>Action Required: User reached 5 reports</h3>
+                        <p>User ID: <strong>${reportedUserId}</strong></p>
+                        <p>This user's anonymous posts have been reported 5 times.</p>
+                        <p>Please review their account in the Supabase Dashboard and decide whether to block or ban them.</p>
+                     `
+                  });
+               }
+            } catch (mailErr) {
+               console.error('Failed to send admin report email:', mailErr);
+            }
          } else {
             messageText += `\nBe careful! You will receive a block WARNING after 5 total reports. (${warningsLeft} reports remaining).`;
          }
