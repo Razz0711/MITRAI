@@ -22,6 +22,7 @@ export interface CampusPost {
   reactions?: { imin: number; reply: number; connect: number };
   myReactions?: string[]; // which types current user reacted with
   isMyPost?: boolean; // true if current user is the author (set before userId is stripped)
+  isReportedByMe?: boolean; // true if current user has already reported the post
 }
 
 /** Internal post type with institution field for sorting */
@@ -115,21 +116,35 @@ export async function getFeedPosts(opts: {
 
   // Fetch current user's reactions
   const myReactionsMap = new Map<string, string[]>();
+  const myReportsSet = new Set<string>();
+  
   if (userId) {
-    const { data: myReactions } = await supabase
-      .from('post_reactions')
-      .select('post_id, type')
-      .eq('user_id', userId)
-      .in('post_id', postIds);
-    (myReactions || []).forEach(r => {
+    const [reactionsRes, reportsRes] = await Promise.all([
+      supabase
+        .from('post_reactions')
+        .select('post_id, type')
+        .eq('user_id', userId)
+        .in('post_id', postIds),
+      supabase
+        .from('post_reports')
+        .select('post_id')
+        .eq('reporter_id', userId)
+        .in('post_id', postIds)
+    ]);
+    
+    (reactionsRes.data || []).forEach(r => {
       if (!myReactionsMap.has(r.post_id)) myReactionsMap.set(r.post_id, []);
       myReactionsMap.get(r.post_id)!.push(r.type);
     });
+    
+    (reportsRes.data || []).forEach(r => myReportsSet.add(r.post_id));
   }
 
   // Enrich posts
   for (const post of internalPosts) {
     post.isMyPost = userId ? post.userId === userId : false;
+    post.isReportedByMe = myReportsSet.has(post.id);
+    
     if (post.isAnonymous) {
       post.userName = 'Anonymous';
       post.userId = '';

@@ -128,7 +128,7 @@ export default function PostCard({
   }, []);
 
   // Report state
-  const [isReported, setIsReported] = useState(false);
+  const [isReported, setIsReported] = useState(post.isReportedByMe || false);
 
   const handleReport = async () => {
     if (isReported) return;
