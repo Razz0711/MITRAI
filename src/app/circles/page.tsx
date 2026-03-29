@@ -246,7 +246,7 @@ function CircleChat({ circle }: { circle: Circle }) {
   };
 
   /* ── render a single message bubble ── */
-  const renderMessage = (m: CircleMessage, isMe: boolean) => {
+  const renderMessage = (m: CircleMessage, isMe: boolean): React.ReactNode => {
     const msgType = m.type || 'text';
     const meta = m.metadata || {};
 
@@ -256,12 +256,11 @@ function CircleChat({ circle }: { circle: Circle }) {
       const imgName = meta.name ? String(meta.name) : 'Image';
       return (
         <div className="rounded-xl overflow-hidden max-w-[260px]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imgUrl}
-            alt={imgName}
-            className="w-full max-h-[200px] object-cover cursor-pointer"
-            style={{ borderRadius: '12px' }}
+          <div
+            role="img"
+            aria-label={imgName}
+            className="w-full h-[200px] bg-cover bg-center cursor-pointer rounded-xl"
+            style={{ backgroundImage: `url(${imgUrl})` }}
             onClick={() => window.open(imgUrl, '_blank')}
           />
           {meta.name && (
