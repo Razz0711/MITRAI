@@ -619,7 +619,9 @@ export default function CirclesPage() {
 
               {/* ─── Detail tabs ─── */}
               <div className="flex items-center gap-4 mb-5 border-b border-[var(--border)] pb-2">
-                {(['rooms', 'messages', 'members'] as const).map(t => (
+                {(['rooms', 'messages', 'members'] as const).map(t => {
+                  const tabLabel = t === 'rooms' ? 'Live Room' : t;
+                  return (
                   <button
                     key={t}
                     onClick={() => { setDetailTab(t); if (t === 'members') loadMembers(activeCircle.id); }}
@@ -630,9 +632,10 @@ export default function CirclesPage() {
                     }`}
                     style={detailTab === t ? { borderColor: activeCircle.color, color: activeCircle.color } : {}}
                   >
-                    {t}
+                    {tabLabel}
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               {/* ─── Rooms tab ─── */}
@@ -685,21 +688,8 @@ export default function CirclesPage() {
                     )}
                   </div>
 
-                  {/* Start a new room — only for members */}
-                  {isJoined(activeCircle.id) && (!showCreate ? (
-                    <button
-                      onClick={() => setShowCreate(true)}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--surface)] transition-all w-full text-left mb-5"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-[var(--primary)]/15 flex items-center justify-center">
-                        <Plus size={14} className="text-[var(--primary-light)]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-[var(--foreground)]">Start a new room</p>
-                        <p className="text-[11px] text-[var(--muted-strong)]">DSA · CP · Project · Discussion · Pomodoro</p>
-                      </div>
-                    </button>
-                  ) : (
+                  {/* Create room form — only for members */}
+                  {isJoined(activeCircle.id) && showCreate && (
                     <div className="p-4 rounded-2xl mb-5 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-[var(--foreground)]">📚 New Room in {activeCircle.name}</span>
@@ -728,7 +718,7 @@ export default function CirclesPage() {
                         </button>
                       </div>
                     </div>
-                  ))}
+                  )}
 
                   {/* RECENT ACTIVITY */}
                   <div>

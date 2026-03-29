@@ -47,6 +47,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, circleId, userId } = body;
 
+    // 'members' action only needs circleId
+    if (action === 'members') {
+      if (!circleId) {
+        return NextResponse.json({ success: false, error: 'circleId required' }, { status: 400 });
+      }
+      const members = await getCircleMembers(circleId);
+      return NextResponse.json({ success: true, data: { members } });
+    }
+
     if (!circleId || !userId) {
       return NextResponse.json({ success: false, error: 'circleId and userId required' }, { status: 400 });
     }
@@ -63,11 +72,6 @@ export async function POST(req: NextRequest) {
       const ok = await leaveCircle(userId, circleId);
       if (!ok) return NextResponse.json({ success: false, error: 'Could not leave circle' }, { status: 500 });
       return NextResponse.json({ success: true });
-    }
-
-    if (action === 'members') {
-      const members = await getCircleMembers(circleId);
-      return NextResponse.json({ success: true, data: { members } });
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
