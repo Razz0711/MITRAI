@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { Search, Plus, ArrowLeft, Send, ChevronUp } from 'lucide-react';
+import { Search, Plus, ArrowLeft, Send } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import { getCircleMessages, sendCircleMessage, CircleMessage } from '@/lib/store/circles';
 
@@ -229,7 +229,7 @@ export default function CirclesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [roomName, setRoomName] = useState('');
   const [roomTopic, setRoomTopic] = useState('');
-  const [roomMax, setRoomMax] = useState(5);
+  const [roomMax, setRoomMax] = useState(100);
   const [creating, setCreating] = useState(false);
 
   // All members for the circle
@@ -340,7 +340,7 @@ export default function CirclesPage() {
         setShowCreate(false);
         setRoomName('');
         setRoomTopic('');
-        setRoomMax(5);
+        setRoomMax(100);
         await loadCircles();
       }
     } catch (err) {
@@ -662,7 +662,6 @@ export default function CirclesPage() {
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             {room.topic && <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-500/25 text-blue-300 font-semibold">{room.topic}</span>}
-                            <span className="text-[11px] text-[var(--muted-strong)]">👥 {room.maxMembers} max</span>
                             <span className="text-[10px] text-[var(--success)]">{timeAgo(room.createdAt)}</span>
                             <span className="ml-auto text-[10px] font-bold text-white px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500">Join</span>
                           </div>
@@ -709,14 +708,6 @@ export default function CirclesPage() {
                         className="w-full px-3 py-2 rounded-xl text-xs bg-white/5 border border-[var(--glass-border)] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none focus:border-[var(--primary)]/50"
                       />
                       <div className="flex items-center gap-3">
-                        <select
-                          value={roomMax}
-                          onChange={e => setRoomMax(Number(e.target.value))}
-                          className="px-3 py-2 rounded-xl text-xs border border-[var(--glass-border)] text-[var(--foreground)] outline-none"
-                          style={{ backgroundColor: 'var(--surface)', colorScheme: 'dark' }}
-                        >
-                          {[2, 3, 4, 5, 6, 8, 10].map(n => <option key={n} value={n} style={{ backgroundColor: 'var(--surface)', color: 'var(--foreground)' }}>{n} people</option>)}
-                        </select>
                         <button
                           onClick={handleCreateRoom}
                           disabled={creating || !roomName.trim()}
