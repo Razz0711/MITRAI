@@ -432,8 +432,7 @@ export default function CirclesPage() {
   const circleRooms = activeCircle ? rooms.filter(r => r.circleId === activeCircle.id) : [];
   const liveRooms = circleRooms.filter(r => r.status === 'active');
 
-  // Dept stats — how many from your dept are in each circle
-  const myDept = user?.department || '';
+
 
 
   return (
@@ -782,18 +781,6 @@ export default function CirclesPage() {
               {/* ─── Members tab ─── */}
               {detailTab === 'members' && (
                 <div>
-                  {/* Dept breakdown for this circle */}
-                  {myDept && circleMembers.length > 0 && (() => {
-                    const deptCount = circleMembers.filter(m => m.department === myDept).length;
-                    return deptCount > 0 ? (
-                      <div className="rounded-2xl p-3 mb-4 flex items-center gap-3" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
-                        <span className="text-xl">🏛️</span>
-                        <p className="text-xs text-[var(--foreground)]">
-                          <span className="font-bold text-[var(--success)]">{deptCount}</span> member{deptCount !== 1 ? 's' : ''} from your department ({myDept}) are in this circle
-                        </p>
-                      </div>
-                    ) : null;
-                  })()}
 
                   {/* Member list */}
                   <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)] flex items-center gap-2 mb-3">
@@ -811,9 +798,7 @@ export default function CirclesPage() {
                             <p className="text-sm text-[var(--foreground)] font-medium truncate">{m.userName || 'Student'}</p>
                             {m.department && <p className="text-[10px] text-[var(--muted-strong)] truncate">{m.department}</p>}
                           </div>
-                          {m.department === myDept && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--success)]/10 text-[var(--success)] border border-[var(--success)]/20 shrink-0">your dept</span>
-                          )}
+
                         </div>
                       ))}
                     </div>

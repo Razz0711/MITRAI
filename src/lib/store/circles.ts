@@ -71,6 +71,21 @@ export async function getCircleMembers(circleId: string): Promise<{ userId: stri
     .in('id', userIds);
 
   const infoMap = new Map((students || []).map((s) => [s.id as string, { name: s.name as string, department: s.department as string | undefined }]));
+
+  // Fallback: fetch names from auth metadata for users not in students table
+  const missingIds = userIds.filter((id) => !infoMap.has(id) || !infoMap.get(id)?.name);
+  for (const id of missingIds) {
+    try {
+      const { data: authData } = await supabase.auth.admin.getUserById(id);
+      if (authData?.user?.user_metadata?.name) {
+        infoMap.set(id, {
+          name: authData.user.user_metadata.name,
+          department: authData.user.user_metadata.department,
+        });
+      }
+    } catch { /* ignore auth lookup failures */ }
+  }
+
   return userIds.map((id) => ({
     userId: id,
     userName: infoMap.get(id)?.name || 'Student',
