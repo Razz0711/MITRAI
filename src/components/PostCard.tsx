@@ -161,7 +161,6 @@ export default function PostCard({
   const handleAddComment = async () => {
     if (!commentText.trim() || !user) return;
     const text = commentText.trim();
-    setCommentText('');
     try {
       const res = await fetch(`/api/feed/${post.id}`, {
         method: 'POST',
@@ -169,8 +168,17 @@ export default function PostCard({
         body: JSON.stringify({ action: 'comment', content: text }),
       });
       const data = await res.json();
-      if (data.success) setComments(prev => [...prev, data.data]);
-    } catch { /* ignore */ }
+      if (data.success) {
+        setComments(prev => [...prev, data.data]);
+        setCommentText('');
+      } else {
+        alert(data.error || 'Failed to post reply.');
+        setCommentText(text); // Restore text on failure
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Failed to post reply.');
+      setCommentText(text); // Restore text on failure
+    }
   };
 
   return (
@@ -298,20 +306,16 @@ export default function PostCard({
             {showComments ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
           </button>
 
-          {/* Connect — hidden for own post */}
-          {!isOwn && (
+          {/* Message option that appears when I'm in (only for non-anon posts) */}
+          {!isOwn && iminActive && !post.isAnonymous && post.userId && (
             <button
-              onClick={handleConnectClick}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all active:scale-95 ml-auto reaction-pop btn-ripple ${
-                connectActive
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'text-[var(--muted-strong)] hover:bg-white/6 hover:text-[var(--foreground)]'
-              }`}
+               onClick={() => router.push(`/chat?friendId=${encodeURIComponent(post.userId)}&friendName=${encodeURIComponent(post.userName || 'Student')}`)}
+               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-all active:scale-95 btn-ripple ml-auto"
             >
-              <Zap size={12} />
-              {post.isAnonymous ? 'Anonymous' : connectCount > 0 ? `${connectCount} connect` : 'Connect'}
+               <MessageCircle size={12} /> Message
             </button>
           )}
+
         </div>
 
         {/* ─── Interested Users Panel (post author only) ─── */}
