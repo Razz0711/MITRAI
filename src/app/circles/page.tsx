@@ -143,13 +143,31 @@ function CircleChat({ circle }: { circle: Circle }) {
     const text = inputText.trim();
     setInputText('');
     try {
-      await fetch(`/api/circles/${circle.id}/messages`, {
+      const res = await fetch(`/api/circles/${circle.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       });
+      const data = await res.json();
+      if (data.success && data.message) {
+        // Add the sent message to the UI immediately
+        const msg = data.message;
+        setMessages(prev => {
+          // Avoid dupe if realtime already added it
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+        setTimeout(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }, 50);
+      } else {
+        // Fallback: reload messages
+        loadMessages(true);
+      }
     } catch (err) {
       console.error('sendCircleMessage:', err);
+      // Fallback: reload messages
+      loadMessages(true);
     }
   };
   
@@ -161,11 +179,16 @@ function CircleChat({ circle }: { circle: Circle }) {
   };
 
   return (
-    <div className="flex flex-col h-[60dvh] rounded-2xl border border-[var(--glass-border)] bg-[var(--surface)] overflow-hidden">
+    <div className="flex flex-col h-[60dvh] rounded-2xl border border-[var(--glass-border)] overflow-hidden">
       <div 
         ref={scrollRef} 
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 flex flex-col gap-4"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, ${circle.color}15 1px, transparent 0)`,
+          backgroundSize: '24px 24px',
+          backgroundColor: 'var(--surface)',
+        }}
       >
         {loading ? (
            <div className="flex-1 flex justify-center items-center">
