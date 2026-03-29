@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth";
 import ThemeProvider from "@/components/ThemeProvider";
 import AppShell from "@/components/AppShell";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import ToastProvider from "@/components/ToastProvider";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import SplashScreen from "@/components/SplashScreen";
@@ -77,21 +78,23 @@ export default function RootLayout({
       <body
         className={`${plusJakarta.variable} ${outfit.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <ThemeProvider>
-            <ToastProvider>
-              <AppProviders>
-                <AppShell>
-                  <ErrorBoundary>
-                    {children}
-                  </ErrorBoundary>
-                  <OnboardingWalkthrough />
-                  <SplashScreen />
-                </AppShell>
-              </AppProviders>
-            </ToastProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <GlobalErrorBoundary>
+            <AuthProvider>
+              <ToastProvider>
+                <AppProviders>
+                  <AppShell>
+                    <ErrorBoundary>
+                      {children}
+                    </ErrorBoundary>
+                    <OnboardingWalkthrough />
+                    <SplashScreen />
+                  </AppShell>
+                </AppProviders>
+              </ToastProvider>
+            </AuthProvider>
+          </GlobalErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );
