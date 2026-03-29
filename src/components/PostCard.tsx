@@ -459,23 +459,25 @@ export default function PostCard({
         {showIminModal && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
             <div 
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+              className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
               onClick={() => setShowIminModal(false)}
             />
             <div 
-              className="relative w-full max-w-sm rounded-[24px] overflow-hidden shadow-2xl animate-in zoom-in-95 fade-in duration-300"
-              style={{ background: 'var(--surface-solid)', border: '1px solid rgba(255,255,255,0.1)' }}
+              className="relative w-full max-w-sm rounded-[28px] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8)] animate-in zoom-in-[0.97] fade-in duration-300 bg-[#13141c] border border-white/10"
             >
-              <div className="p-6">
+              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent opacity-80" />
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 blur-[50px] rounded-full pointer-events-none" />
+
+              <div className="p-6 relative">
                 <button 
                   onClick={() => setShowIminModal(false)}
-                  className="absolute top-4 right-4 text-[var(--muted)] hover:text-white transition-colors"
+                  className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[var(--muted)] hover:text-white hover:bg-white/10 transition-all"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
                 
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-4">
-                  <Users size={20} className="text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-5 border border-emerald-400/30 ring-4 ring-emerald-500/10">
+                  <Users size={24} className="text-white drop-shadow-sm" />
                 </div>
                 
                 <h3 className="text-xl font-bold text-white mb-2">You&apos;re in! 🎉</h3>
