@@ -20,7 +20,7 @@ INSERT INTO circles (id, name, emoji, description, color) VALUES
   ('coding',  'Coding',  '💻', 'Programming, hackathons, code reviews',       '#3b82f6'),
   ('gaming',  'Gaming',  '🎮', 'BGMI, Valorant, Chess & more',                '#ef4444'),
   ('startup', 'Startup', '🚀', 'Build products, find co-founders',            '#f59e0b'),
-  ('blogging','Blogging','✍️', 'Writing, peer review, SVNIT blog',            '#8b5cf6'),
+  ('blogging','Blogging','✍️', 'Writing, peer review, blogs',                '#8b5cf6'),
   ('music',   'Music',   '🎵', 'Jam sessions, playlists, genre matching',     '#ec4899'),
   ('fitness', 'Fitness', '💪', 'Gym partners, morning runs, nutrition',       '#10b981'),
   ('movies',  'Movies',  '🎬', 'Watch parties, reviews, discussions',         '#f97316')

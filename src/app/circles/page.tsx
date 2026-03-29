@@ -632,6 +632,10 @@ export default function CirclesPage() {
 
   // All members for the circle
   const [circleMembers, setCircleMembers] = useState<{userId: string; userName: string; department?: string}[]>([]);
+  const [selectedMemberModal, setSelectedMemberModal] = useState<{userId: string; userName: string; department?: string} | null>(null);
+  const [requestSending, setRequestSending] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const [requestError, setRequestError] = useState('');
 
   const roomPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -687,6 +691,35 @@ export default function CirclesPage() {
       console.error('loadMembers:', err);
     }
   }, []);
+
+  const handleSendRequest = async () => {
+    if (!user || !selectedMemberModal) return;
+    setRequestSending(true);
+    setRequestError('');
+    try {
+      const res = await fetch('/api/friends', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_request', 
+          fromUserId: user.id, 
+          fromUserName: user.name || user.email?.split('@')[0] || 'Member',
+          toUserId: selectedMemberModal.userId, 
+          toUserName: selectedMemberModal.userName,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRequestSent(true);
+      } else {
+        setRequestError(data.error || 'Failed to send request');
+      }
+    } catch (err) {
+      setRequestError('Network error');
+    } finally {
+      setRequestSending(false);
+    }
+  };
 
   const isJoined = (circleId: string) =>
     memberships.some((m) => m.circleId === circleId);
@@ -1147,7 +1180,11 @@ export default function CirclesPage() {
                   {circleMembers.length > 0 ? (
                     <div className="space-y-1">
                       {circleMembers.map(m => (
-                        <div key={m.userId} className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--surface)] transition-all">
+                        <div 
+                          key={m.userId} 
+                          onClick={() => { setSelectedMemberModal(m); setRequestSent(false); setRequestError(''); }}
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--surface)] transition-all cursor-pointer"
+                        >
                           <div className={`w-8 h-8 rounded-full ${avatarColor(m.userName || 'U')} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                             {(m.userName || 'U').charAt(0).toUpperCase()}
                           </div>
@@ -1178,6 +1215,55 @@ export default function CirclesPage() {
           )}
         </div>
       </div>
+
+      {/* Member Profile Modal */}
+      {selectedMemberModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-[var(--background)] border border-[var(--glass-border)] p-6 rounded-2xl w-full max-w-sm shadow-xl">
+            <div className="flex justify-between items-start mb-4">
+              <div className={`w-16 h-16 rounded-full ${avatarColor(selectedMemberModal.userName || 'U')} flex items-center justify-center text-white text-2xl font-bold`}>
+                {(selectedMemberModal.userName || 'U').charAt(0).toUpperCase()}
+              </div>
+              <button 
+                onClick={() => setSelectedMemberModal(null)}
+                className="text-[var(--muted)] hover:text-[var(--foreground)] p-1 rounded-full hover:bg-[var(--surface)] transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <h2 className="text-[var(--foreground)] text-xl font-bold truncate">{selectedMemberModal.userName}</h2>
+            <p className="text-[var(--muted)] text-sm mt-1">{selectedMemberModal.department || 'Student'}</p>
+            
+            {user?.id !== selectedMemberModal.userId ? (
+              <div className="mt-6 pt-4 border-t border-[var(--glass-border)]">
+                {requestSent ? (
+                  <button disabled className="w-full py-2.5 rounded-xl font-bold text-sm bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                    ✓ Request Sent
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handleSendRequest}
+                    disabled={requestSending}
+                    className="w-full py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-50 hover:opacity-90 transition-opacity whitespace-nowrap overflow-hidden"
+                    style={{ background: 'var(--primary)' }}
+                  >
+                    {requestSending ? 'Sending...' : 'Send Friend Request'}
+                  </button>
+                )}
+                {requestError && (
+                  <p className="text-xs text-red-500 mt-2 text-center">{requestError}</p>
+                )}
+              </div>
+            ) : (
+              <div className="mt-6 pt-4 border-t border-[var(--glass-border)] text-center text-xs text-[var(--muted)] font-medium">
+                This is you
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
