@@ -120,6 +120,8 @@ export interface CircleMessage {
   senderId: string;
   senderName: string;
   text: string;
+  type: 'text' | 'image' | 'document' | 'poll';
+  metadata: Record<string, unknown> | null;
   createdAt: string;
 }
 
@@ -141,12 +143,38 @@ export async function sendCircleMessage(
   senderId: string,
   senderName: string,
   text: string,
+  type: 'text' | 'image' | 'document' | 'poll' = 'text',
+  metadata: Record<string, unknown> | null = null,
 ): Promise<CircleMessage | null> {
   const { data, error } = await supabase
     .from('circle_messages')
-    .insert({ circle_id: circleId, sender_id: senderId, sender_name: senderName, text })
+    .insert({ circle_id: circleId, sender_id: senderId, sender_name: senderName, text, type, metadata })
     .select()
     .single();
   if (error) { console.error('sendCircleMessage:', error); return null; }
   return fromRow<CircleMessage>(data);
 }
+
+/** Vote on a poll */
+export async function votePoll(messageId: string, userId: string, optionIndex: number): Promise<boolean> {
+  // Upsert: update vote if already voted, insert if not
+  const { error } = await supabase
+    .from('circle_poll_votes')
+    .upsert(
+      { message_id: messageId, user_id: userId, option_index: optionIndex },
+      { onConflict: 'message_id,user_id' }
+    );
+  if (error) { console.error('votePoll:', error); return false; }
+  return true;
+}
+
+/** Get poll votes for a message */
+export async function getPollVotes(messageId: string): Promise<{ userId: string; optionIndex: number }[]> {
+  const { data, error } = await supabase
+    .from('circle_poll_votes')
+    .select('user_id, option_index')
+    .eq('message_id', messageId);
+  if (error) { console.error('getPollVotes:', error); return []; }
+  return (data || []).map((r) => ({ userId: r.user_id as string, optionIndex: r.option_index as number }));
+}
+

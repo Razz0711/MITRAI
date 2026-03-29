@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { Search, ArrowLeft, Send } from 'lucide-react';
+import { Search, ArrowLeft, Send, Paperclip, Image as ImageIcon, FileText, BarChart3, X, Download } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 interface CircleMessage {
@@ -19,6 +19,8 @@ interface CircleMessage {
   senderId: string;
   senderName: string;
   text: string;
+  type: 'text' | 'image' | 'document' | 'poll';
+  metadata: Record<string, unknown> | null;
   createdAt: string;
 }
 
@@ -65,8 +67,22 @@ function CircleChat({ circle }: { circle: Circle }) {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [showAttach, setShowAttach] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [showPollForm, setShowPollForm] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState(['', '']);
+  const [pollVotes, setPollVotes] = useState<Record<string, { userId: string; optionIndex: number }[]>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
   
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }, 80);
+  };
+
   const loadMessages = useCallback(async (isInitial = true) => {
     if (isInitial) setLoading(true);
     else setLoadingMore(true);
@@ -81,18 +97,12 @@ function CircleChat({ circle }: { circle: Circle }) {
       
       if (isInitial) {
         setMessages(data);
-        setTimeout(() => {
-          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }, 100);
+        scrollToBottom();
       } else {
         const el = scrollRef.current;
         const oldHeight = el ? el.scrollHeight : 0;
         setMessages(prev => [...data, ...prev]);
-        if (el) {
-          setTimeout(() => {
-            el.scrollTop = el.scrollHeight - oldHeight;
-          }, 0);
-        }
+        if (el) setTimeout(() => { el.scrollTop = el.scrollHeight - oldHeight; }, 0);
       }
     } catch (err) {
       console.error(err);
@@ -115,27 +125,35 @@ function CircleChat({ circle }: { circle: Circle }) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'circle_messages', filter: `circle_id=eq.${circle.id}` },
         (payload) => {
-          const newMsg = {
+          const newMsg: CircleMessage = {
             id: payload.new.id,
             circleId: payload.new.circle_id,
             senderId: payload.new.sender_id,
             senderName: payload.new.sender_name,
             text: payload.new.text,
+            type: payload.new.type || 'text',
+            metadata: payload.new.metadata || null,
             createdAt: payload.new.created_at,
           };
-          setMessages(prev => [...prev, newMsg]);
-          
-          setTimeout(() => {
-            if (scrollRef.current) {
-              scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-            }
-          }, 100);
+          setMessages(prev => {
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+          scrollToBottom();
         }
       )
       .subscribe();
       
     return () => { supabaseBrowser.removeChannel(channel); };
   }, [circle.id]);
+
+  const addMsg = (msg: CircleMessage) => {
+    setMessages(prev => {
+      if (prev.some(m => m.id === msg.id)) return prev;
+      return [...prev, msg];
+    });
+    scrollToBottom();
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,25 +167,74 @@ function CircleChat({ circle }: { circle: Circle }) {
         body: JSON.stringify({ text }),
       });
       const data = await res.json();
-      if (data.success && data.message) {
-        // Add the sent message to the UI immediately
-        const msg = data.message;
-        setMessages(prev => {
-          // Avoid dupe if realtime already added it
-          if (prev.some(m => m.id === msg.id)) return prev;
-          return [...prev, msg];
-        });
-        setTimeout(() => {
-          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }, 50);
-      } else {
-        // Fallback: reload messages
-        loadMessages(true);
-      }
+      if (data.success && data.message) addMsg(data.message);
+      else loadMessages(true);
     } catch (err) {
       console.error('sendCircleMessage:', err);
-      // Fallback: reload messages
       loadMessages(true);
+    }
+  };
+
+  const handleFileUpload = async (file: File, type: 'image' | 'document') => {
+    if (!user) return;
+    if (file.size > 5 * 1024 * 1024) { alert('File too large (5MB max)'); return; }
+    setUploading(true);
+    setShowAttach(false);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      const res = await fetch(`/api/circles/${circle.id}/messages`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.message) addMsg(data.message);
+      else loadMessages(true);
+    } catch (err) {
+      console.error('File upload error:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCreatePoll = async () => {
+    if (!user) return;
+    const q = pollQuestion.trim();
+    const opts = pollOptions.map(o => o.trim()).filter(Boolean);
+    if (!q || opts.length < 2) return;
+    setShowPollForm(false);
+    setShowAttach(false);
+    try {
+      const res = await fetch(`/api/circles/${circle.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'poll', question: q, options: opts }),
+      });
+      const data = await res.json();
+      if (data.success && data.message) addMsg(data.message);
+      else loadMessages(true);
+    } catch (err) {
+      console.error('Poll creation error:', err);
+    }
+    setPollQuestion('');
+    setPollOptions(['', '']);
+  };
+
+  const handleVote = async (messageId: string, optionIndex: number) => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/circles/${circle.id}/messages/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, optionIndex }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPollVotes(prev => ({ ...prev, [messageId]: data.votes }));
+      }
+    } catch (err) {
+      console.error('Vote error:', err);
     }
   };
   
@@ -176,6 +243,136 @@ function CircleChat({ circle }: { circle: Circle }) {
     if (scrollRef.current.scrollTop === 0 && hasMore && !loadingMore && !loading) {
       loadMessages(false);
     }
+  };
+
+  /* ── render a single message bubble ── */
+  const renderMessage = (m: CircleMessage, isMe: boolean) => {
+    const msgType = m.type || 'text';
+    const meta = m.metadata || {};
+
+    // Image message
+    if (msgType === 'image' && meta.url) {
+      const imgUrl = String(meta.url);
+      const imgName = meta.name ? String(meta.name) : 'Image';
+      return (
+        <div className="rounded-xl overflow-hidden max-w-[260px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imgUrl}
+            alt={imgName}
+            className="w-full max-h-[200px] object-cover cursor-pointer"
+            style={{ borderRadius: '12px' }}
+            onClick={() => window.open(imgUrl, '_blank')}
+          />
+          {meta.name && (
+            <p className={`text-[10px] mt-1 truncate ${isMe ? 'text-white/70' : 'text-[var(--muted-strong)]'}`}>
+              {imgName}
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    // Document message
+    if (msgType === 'document' && meta.url) {
+      const docUrl = String(meta.url);
+      const docName = meta.name ? String(meta.name) : 'Document';
+      const size = meta.size ? `${(Number(meta.size) / 1024).toFixed(0)} KB` : '';
+      return (
+        <a
+          href={docUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex items-center gap-2.5 p-2 rounded-xl transition-all hover:opacity-80 ${isMe ? 'bg-white/15' : 'bg-[var(--surface)]'}`}
+          style={{ minWidth: 180 }}
+        >
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isMe ? 'bg-white/20' : 'bg-blue-500/15'}`}>
+            <FileText size={16} className={isMe ? 'text-white' : 'text-blue-400'} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-xs font-medium truncate ${isMe ? 'text-white' : 'text-[var(--foreground)]'}`}>
+              {docName}
+            </p>
+            {size && <p className={`text-[10px] ${isMe ? 'text-white/60' : 'text-[var(--muted-strong)]'}`}>{size}</p>}
+          </div>
+          <Download size={14} className={`shrink-0 ${isMe ? 'text-white/70' : 'text-[var(--muted-strong)]'}`} />
+        </a>
+      );
+    }
+
+    // Poll message
+    if (msgType === 'poll' && meta.question) {
+      const options = (meta.options as string[]) || [];
+      const votes = pollVotes[m.id] || [];
+      const totalVotes = votes.length;
+      const myVote = votes.find(v => v.userId === user?.id);
+
+      return (
+        <div className="w-full max-w-[280px]">
+          <div className="flex items-center gap-1.5 mb-2">
+            <BarChart3 size={13} className={isMe ? 'text-white/80' : 'text-[var(--primary-light)]'} />
+            <span className={`text-[11px] font-bold uppercase tracking-wide ${isMe ? 'text-white/70' : 'text-[var(--muted-strong)]'}`}>Poll</span>
+          </div>
+          <p className={`text-sm font-semibold mb-2.5 ${isMe ? 'text-white' : 'text-[var(--foreground)]'}`}>
+            {String(meta.question)}
+          </p>
+          <div className="space-y-1.5">
+            {options.map((opt, idx) => {
+              const optVotes = votes.filter(v => v.optionIndex === idx).length;
+              const pct = totalVotes > 0 ? Math.round((optVotes / totalVotes) * 100) : 0;
+              const isMyVote = myVote?.optionIndex === idx;
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleVote(m.id, idx)}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition-all relative overflow-hidden ${
+                    isMyVote
+                      ? 'ring-1'
+                      : 'hover:opacity-90'
+                  }`}
+                  style={{
+                    background: isMe ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)',
+                    color: isMe ? 'white' : 'var(--foreground)',
+                    border: `1px solid ${isMe ? 'rgba(255,255,255,0.2)' : 'var(--border)'}`,
+                    outline: isMyVote ? `2px solid ${circle.color}` : 'none',
+                    outlineOffset: '-2px',
+                  }}
+                >
+                  {/* Progress bar */}
+                  {totalVotes > 0 && (
+                    <div
+                      className="absolute inset-0 rounded-xl transition-all duration-500"
+                      style={{
+                        width: `${pct}%`,
+                        background: isMyVote ? `${circle.color}40` : `${circle.color}20`,
+                      }}
+                    />
+                  )}
+                  <div className="relative flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      {isMyVote && <span className="text-[10px]">✓</span>}
+                      {opt}
+                    </span>
+                    {totalVotes > 0 && (
+                      <span className={`text-[10px] ${isMe ? 'text-white/60' : 'text-[var(--muted-strong)]'}`}>{pct}%</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {totalVotes > 0 && (
+            <p className={`text-[10px] mt-2 ${isMe ? 'text-white/50' : 'text-[var(--muted-strong)]'}`}>
+              {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    // Default: text message
+    return <>{m.text}</>;
   };
 
   return (
@@ -222,7 +419,7 @@ function CircleChat({ circle }: { circle: Circle }) {
                       : { background: 'var(--background)', border: '1px solid var(--border)', borderBottomLeftRadius: '4px' }
                     }
                   >
-                    {m.text}
+                    {renderMessage(m, isMe)}
                   </div>
                 </div>
               );
@@ -230,15 +427,119 @@ function CircleChat({ circle }: { circle: Circle }) {
           </>
         )}
       </div>
+
+      {/* ── Upload indicator ── */}
+      {uploading && (
+        <div className="px-4 py-2 bg-[var(--surface)] border-t border-[var(--glass-border)] flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: circle.color, borderTopColor: 'transparent' }} />
+          <span className="text-xs text-[var(--muted-strong)]">Uploading...</span>
+        </div>
+      )}
+
+      {/* ── Poll creation form ── */}
+      {showPollForm && (
+        <div className="px-4 py-3 bg-[var(--surface)] border-t border-[var(--glass-border)] space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
+              <BarChart3 size={13} style={{ color: circle.color }} /> Create Poll
+            </span>
+            <button onClick={() => { setShowPollForm(false); setShowAttach(false); }} className="text-[var(--muted)] hover:text-[var(--foreground)]">
+              <X size={14} />
+            </button>
+          </div>
+          <input
+            value={pollQuestion}
+            onChange={e => setPollQuestion(e.target.value)}
+            placeholder="Ask a question..."
+            className="w-full px-3 py-2 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none"
+            autoFocus
+          />
+          {pollOptions.map((opt, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                value={opt}
+                onChange={e => {
+                  const next = [...pollOptions];
+                  next[i] = e.target.value;
+                  setPollOptions(next);
+                }}
+                placeholder={`Option ${i + 1}`}
+                className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none"
+              />
+              {pollOptions.length > 2 && (
+                <button onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))} className="text-[var(--muted)] hover:text-red-400">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          ))}
+          <div className="flex items-center gap-2">
+            {pollOptions.length < 6 && (
+              <button
+                onClick={() => setPollOptions([...pollOptions, ''])}
+                className="text-[10px] font-semibold px-2 py-1 rounded-md hover:bg-white/5 transition-colors"
+                style={{ color: circle.color }}
+              >
+                + Add option
+              </button>
+            )}
+            <button
+              onClick={handleCreatePoll}
+              disabled={!pollQuestion.trim() || pollOptions.filter(o => o.trim()).length < 2}
+              className="ml-auto px-3 py-1.5 rounded-lg text-xs font-bold text-white disabled:opacity-40"
+              style={{ background: circle.color }}
+            >
+              Create Poll
+            </button>
+          </div>
+        </div>
+      )}
       
+      {/* ── Input bar ── */}
       <div className="p-3 bg-[var(--background)] border-t border-[var(--glass-border)]">
-        <form onSubmit={handleSend} className="relative flex items-center">
+        {/* Attachment menu */}
+        {showAttach && !showPollForm && (
+          <div className="flex items-center gap-1 mb-2 p-1.5 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-white/5 transition-colors text-[var(--foreground)]"
+            >
+              <ImageIcon size={14} className="text-emerald-400" /> Image
+            </button>
+            <button
+              onClick={() => docInputRef.current?.click()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-white/5 transition-colors text-[var(--foreground)]"
+            >
+              <FileText size={14} className="text-blue-400" /> Document
+            </button>
+            <button
+              onClick={() => setShowPollForm(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium hover:bg-white/5 transition-colors text-[var(--foreground)]"
+            >
+              <BarChart3 size={14} className="text-amber-400" /> Poll
+            </button>
+          </div>
+        )}
+
+        {/* Hidden file inputs */}
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0], 'image'); e.target.value = ''; }} />
+        <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx,.zip,.rar" className="hidden" onChange={e => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0], 'document'); e.target.value = ''; }} />
+
+        <form onSubmit={handleSend} className="relative flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { setShowAttach(!showAttach); setShowPollForm(false); }}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${showAttach ? 'rotate-45' : ''}`}
+            style={{ color: showAttach ? circle.color : 'var(--muted-strong)' }}
+          >
+            <Paperclip size={16} />
+          </button>
           <input
             type="text"
             value={inputText}
             onChange={e => setInputText(e.target.value)}
             placeholder={`Message ${circle.name}...`}
-            className="w-full pl-4 pr-12 py-2.5 rounded-xl text-[13px] bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none focus:border-[var(--primary)]/50 transition-colors"
+            className="flex-1 pl-3 pr-12 py-2.5 rounded-xl text-[13px] bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none focus:border-[var(--primary)]/50 transition-colors"
           />
           <button 
             type="submit" 
