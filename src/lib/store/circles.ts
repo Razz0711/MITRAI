@@ -96,3 +96,42 @@ export async function getCircleById(circleId: string): Promise<Circle | null> {
   if (error || !data) return null;
   return fromRow<Circle>(data);
 }
+
+// ─── Circle Messages ───────────────────────────────────────────────────────
+
+export interface CircleMessage {
+  id: string;
+  circleId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
+}
+
+export async function getCircleMessages(circleId: string, limit = 30, before?: string): Promise<CircleMessage[]> {
+  let query = supabase
+    .from('circle_messages')
+    .select('*')
+    .eq('circle_id', circleId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (before) query = query.lt('created_at', before);
+  const { data, error } = await query;
+  if (error) { console.error('getCircleMessages:', error); return []; }
+  return (data || []).map((r) => fromRow<CircleMessage>(r)).reverse();
+}
+
+export async function sendCircleMessage(
+  circleId: string,
+  senderId: string,
+  senderName: string,
+  text: string,
+): Promise<CircleMessage | null> {
+  const { data, error } = await supabase
+    .from('circle_messages')
+    .insert({ circle_id: circleId, sender_id: senderId, sender_name: senderName, text })
+    .select()
+    .single();
+  if (error) { console.error('sendCircleMessage:', error); return null; }
+  return fromRow<CircleMessage>(data);
+}
