@@ -121,6 +121,26 @@ export default function PostCard({
   const [dmText, setDmText] = useState('');
   const [dmLoading, setDmLoading] = useState(false);
 
+  // Report state
+  const [isReported, setIsReported] = useState(false);
+
+  const handleReport = async () => {
+    if (isReported) return;
+    setIsReported(true);
+    setMenuPostId(null); // Close menu
+    try {
+      await fetch(`/api/feed/${post.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'report' }),
+      });
+    } catch (err) {
+      console.error('Failed to report:', err);
+      // Revert if failed completely
+      setIsReported(false);
+    }
+  };
+
   const handleIminClick = useCallback(async () => {
     if (isOwn && iminCount > 0) {
       // Post author → show who's interested
@@ -272,8 +292,17 @@ export default function PostCard({
                 <Trash2 size={11} /> Delete post
               </button>
             ) : (
-              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 text-[var(--muted-strong)] text-[11px] font-medium border border-white/8">
-                <Flag size={11} /> Report
+              <button 
+                onClick={handleReport}
+                disabled={isReported}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-medium border transition-colors ${
+                  isReported 
+                    ? 'bg-red-500/20 text-red-500 border-red-500/30 font-bold' 
+                    : 'bg-white/5 text-[var(--muted-strong)] border-white/8 hover:bg-white/8'
+                }`}
+              >
+                <Flag size={11} className={isReported ? 'fill-red-500' : ''} /> 
+                {isReported ? 'Reported' : 'Report'}
               </button>
             )}
           </div>

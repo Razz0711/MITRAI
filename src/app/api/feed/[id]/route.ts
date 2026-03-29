@@ -82,6 +82,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 // POST /api/feed/[id] { action: 'react', type: 'imin'|'reply'|'connect' }
 //                    | { action: 'comment', content: string }
 //                    | { action: 'direct_message', content: string }
+//                    | { action: 'report' }
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
@@ -156,6 +157,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       if (error) {
         console.error('Failed to send direct message:', error);
         return NextResponse.json({ success: false, error: 'Failed to send message', details: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'report') {
+      const { error } = await supabase.from('post_reports').insert({
+        reporter_id: authUser.id,
+        post_id: params.id,
+        reason: 'Inappropriate content',
+        status: 'pending'
+      });
+
+      // Ignore uniqueness constraint failures (already reported)
+      if (error && error.code !== '23505') {
+        console.error('Failed to report post:', error);
+        return NextResponse.json({ success: false, error: 'Failed to report post', details: error.message }, { status: 500 });
       }
       return NextResponse.json({ success: true });
     }
