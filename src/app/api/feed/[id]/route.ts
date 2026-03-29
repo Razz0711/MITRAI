@@ -162,18 +162,59 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     if (action === 'report') {
-      const { error } = await supabase.from('post_reports').insert({
+      // 1. Get the post author
+      const { data: post } = await supabase.from('campus_posts').select('user_id').eq('id', params.id).single();
+      if (!post || !post.user_id) return NextResponse.json({ success: false, error: 'Post not found' }, { status: 404 });
+      
+      const reportedUserId = post.user_id;
+      if (reportedUserId === authUser.id) return NextResponse.json({ success: false, error: 'Cannot report yourself' }, { status: 400 });
+
+      // 2. Insert the report
+      const { error: insertErr } = await supabase.from('post_reports').insert({
         reporter_id: authUser.id,
         post_id: params.id,
+        reported_user_id: reportedUserId,
         reason: 'Inappropriate content',
         status: 'pending'
       });
 
-      // Ignore uniqueness constraint failures (already reported)
-      if (error && error.code !== '23505') {
-        console.error('Failed to report post:', error);
-        return NextResponse.json({ success: false, error: 'Failed to report post', details: error.message }, { status: 500 });
+      // Ignore uniqueness constraint failures (if the user already reported this exact post)
+      if (insertErr && insertErr.code !== '23505') {
+        console.error('Failed to report post:', insertErr);
+        return NextResponse.json({ success: false, error: 'Failed to report post', details: insertErr.message }, { status: 500 });
       }
+
+      // 3. Count total reports against this user across all their posts
+      const { count: reportCount, error: countErr } = await supabase
+        .from('post_reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('reported_user_id', reportedUserId);
+        
+      if (!countErr && reportCount !== null) {
+         // Notify the reported user via direct system chat message
+         const chatId = ['system', reportedUserId].sort().join('_');
+         await supabase.from('chat_rooms').upsert({
+           id: chatId, user1_id: 'system', user2_id: reportedUserId, updated_at: new Date().toISOString()
+         }, { onConflict: 'id' });
+         
+         const warningsLeft = Math.max(0, 5 - reportCount);
+         let messageText = `⚠️ **System Alert**: Someone has reported your anonymous post for inappropriate content.\n\nYou have received ${reportCount} total reports.`;
+         
+         if (reportCount >= 5) {
+            messageText += `\n\n🚨 **URGENT WARNING**: You have reached 5 reports. Your account is now flagged and facing an imminent ban. Please adhere to the community guidelines immediately!`;
+         } else {
+            messageText += `\nBe careful! You will receive a block WARNING after 5 total reports. (${warningsLeft} reports remaining).`;
+         }
+
+         await supabase.from('chat_messages').insert({
+           chat_id: chatId,
+           sender_id: '00000000-0000-0000-0000-000000000000', // Null UUID pattern for system
+           sender_name: 'MitrRAI Safety Team',
+           text: messageText,
+           is_read: false
+         });
+      }
+
       return NextResponse.json({ success: true });
     }
 
