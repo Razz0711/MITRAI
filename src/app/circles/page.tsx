@@ -59,6 +59,41 @@ function avatarColor(name: string) {
   return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
 }
 
+/* ─── Themed chat background based on circle name/description ─── */
+function getChatTheme(name: string, desc: string, color: string) {
+  const text = `${name} ${desc}`.toLowerCase();
+  let icons = '💬 ✨ 🌟';
+  if (/fitness|gym|health|workout|exercise/.test(text)) icons = '💪 🏋️ 🧘 ❤️ 🏃';
+  else if (/cod|program|dev|tech|software|dsa|algo|hack/.test(text)) icons = '💻 ⚡ { } 🔧 01';
+  else if (/blog|writ|read|book|liter|poem|story/.test(text)) icons = '✍️ 📖 📝 ✒️ 📚';
+  else if (/music|song|sing|guitar|piano|band/.test(text)) icons = '🎵 🎸 🎤 🎶 🎧';
+  else if (/art|design|paint|draw|sketch|creat/.test(text)) icons = '🎨 🖌️ ✏️ 🖼️ 🌈';
+  else if (/game|esport|play|chess|puzzle/.test(text)) icons = '🎮 🕹️ ♟️ 🏆 🎯';
+  else if (/science|physics|chem|bio|math|research/.test(text)) icons = '🔬 🧪 📐 🧬 ⚛️';
+  else if (/food|cook|recipe|bake|kitchen|eat/.test(text)) icons = '🍳 🧁 🍕 🥗 👨‍🍳';
+  else if (/travel|explore|adventure|trip|wander/.test(text)) icons = '✈️ 🌍 🗺️ 🏔️ 🧳';
+  else if (/photo|camera|film|video|cinema/.test(text)) icons = '📷 🎬 🎥 🌄 📸';
+  else if (/business|startup|entrepreneur|market|finance/.test(text)) icons = '📈 💼 🚀 💡 📊';
+  else if (/mental|meditat|mindful|well|self/.test(text)) icons = '🧘 🌸 🕊️ 💭 🌿';
+
+  const svgIcons = icons.split(' ').map((icon, i) => {
+    const x = (i * 23 + 7) % 100;
+    const y = (i * 37 + 13) % 100;
+    return `<text x="${x}%" y="${y}%" font-size="14" opacity="0.06">${icon}</text>`;
+  }).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">${svgIcons}</svg>`;
+  const encoded = typeof window !== 'undefined' ? btoa(unescape(encodeURIComponent(svg))) : '';
+  return {
+    background: `
+      radial-gradient(ellipse 80% 50% at 50% 0%, ${color}12 0%, transparent 60%),
+      radial-gradient(circle at 1px 1px, ${color}15 1px, transparent 0)${encoded ? `,
+      url("data:image/svg+xml;base64,${encoded}")` : ''},
+      var(--surface)
+    `,
+    backgroundSize: `100% 100%, 20px 20px${encoded ? ', 200px 200px' : ''}, 100% 100%`,
+  };
+}
+
 /* ─── Circle Chat Component ─── */
 function CircleChat({ circle }: { circle: Circle }) {
   const { user } = useAuth();
@@ -160,6 +195,22 @@ function CircleChat({ circle }: { circle: Circle }) {
     if (!inputText.trim() || !user) return;
     const text = inputText.trim();
     setInputText('');
+    
+    // Optimistic: add msg immediately
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg: CircleMessage = {
+      id: tempId,
+      circleId: circle.id,
+      senderId: user.id,
+      senderName: user.name || user.email?.split('@')[0] || 'You',
+      text,
+      type: 'text',
+      metadata: null,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
+    scrollToBottom();
+
     try {
       const res = await fetch(`/api/circles/${circle.id}/messages`, {
         method: 'POST',
@@ -167,11 +218,17 @@ function CircleChat({ circle }: { circle: Circle }) {
         body: JSON.stringify({ text }),
       });
       const data = await res.json();
-      if (data.success && data.message) addMsg(data.message);
-      else loadMessages(true);
+      if (data.success && data.message) {
+        // Replace temp msg with real one
+        setMessages(prev => prev.map(m => m.id === tempId ? data.message : m));
+      } else {
+        console.error('Message API error:', data.error || data);
+        // Show error visually - mark the temp msg as failed
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, text: `${text} ⚠️ (failed to send)` } : m));
+      }
     } catch (err) {
-      console.error('sendCircleMessage:', err);
-      loadMessages(true);
+      console.error('sendCircleMessage network error:', err);
+      setMessages(prev => prev.map(m => m.id === tempId ? { ...m, text: `${text} ⚠️ (network error)` } : m));
     }
   };
 
@@ -380,15 +437,7 @@ function CircleChat({ circle }: { circle: Circle }) {
         ref={scrollRef} 
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative"
-        style={{
-          background: `
-            radial-gradient(ellipse 80% 50% at 50% 0%, ${circle.color}12 0%, transparent 60%),
-            radial-gradient(circle at 1px 1px, ${circle.color}18 1px, transparent 0),
-            linear-gradient(135deg, ${circle.color}06 25%, transparent 25%, transparent 75%, ${circle.color}06 75%),
-            var(--surface)
-          `,
-          backgroundSize: '100% 100%, 20px 20px, 40px 40px, 100% 100%',
-        }}
+        style={getChatTheme(circle.name, circle.description, circle.color)}
       >
         {loading ? (
            <div className="flex-1 flex justify-center items-center">

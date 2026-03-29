@@ -74,22 +74,35 @@ export async function getCircleMembers(circleId: string): Promise<{ userId: stri
 
   // Fallback: fetch names from auth metadata for users not in students table
   const missingIds = userIds.filter((id) => !infoMap.has(id) || !infoMap.get(id)?.name);
+  if (missingIds.length > 0) {
+    console.log(`[getCircleMembers] ${missingIds.length} users missing from students table, trying auth...`);
+  }
   for (const id of missingIds) {
     try {
-      const { data: authData } = await supabase.auth.admin.getUserById(id);
+      const { data: authData, error: authError } = await supabase.auth.admin.getUserById(id);
+      if (authError) {
+        console.error(`[getCircleMembers] auth.admin.getUserById error for ${id}:`, authError.message);
+        continue;
+      }
       const authUser = authData?.user;
       if (authUser) {
-        const name = authUser.user_metadata?.name
-          || authUser.user_metadata?.full_name
+        const meta = authUser.user_metadata || {};
+        const name = meta.name
+          || meta.full_name
+          || meta.display_name
+          || meta.preferred_username
           || (authUser.email ? authUser.email.split('@')[0] : null);
+        console.log(`[getCircleMembers] auth user ${id}: email=${authUser.email}, meta.name=${meta.name}, resolved=${name}`);
         if (name) {
           infoMap.set(id, {
             name,
-            department: authUser.user_metadata?.department,
+            department: meta.department,
           });
         }
       }
-    } catch { /* ignore auth lookup failures */ }
+    } catch (err) {
+      console.error(`[getCircleMembers] auth lookup failed for ${id}:`, err);
+    }
   }
 
   return userIds.map((id) => ({
