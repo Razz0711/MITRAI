@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { Search, ArrowLeft, Send, Paperclip, Image as ImageIcon, FileText, BarChart3, X, Download } from 'lucide-react';
@@ -613,6 +614,7 @@ function CircleChat({ circle }: { circle: Circle }) {
 
 export default function CirclesPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [circles, setCircles] = useState<Circle[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
@@ -633,8 +635,14 @@ export default function CirclesPage() {
   // All members for the circle
   const [circleMembers, setCircleMembers] = useState<{userId: string; userName: string; department?: string}[]>([]);
   const [selectedMemberModal, setSelectedMemberModal] = useState<{userId: string; userName: string; department?: string} | null>(null);
+  
+  // Profile Modal Extended State
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [profileData, setProfileData] = useState<any>(null);
+  const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'friends'>('none');
+  const [profileLoading, setProfileLoading] = useState(false);
+  
   const [requestSending, setRequestSending] = useState(false);
-  const [requestSent, setRequestSent] = useState(false);
   const [requestError, setRequestError] = useState('');
 
   const roomPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -692,6 +700,47 @@ export default function CirclesPage() {
     }
   }, []);
 
+  const openProfileModal = async (member: {userId: string; userName: string; department?: string}) => {
+    setSelectedMemberModal(member);
+    setRequestError('');
+    setProfileData(null);
+    setFriendStatus('none');
+    setProfileLoading(true);
+
+    if (user) {
+      try {
+        const [fRes, pRes] = await Promise.all([
+          fetch(`/api/friends?userId=${user.id}`),
+          fetch(`/api/students?id=${member.userId}`)
+        ]);
+        const fData = await fRes.json();
+        const pData = await pRes.json();
+
+        let newStatus: 'none' | 'pending' | 'friends' = 'none';
+        if (fData.success) {
+          const { friends, allRequests } = fData.data;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const isFriend = friends.some((f: any) => f.user1Id === member.userId || f.user2Id === member.userId);
+          if (isFriend) {
+            newStatus = 'friends';
+          } else {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const hasSent = allRequests.some((r: any) => r.fromUserId === user.id && r.toUserId === member.userId && r.status === 'pending');
+            if (hasSent) newStatus = 'pending';
+          }
+        }
+        setFriendStatus(newStatus);
+        
+        if (pData.success && pData.data) {
+          setProfileData(pData.data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    setProfileLoading(false);
+  };
+
   const handleSendRequest = async () => {
     if (!user || !selectedMemberModal) return;
     setRequestSending(true);
@@ -710,7 +759,7 @@ export default function CirclesPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setRequestSent(true);
+        setFriendStatus('pending');
       } else {
         setRequestError(data.error || 'Failed to send request');
       }
@@ -1183,7 +1232,7 @@ export default function CirclesPage() {
                       {circleMembers.map(m => (
                         <div 
                           key={m.userId} 
-                          onClick={() => { setSelectedMemberModal(m); setRequestSent(false); setRequestError(''); }}
+                          onClick={() => openProfileModal(m)}
                           className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--surface)] transition-all cursor-pointer"
                         >
                           <div className={`w-8 h-8 rounded-full ${avatarColor(m.userName || 'U')} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
@@ -1219,46 +1268,125 @@ export default function CirclesPage() {
 
       {/* Member Profile Modal */}
       {selectedMemberModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--background)] border border-[var(--glass-border)] p-6 rounded-2xl w-full max-w-sm shadow-xl">
-            <div className="flex justify-between items-start mb-4">
-              <div className={`w-16 h-16 rounded-full ${avatarColor(selectedMemberModal.userName || 'U')} flex items-center justify-center text-white text-2xl font-bold`}>
-                {(selectedMemberModal.userName || 'U').charAt(0).toUpperCase()}
-              </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200" onClick={() => setSelectedMemberModal(null)}>
+          <div className="bg-[var(--surface)] border border-[var(--glass-border)] rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            
+            {/* Header/Cover Photo Area */}
+            <div className="relative h-32 bg-gradient-to-br from-violet-600/40 via-purple-600/60 to-blue-600/40 flex-shrink-0">
               <button 
                 onClick={() => setSelectedMemberModal(null)}
-                className="text-[var(--muted)] hover:text-[var(--foreground)] p-1 rounded-full hover:bg-[var(--surface)] transition-colors"
+                className="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full hover:bg-black/20 transition-colors z-10"
               >
                 <X size={20} />
               </button>
+              
+              {/* Profile Avatar overlapping cover photo */}
+              <div className="absolute -bottom-10 left-6">
+                <div className={`w-24 h-24 rounded-full border-[5px] border-[var(--surface)] ${avatarColor(selectedMemberModal.userName || 'U')} flex items-center justify-center text-white text-3xl font-bold shadow-lg`}>
+                  {(selectedMemberModal.userName || 'U').charAt(0).toUpperCase()}
+                </div>
+              </div>
             </div>
-            
-            <h2 className="text-[var(--foreground)] text-xl font-bold truncate">{selectedMemberModal.userName}</h2>
-            <p className="text-[var(--muted)] text-sm mt-1">{selectedMemberModal.department || 'Student'}</p>
-            
+
+            {/* Profile Content */}
+            <div className="pt-14 pb-6 px-6 overflow-y-auto flex-1 no-scrollbar">
+              <h2 className="text-[var(--foreground)] text-xl font-bold tracking-tight inline-flex items-center gap-2">
+                {selectedMemberModal.userName}
+              </h2>
+              <p className="text-[var(--primary-light)] text-sm font-medium mt-0.5">
+                {profileData?.department || selectedMemberModal.department || 'Student'} {profileData?.yearLevel ? `· ${profileData.yearLevel}` : ''}
+              </p>
+
+              {profileLoading ? (
+                <div className="py-12 flex justify-center">
+                  <div className="w-6 h-6 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <div className="mt-6 space-y-6 animate-in slide-in-from-bottom-2 duration-300">
+                  {/* Bio */}
+                  {profileData?.bio && (
+                    <div>
+                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-2">About</h4>
+                      <p className="text-sm text-[var(--foreground)] leading-relaxed">{profileData.bio}</p>
+                    </div>
+                  )}
+
+                  {/* Badges/Tags */}
+                  {(profileData?.strongSubjects?.length > 0 || profileData?.learningType || profileData?.country) && (
+                    <div className="flex flex-wrap gap-2">
+                      {profileData.country && profileData.country !== 'India' && (
+                        <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-[var(--foreground)]">
+                          🌍 {profileData.country}
+                        </span>
+                      )}
+                      {profileData.learningType && (
+                        <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs text-[var(--foreground)]">
+                          🧠 {profileData.learningType} learner
+                        </span>
+                      )}
+                      {profileData.strongSubjects?.map((s: string) => (
+                        <span key={s} className="px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                          ⭐ {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Goals */}
+                  {(profileData?.shortTermGoal || profileData?.longTermGoal) && (
+                    <div className="space-y-3 bg-[var(--background)] p-4 rounded-2xl border border-[var(--glass-border)]">
+                      {profileData.shortTermGoal && (
+                        <div>
+                          <h4 className="text-[9px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1">Current Focus</h4>
+                          <p className="text-xs text-[var(--foreground)]">{profileData.shortTermGoal}</p>
+                        </div>
+                      )}
+                      {profileData.longTermGoal && (
+                        <div>
+                          <h4 className="text-[9px] font-bold uppercase tracking-wider text-[var(--muted-strong)] mb-1">Long Term Goal</h4>
+                          <p className="text-xs text-[var(--foreground)]">{profileData.longTermGoal}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {(!profileData?.bio && (!profileData?.strongSubjects || profileData.strongSubjects.length === 0) && !profileData?.shortTermGoal) && (
+                    <p className="text-sm text-[var(--muted)] text-center italic py-4">No additional details shared yet.</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
             {user?.id !== selectedMemberModal.userId ? (
-              <div className="mt-6 pt-4 border-t border-[var(--glass-border)]">
-                {requestSent ? (
-                  <button disabled className="w-full py-2.5 rounded-xl font-bold text-sm bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                    ✓ Request Sent
+              <div className="p-4 border-t border-[var(--glass-border)] bg-[var(--surface)] shrink-0 z-10">
+                {friendStatus === 'friends' ? (
+                  <button 
+                    onClick={() => router.push(`/chat?friendId=${selectedMemberModal.userId}&friendName=${encodeURIComponent(selectedMemberModal.userName)}`)}
+                    className="w-full py-3 rounded-xl font-bold text-sm bg-blue-500/15 text-blue-400 border border-blue-500/25 hover:bg-blue-500/25 transition-all outline-none"
+                  >
+                    💬 Message Friend
+                  </button>
+                ) : friendStatus === 'pending' ? (
+                  <button disabled className="w-full py-3 rounded-xl font-bold text-sm bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 cursor-not-allowed outline-none">
+                    ✓ Request Already Sent
                   </button>
                 ) : (
-                  <button 
-                    onClick={handleSendRequest}
-                    disabled={requestSending}
-                    className="w-full py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-50 hover:opacity-90 transition-opacity whitespace-nowrap overflow-hidden"
-                    style={{ background: 'var(--primary)' }}
-                  >
-                    {requestSending ? 'Sending...' : 'Send Friend Request'}
-                  </button>
-                )}
-                {requestError && (
-                  <p className="text-xs text-red-500 mt-2 text-center">{requestError}</p>
+                  <div className="space-y-2">
+                    <button 
+                      onClick={handleSendRequest}
+                      disabled={requestSending}
+                      className="w-full py-3 rounded-xl font-bold text-sm text-white disabled:opacity-50 hover:opacity-90 transition-opacity bg-gradient-to-r from-violet-600 to-purple-600 shadow-lg shadow-purple-500/25 outline-none"
+                    >
+                      {requestSending ? 'Sending...' : '+ Send Friend Request'}
+                    </button>
+                    {requestError && <p className="text-xs text-red-500 text-center font-medium">{requestError}</p>}
+                  </div>
                 )}
               </div>
             ) : (
-              <div className="mt-6 pt-4 border-t border-[var(--glass-border)] text-center text-xs text-[var(--muted)] font-medium">
-                This is you
+              <div className="p-4 border-t border-[var(--glass-border)] text-center text-xs text-[var(--muted)] font-medium bg-[var(--surface)] shrink-0">
+                This is your profile
               </div>
             )}
           </div>
