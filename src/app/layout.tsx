@@ -9,7 +9,6 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import ToastProvider from "@/components/ToastProvider";
 import OnboardingWalkthrough from "@/components/OnboardingWalkthrough";
 import SplashScreen from "@/components/SplashScreen";
-import PwaInstallBanner from "@/components/PwaInstallBanner";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -88,7 +87,6 @@ export default function RootLayout({
                   </ErrorBoundary>
                   <OnboardingWalkthrough />
                   <SplashScreen />
-                  <PwaInstallBanner />
                 </AppShell>
               </AppProviders>
             </ToastProvider>

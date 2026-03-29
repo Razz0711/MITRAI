@@ -14,7 +14,6 @@ import GlobalNotificationPoller from './GlobalNotificationPoller';
 import IncomingCallBanner from './IncomingCallBanner';
 import { useTimeTracker } from '@/hooks/useTimeTracker';
 import MitrrAiLogo from './MitrrAiLogo';
-import PwaInstallBanner from './PwaInstallBanner';
 import { useVapidSubscription } from '@/hooks/usePushNotifications';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -70,7 +69,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </main>
           {/* Mobile navbar at bottom */}
           <MobileNavbar />
-          <PwaInstallBanner />
         </div>
       </>
     );
