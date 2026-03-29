@@ -449,9 +449,9 @@ export default function PostCard({
                   <Users size={20} className="text-white" />
                 </div>
                 
-                <h3 className="text-xl font-bold text-white mb-2">You're in! 🎉</h3>
+                <h3 className="text-xl font-bold text-white mb-2">You&apos;re in! 🎉</h3>
                 <p className="text-[13px] text-[var(--muted-strong)] mb-5 leading-relaxed">
-                  Would you like to send a direct message to {post.isAnonymous ? 'the poster' : (post.userName || 'them')}? They'll get an instant notification.
+                  Would you like to send a direct message to {post.isAnonymous ? 'the poster' : (post.userName || 'them')}? They&apos;ll get an instant notification.
                 </p>
 
                 <textarea
