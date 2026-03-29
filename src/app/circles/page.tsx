@@ -10,7 +10,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { Search, Plus, ArrowLeft } from 'lucide-react';
+import { Search, Plus, ArrowLeft, Send, ChevronUp } from 'lucide-react';
+import { supabaseBrowser } from '@/lib/supabase-browser';
+import { getCircleMessages, sendCircleMessage, CircleMessage } from '@/lib/store/circles';
 
 interface Circle {
   id: string;
@@ -47,6 +49,169 @@ function avatarColor(name: string) {
   return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
 }
 
+/* ─── Circle Chat Component ─── */
+function CircleChat({ circle }: { circle: Circle }) {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<CircleMessage[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  const loadMessages = useCallback(async (isInitial = true) => {
+    if (isInitial) setLoading(true);
+    else setLoadingMore(true);
+    
+    try {
+      const before = isInitial || messages.length === 0 ? undefined : messages[0].createdAt;
+      const data = await getCircleMessages(circle.id, 50, before);
+      if (data.length < 50) setHasMore(false);
+      
+      if (isInitial) {
+        setMessages(data);
+        setTimeout(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }, 100);
+      } else {
+        const el = scrollRef.current;
+        const oldHeight = el ? el.scrollHeight : 0;
+        setMessages(prev => [...data, ...prev]);
+        if (el) {
+          setTimeout(() => {
+            el.scrollTop = el.scrollHeight - oldHeight;
+          }, 0);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (isInitial) setLoading(false);
+      else setLoadingMore(false);
+    }
+  }, [circle.id, messages]);
+
+  useEffect(() => {
+    setMessages([]);
+    setHasMore(true);
+    loadMessages(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [circle.id]);
+
+  useEffect(() => {
+    const channel = supabaseBrowser.channel(`circle_messages_${circle.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'circle_messages', filter: `circle_id=eq.${circle.id}` },
+        (payload) => {
+          const newMsg = {
+            id: payload.new.id,
+            circleId: payload.new.circle_id,
+            senderId: payload.new.sender_id,
+            senderName: payload.new.sender_name,
+            text: payload.new.text,
+            createdAt: payload.new.created_at,
+          };
+          setMessages(prev => [...prev, newMsg]);
+          
+          setTimeout(() => {
+            if (scrollRef.current) {
+              scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }
+          }, 100);
+        }
+      )
+      .subscribe();
+      
+    return () => { supabaseBrowser.removeChannel(channel); };
+  }, [circle.id]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputText.trim() || !user) return;
+    const text = inputText.trim();
+    setInputText('');
+    await sendCircleMessage(circle.id, user.id, user.name || user.email?.split('@')[0] || 'Student', text);
+  };
+  
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    if (scrollRef.current.scrollTop === 0 && hasMore && !loadingMore && !loading) {
+      loadMessages(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-[60dvh] rounded-2xl border border-[var(--glass-border)] bg-[var(--surface)] overflow-hidden">
+      <div 
+        ref={scrollRef} 
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-4 flex flex-col gap-4"
+      >
+        {loading ? (
+           <div className="flex-1 flex justify-center items-center">
+             <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: circle.color, borderTopColor: 'transparent' }} />
+           </div>
+        ) : messages.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-[var(--muted-strong)] text-sm">
+            <p>No messages yet.</p>
+            <p className="text-xs">Start the conversation!</p>
+          </div>
+        ) : (
+          <>
+            {loadingMore && (
+              <div className="flex justify-center my-2">
+                <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: circle.color, borderTopColor: 'transparent' }} />
+              </div>
+            )}
+            {messages.map((m, i) => {
+              const isMe = user?.id === m.senderId;
+              const isConsecutive = i > 0 && messages[i-1].senderId === m.senderId;
+              
+              return (
+                <div key={m.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isConsecutive ? '-mt-2' : ''}`}>
+                  {!isMe && !isConsecutive && (
+                    <span className="text-[10px] text-[var(--muted-strong)] ml-2 mb-1">{m.senderName}</span>
+                  )}
+                  <div 
+                    className={`px-3 py-2 rounded-2xl max-w-[85%] text-[13px] ${isMe ? 'text-white' : 'text-[var(--foreground)]'}`}
+                    style={isMe 
+                      ? { background: `linear-gradient(135deg, ${circle.color}, ${circle.color}dd)`, borderBottomRightRadius: '4px' } 
+                      : { background: 'var(--background)', border: '1px solid var(--border)', borderBottomLeftRadius: '4px' }
+                    }
+                  >
+                    {m.text}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+      
+      <div className="p-3 bg-[var(--background)] border-t border-[var(--glass-border)]">
+        <form onSubmit={handleSend} className="relative flex items-center">
+          <input
+            type="text"
+            value={inputText}
+            onChange={e => setInputText(e.target.value)}
+            placeholder={`Message ${circle.name}...`}
+            className="w-full pl-4 pr-12 py-2.5 rounded-xl text-[13px] bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted)] outline-none focus:border-[var(--primary)]/50 transition-colors"
+          />
+          <button 
+            type="submit" 
+            disabled={!inputText.trim()}
+            className="absolute right-1 w-8 h-8 rounded-lg flex items-center justify-center text-white disabled:opacity-40 transition-opacity"
+            style={{ background: `linear-gradient(135deg, ${circle.color}, ${circle.color}dd)` }}
+          >
+            <Send size={14} />
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function CirclesPage() {
   const { user } = useAuth();
   const [circles, setCircles] = useState<Circle[]>([]);
@@ -58,7 +223,7 @@ export default function CirclesPage() {
   const [listTab, setListTab] = useState<'joined' | 'discover'>('joined');
   const [selectedCircle, setSelectedCircle] = useState<Circle | null>(null);
   const [rooms, setRooms] = useState<StudyRoom[]>([]);
-  const [detailTab, setDetailTab] = useState<'rooms' | 'members'>('rooms');
+  const [detailTab, setDetailTab] = useState<'rooms' | 'members' | 'messages'>('rooms');
 
   // Create room form
   const [showCreate, setShowCreate] = useState(false);
@@ -443,17 +608,18 @@ export default function CirclesPage() {
 
               {/* ─── Detail tabs ─── */}
               <div className="flex items-center gap-4 mb-5 border-b border-[var(--border)] pb-2">
-                {(['rooms', 'members'] as const).map(t => (
+                {(['rooms', 'messages', 'members'] as const).map(t => (
                   <button
                     key={t}
                     onClick={() => { setDetailTab(t); if (t === 'members') loadMembers(activeCircle.id); }}
                     className={`text-xs font-semibold pb-2 border-b-2 transition-all capitalize ${
                       detailTab === t
-                        ? 'border-[var(--primary)] text-[var(--primary-light)]'
+                        ? 'border-transparent' // Using inline style for dynamic active color
                         : 'border-transparent text-[var(--muted-strong)] hover:text-[var(--foreground)]'
                     }`}
+                    style={detailTab === t ? { borderColor: activeCircle.color, color: activeCircle.color } : {}}
                   >
-                    {t === 'rooms' ? 'Rooms' : 'Members'}
+                    {t}
                   </button>
                 ))}
               </div>
@@ -591,6 +757,11 @@ export default function CirclesPage() {
                     )}
                   </div>
                 </>
+              )}
+
+              {/* ─── Messages tab ─── */}
+              {detailTab === 'messages' && (
+                <CircleChat circle={activeCircle} />
               )}
 
               {/* ─── Members tab ─── */}
