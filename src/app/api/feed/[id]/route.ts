@@ -221,6 +221,26 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             try {
                const adminEmail = (process.env.SMTP_EMAIL || '').trim();
                if (adminEmail) {
+                  // Fetch who reported the user
+                  const { data: reportRows } = await supabase
+                    .from('post_reports')
+                    .select('reporter_id')
+                    .eq('reported_user_id', reportedUserId);
+                    
+                  const reporterIds = reportRows?.map(r => r.reporter_id) || [];
+                  let reporterListHtml = '<p>No reporter details available.</p>';
+                  
+                  if (reporterIds.length > 0) {
+                    const { data: students } = await supabase
+                      .from('students')
+                      .select('id, name')
+                      .in('id', reporterIds);
+                      
+                    if (students && students.length > 0) {
+                      reporterListHtml = '<ul>' + students.map(s => `<li><strong>${s.name}</strong> (ID: ${s.id})</li>`).join('') + '</ul>';
+                    }
+                  }
+
                   const t = createTransporter();
                   await t.sendMail({
                      from: `"MitrRAI Safety" <${adminEmail}>`,
@@ -228,8 +248,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
                      subject: `🚨 MitrRAI: User reached 5 reports!`,
                      html: `
                         <h3>Action Required: User reached 5 reports</h3>
-                        <p>User ID: <strong>${reportedUserId}</strong></p>
+                        <p>Reported User ID: <strong>${reportedUserId}</strong></p>
                         <p>This user's anonymous posts have been reported 5 times.</p>
+                        <h4>Users who filed these reports:</h4>
+                        ${reporterListHtml}
+                        <hr />
                         <p>Please review their account in the Supabase Dashboard and decide whether to block or ban them.</p>
                      `
                   });
