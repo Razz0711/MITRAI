@@ -229,35 +229,28 @@ export default function CirclesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [roomName, setRoomName] = useState('');
   const [roomTopic, setRoomTopic] = useState('');
-  const [roomMax, setRoomMax] = useState(100);
   const [creating, setCreating] = useState(false);
 
   // All members for the circle
   const [circleMembers, setCircleMembers] = useState<{userId: string; userName: string; department?: string}[]>([]);
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [allStudents, setAllStudents] = useState<{id: string; department: string}[]>([]);
 
   const roomPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadCircles = useCallback(async () => {
     if (!user) return;
     try {
-      const [circlesRes, roomsRes, studentsRes] = await Promise.all([
+      const [circlesRes, roomsRes] = await Promise.all([
         fetch(`/api/circles?userId=${user.id}`),
         fetch('/api/rooms'),
-        fetch('/api/students'),
       ]);
       const data = await circlesRes.json();
       const roomsData = await roomsRes.json();
-      const studentsData = await studentsRes.json();
       if (data.success) {
         setCircles(data.data.circles || []);
         setMemberships(data.data.memberships || []);
         setMemberCounts(data.data.memberCounts || {});
       }
       if (roomsData.success) setRooms(roomsData.data.rooms || []);
-      if (studentsData.success) setAllStudents(studentsData.data || []);
     } catch (err) {
       console.error('loadCircles:', err);
     } finally {
@@ -331,7 +324,7 @@ export default function CirclesPage() {
           description: '',
           creatorId: user.id,
           creatorName: user.name || user.email?.split('@')[0] || 'Student',
-          maxMembers: roomMax,
+          maxMembers: 100,
           circleId: selectedCircle.id,
         }),
       });
@@ -340,7 +333,6 @@ export default function CirclesPage() {
         setShowCreate(false);
         setRoomName('');
         setRoomTopic('');
-        setRoomMax(100);
         await loadCircles();
       }
     } catch (err) {

@@ -20,7 +20,7 @@ export default function FriendRequestPopup() {
   const [loading, setLoading] = useState(false);
 
   // Do not show on auth pages or if already on friends requests tab
-  const isAuthPage = pathname === '/login' || pathname.startsWith('/reset-password');
+  const isAuthPage = pathname === '/login' || (pathname && pathname.startsWith('/reset-password'));
   const isFriendsPage = pathname === '/friends';
 
   const fetchRequests = useCallback(async () => {

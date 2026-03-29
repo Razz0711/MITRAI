@@ -29,8 +29,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useVapidSubscription(user?.id);
 
   // Determine page type
-  const isAuthPage = pathname === '/login' || pathname.startsWith('/reset-password');
-  const isAdminPage = pathname.startsWith('/admin');
+  const isAuthPage = pathname === '/login' || (pathname && pathname.startsWith('/reset-password'));
+  const isAdminPage = pathname && pathname.startsWith('/admin');
 
   // Show full app shell (TopBar + BottomTabs) for logged-in users on app pages
   const showAppShell = !!user && !isAuthPage && !isAdminPage;
