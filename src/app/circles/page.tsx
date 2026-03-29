@@ -12,7 +12,15 @@ import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { Search, Plus, ArrowLeft, Send } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
-import { getCircleMessages, sendCircleMessage, CircleMessage } from '@/lib/store/circles';
+
+interface CircleMessage {
+  id: string;
+  circleId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
+}
 
 interface Circle {
   id: string;
@@ -65,7 +73,10 @@ function CircleChat({ circle }: { circle: Circle }) {
     
     try {
       const before = isInitial || messages.length === 0 ? undefined : messages[0].createdAt;
-      const data = await getCircleMessages(circle.id, 50, before);
+      const url = `/api/circles/${circle.id}/messages${before ? `?before=${encodeURIComponent(before)}&limit=50` : '?limit=50'}`;
+      const res = await fetch(url);
+      const result = await res.json();
+      const data: CircleMessage[] = result.success ? (result.messages || []) : [];
       if (data.length < 50) setHasMore(false);
       
       if (isInitial) {
@@ -131,7 +142,15 @@ function CircleChat({ circle }: { circle: Circle }) {
     if (!inputText.trim() || !user) return;
     const text = inputText.trim();
     setInputText('');
-    await sendCircleMessage(circle.id, user.id, user.name || user.email?.split('@')[0] || 'Student', text);
+    try {
+      await fetch(`/api/circles/${circle.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+    } catch (err) {
+      console.error('sendCircleMessage:', err);
+    }
   };
   
   const handleScroll = () => {
