@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useTheme } from './ThemeProvider';
 import GlobalNotificationPoller from './GlobalNotificationPoller';
 import IncomingCallBanner from './IncomingCallBanner';
+import FriendRequestPopup from './FriendRequestPopup';
 import { useTimeTracker } from '@/hooks/useTimeTracker';
 import MitrrAiLogo from './MitrrAiLogo';
 import { useVapidSubscription } from '@/hooks/usePushNotifications';
@@ -50,6 +51,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <>
           <GlobalNotificationPoller />
           <IncomingCallBanner />
+          <FriendRequestPopup />
           {children}
         </>
       );
@@ -60,6 +62,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <>
         <GlobalNotificationPoller />
         <IncomingCallBanner />
+        <FriendRequestPopup />
         <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Desktop header at top */}
           <DesktopHeader />

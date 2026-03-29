@@ -8,7 +8,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bell, Users, MessageCircle, MapPin, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Bell, Users, MessageCircle, MapPin, AlertTriangle, UserPlus, Check, X } from 'lucide-react';
+import { FriendRequest } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { EmptyStatePreset } from '@/components/EmptyState';
 
@@ -27,15 +28,24 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
+
   useEffect(() => {
     if (!user) return;
     // Fetch from API if available, otherwise show empty state
     const fetchNotifications = async () => {
       try {
-        const res = await fetch(`/api/notifications?userId=${encodeURIComponent(user.id)}`);
+        const [res, friendsRes] = await Promise.all([
+          fetch(`/api/notifications?userId=${encodeURIComponent(user.id)}`),
+          fetch(`/api/friends?userId=${encodeURIComponent(user.id)}`)
+        ]);
         const d = await res.json();
         if (d.success && d.data) {
-          setNotifications(d.data);
+          setNotifications(d.data.filter((n: Notification) => !(n.type === 'session_request' && n.title === 'New Friend Request')));
+        }
+        const fd = await friendsRes.json();
+        if (fd.success && fd.data.pendingRequests) {
+          setPendingRequests(fd.data.pendingRequests);
         }
       } catch {
         // API may not exist yet — show empty state
@@ -44,6 +54,19 @@ export default function NotificationsPage() {
     };
     fetchNotifications();
   }, [user]);
+
+  const handleRespond = async (requestId: string, status: 'accepted' | 'declined') => {
+    try {
+      await fetch('/api/friends', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId, status }),
+      });
+      setPendingRequests(prev => prev.filter(r => r.id !== requestId));
+    } catch (err) {
+      console.error('Failed to respond to request:', err);
+    }
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -95,9 +118,47 @@ export default function NotificationsPage() {
       <div className="max-w-2xl mx-auto px-4 py-4 space-y-2">
         {loading && <LoadingSkeleton />}
 
-        {!loading && notifications.length === 0 && (
+        {!loading && notifications.length === 0 && pendingRequests.length === 0 && (
           <EmptyStatePreset type="notifications" />
         )}
+
+        {/* Actionable Friend Requests First */}
+        {pendingRequests.map(req => (
+          <div
+            key={req.id}
+            className={`card p-4 flex items-center justify-between transition-all`}
+            style={{ border: '1px solid rgba(124, 58, 237, 0.3)', background: 'rgba(124, 58, 237, 0.05)' }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 flex flex-col items-center justify-center text-white font-bold shadow-md">
+                <UserPlus size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider mb-0.5">Friend Request</p>
+                <p className="text-sm font-semibold text-[var(--foreground)] truncate">{req.fromUserName}</p>
+                <p className="text-[11px] text-[var(--muted-strong)] mt-0.5">{timeAgo(req.createdAt)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0 ml-4">
+              <button
+                onClick={() => handleRespond(req.id, 'declined')}
+                className="p-2 rounded-xl text-white/50 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
+                title="Decline"
+              >
+                <X size={16} />
+              </button>
+              <button
+                onClick={() => handleRespond(req.id, 'accepted')}
+                className="w-10 h-10 rounded-xl bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center shadow-md shadow-violet-500/20 transition-colors"
+                title="Accept"
+              >
+                <Check size={18} />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {/* Standard Notifications */}
 
         {notifications.map(n => (
           <div

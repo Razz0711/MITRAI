@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
-import { StudentProfile } from '@/lib/types';
+import { StudentProfile, FriendRequest } from '@/lib/types';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import { X, Star, Globe, Shield, MessageSquare, HelpCircle, Pencil, Camera, UserPlus, ArrowLeft } from 'lucide-react';
 
@@ -22,16 +22,18 @@ export default function MePage() {
   const [matchCount, setMatchCount] = useState(0);
   const [circleCount, setCircleCount] = useState(0);
   const [topMatch, setTopMatch] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [zoomPhoto, setZoomPhoto] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!user) return;
     try {
-      const [studentRes, matchRes, circleRes] = await Promise.all([
+      const [studentRes, matchRes, circleRes, friendsRes] = await Promise.all([
         fetch(`/api/students?id=${encodeURIComponent(user.id)}`),
         fetch(`/api/match?userId=${encodeURIComponent(user.id)}`),
         fetch(`/api/circles?userId=${user.id}`),
+        fetch(`/api/friends?userId=${user.id}`),
       ]);
 
       const studentData = await studentRes.json();
@@ -51,6 +53,11 @@ export default function MePage() {
       if (circleData.success) {
         const memberships = circleData.data?.memberships || [];
         setCircleCount(memberships.length);
+      }
+
+      const friendsData = await friendsRes.json();
+      if (friendsData.success && friendsData.data.pendingRequests) {
+        setPendingRequests(friendsData.data.pendingRequests);
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -196,6 +203,45 @@ export default function MePage() {
           </div>
         </div>
       </div>
+
+      {pendingRequests.length > 0 && (
+        <div className="animate-appear">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--muted-strong)] px-1 mb-2">Pending Requests ({pendingRequests.length})</p>
+          <div className="rounded-2xl overflow-hidden divide-y divide-[var(--border)]" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
+            {pendingRequests.map(req => (
+              <div key={req.id} className="flex items-center gap-3 p-4 hover:bg-white/[0.02] transition-colors">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center text-white font-bold shrink-0 shadow-md">
+                  {req.fromUserName.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-[var(--foreground)] truncate">{req.fromUserName}</p>
+                  <p className="text-[11px] text-[var(--muted-strong)] truncate">Sent you a friend request</p>
+                </div>
+                <div className="flex gap-1.5 shrink-0">
+                  <button 
+                    onClick={async () => {
+                      await fetch('/api/friends', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: req.id, status: 'declined' }) });
+                      setPendingRequests(prev => prev.filter(r => r.id !== req.id));
+                    }}
+                    className="p-2 rounded-xl text-red-400 bg-red-400/10 border border-red-400/20 hover:bg-red-400/20 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      await fetch('/api/friends', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requestId: req.id, status: 'accepted' }) });
+                      setPendingRequests(prev => prev.filter(r => r.id !== req.id));
+                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-violet-600 hover:bg-violet-500 shadow-md shadow-violet-500/20 transition-colors"
+                  >
+                    Accept
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Photo Zoom Modal */}
       {zoomPhoto && (
