@@ -111,7 +111,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         .select('id, user_id, user_name, content, created_at')
         .single();
 
-      if (error) return NextResponse.json({ success: false, error: 'Failed to save comment' }, { status: 500 });
+      if (error) {
+        console.error('Failed to save comment:', error);
+        return NextResponse.json({ success: false, error: 'Failed to save comment', details: error.message }, { status: 500 });
+      }
       return NextResponse.json({ success: true, data: comment });
     }
 
