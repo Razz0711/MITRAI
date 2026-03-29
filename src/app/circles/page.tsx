@@ -222,13 +222,12 @@ function CircleChat({ circle }: { circle: Circle }) {
         // Replace temp msg with real one
         setMessages(prev => prev.map(m => m.id === tempId ? data.message : m));
       } else {
-        console.error('Message API error:', data.error || data);
-        // Show error visually - mark the temp msg as failed
-        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, text: `${text} ⚠️ (failed to send)` } : m));
+        console.error('Message API error:', res.status, data.error || data);
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, text: `${text} ⚠️ [${res.status}: ${data.error || 'unknown'}]` } : m));
       }
     } catch (err) {
       console.error('sendCircleMessage network error:', err);
-      setMessages(prev => prev.map(m => m.id === tempId ? { ...m, text: `${text} ⚠️ (network error)` } : m));
+      setMessages(prev => prev.map(m => m.id === tempId ? { ...m, text: `${text} ⚠️ [network: ${String(err)}]` } : m));
     }
   };
 
