@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
-import { Search, Plus, ArrowLeft, Send } from 'lucide-react';
+import { Search, ArrowLeft, Send } from 'lucide-react';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 
 interface CircleMessage {
