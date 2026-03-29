@@ -263,11 +263,11 @@ function CircleChat({ circle }: { circle: Circle }) {
             style={{ backgroundImage: `url(${imgUrl})` }}
             onClick={() => window.open(imgUrl, '_blank')}
           />
-          {meta.name && (
+          {meta.name ? (
             <p className={`text-[10px] mt-1 truncate ${isMe ? 'text-white/70' : 'text-[var(--muted-strong)]'}`}>
               {imgName}
             </p>
-          )}
+          ) : null}
         </div>
       );
     }
