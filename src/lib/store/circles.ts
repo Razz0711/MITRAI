@@ -77,18 +77,24 @@ export async function getCircleMembers(circleId: string): Promise<{ userId: stri
   for (const id of missingIds) {
     try {
       const { data: authData } = await supabase.auth.admin.getUserById(id);
-      if (authData?.user?.user_metadata?.name) {
-        infoMap.set(id, {
-          name: authData.user.user_metadata.name,
-          department: authData.user.user_metadata.department,
-        });
+      const authUser = authData?.user;
+      if (authUser) {
+        const name = authUser.user_metadata?.name
+          || authUser.user_metadata?.full_name
+          || (authUser.email ? authUser.email.split('@')[0] : null);
+        if (name) {
+          infoMap.set(id, {
+            name,
+            department: authUser.user_metadata?.department,
+          });
+        }
       }
     } catch { /* ignore auth lookup failures */ }
   }
 
   return userIds.map((id) => ({
     userId: id,
-    userName: infoMap.get(id)?.name || 'Student',
+    userName: infoMap.get(id)?.name || 'Member',
     department: infoMap.get(id)?.department,
   }));
 }

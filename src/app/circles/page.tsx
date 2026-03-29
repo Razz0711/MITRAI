@@ -379,11 +379,15 @@ function CircleChat({ circle }: { circle: Circle }) {
       <div 
         ref={scrollRef} 
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 flex flex-col gap-4"
+        className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 relative"
         style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, ${circle.color}15 1px, transparent 0)`,
-          backgroundSize: '24px 24px',
-          backgroundColor: 'var(--surface)',
+          background: `
+            radial-gradient(ellipse 80% 50% at 50% 0%, ${circle.color}12 0%, transparent 60%),
+            radial-gradient(circle at 1px 1px, ${circle.color}18 1px, transparent 0),
+            linear-gradient(135deg, ${circle.color}06 25%, transparent 25%, transparent 75%, ${circle.color}06 75%),
+            var(--surface)
+          `,
+          backgroundSize: '100% 100%, 20px 20px, 40px 40px, 100% 100%',
         }}
       >
         {loading ? (
@@ -391,9 +395,14 @@ function CircleChat({ circle }: { circle: Circle }) {
              <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: circle.color, borderTopColor: 'transparent' }} />
            </div>
         ) : messages.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-[var(--muted-strong)] text-sm">
-            <p>No messages yet.</p>
-            <p className="text-xs">Start the conversation!</p>
+          <div className="flex-1 flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-3 opacity-60"
+              style={{ background: `${circle.color}15`, border: `1px solid ${circle.color}20` }}
+            >
+              {circle.emoji}
+            </div>
+            <p className="text-sm font-semibold text-[var(--foreground)] opacity-70">No messages yet</p>
+            <p className="text-xs text-[var(--muted-strong)] mt-1">Be the first to say something in <span style={{ color: circle.color }}>{circle.name}</span>!</p>
           </div>
         ) : (
           <>
