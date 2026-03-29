@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Sparkles, MoreHorizontal, Trash2, Flag, Users, MessageCircle, Send, X, ChevronDown, ChevronUp } from 'lucide-react';
 import Avatar from './Avatar';
@@ -120,6 +121,11 @@ export default function PostCard({
   const [showIminModal, setShowIminModal] = useState(false);
   const [dmText, setDmText] = useState('');
   const [dmLoading, setDmLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Report state
   const [isReported, setIsReported] = useState(false);
@@ -456,8 +462,8 @@ export default function PostCard({
         )}
 
         {/* ─── "I'm in" Message Modal ─── */}
-        {showIminModal && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+        {mounted && showIminModal && createPortal(
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
             <div 
               className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
               onClick={() => setShowIminModal(false)}
@@ -512,7 +518,8 @@ export default function PostCard({
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>
