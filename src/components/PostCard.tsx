@@ -116,6 +116,11 @@ export default function PostCard({
   const [commentText, setCommentText] = useState('');
   const [commentsSeen, setCommentsSeen] = useState(false);
 
+  // "I'm in" Message Modal
+  const [showIminModal, setShowIminModal] = useState(false);
+  const [dmText, setDmText] = useState('');
+  const [dmLoading, setDmLoading] = useState(false);
+
   const handleIminClick = useCallback(async () => {
     if (isOwn && iminCount > 0) {
       // Post author → show who's interested
@@ -129,10 +134,40 @@ export default function PostCard({
         } catch { /* ignore */ } finally { setInterestedLoading(false); }
       }
     } else {
-      // Other user → toggle interest
-      onReact(post.id, 'imin');
+      // Other user
+      if (iminActive) {
+        // Already active → toggle off directly
+        onReact(post.id, 'imin');
+      } else {
+        // Not active → open beautiful reply popup!
+        setShowIminModal(true);
+      }
     }
-  }, [isOwn, iminCount, showInterested, interestedUsers.length, post.id, onReact]);
+  }, [isOwn, iminCount, showInterested, interestedUsers.length, post.id, onReact, iminActive]);
+
+  const handleIminConfirm = async () => {
+    // First, register the 'imin' reaction so the UI updates
+    onReact(post.id, 'imin');
+    
+    // Then optionally send the DM if they typed something
+    if (dmText.trim()) {
+      setDmLoading(true);
+      try {
+        await fetch(`/api/feed/${post.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'direct_message', content: dmText.trim() }),
+        });
+      } catch (err) {
+        console.error('Failed to send DM:', err);
+      } finally {
+        setDmLoading(false);
+      }
+    }
+    
+    setShowIminModal(false);
+    setDmText('');
+  };
 
 
 
@@ -387,6 +422,64 @@ export default function PostCard({
               >
                 <Send size={12} />
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── "I'm in" Message Modal ─── */}
+        {showIminModal && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+              onClick={() => setShowIminModal(false)}
+            />
+            <div 
+              className="relative w-full max-w-sm rounded-[24px] overflow-hidden shadow-2xl animate-in zoom-in-95 fade-in duration-300"
+              style={{ background: 'var(--surface-solid)', border: '1px solid rgba(255,255,255,0.1)' }}
+            >
+              <div className="p-6">
+                <button 
+                  onClick={() => setShowIminModal(false)}
+                  className="absolute top-4 right-4 text-[var(--muted)] hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+                
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-4">
+                  <Users size={20} className="text-white" />
+                </div>
+                
+                <h3 className="text-xl font-bold text-white mb-2">You're in! 🎉</h3>
+                <p className="text-[13px] text-[var(--muted-strong)] mb-5 leading-relaxed">
+                  Would you like to send a direct message to {post.isAnonymous ? 'the poster' : (post.userName || 'them')}? They'll get an instant notification.
+                </p>
+
+                <textarea
+                  value={dmText}
+                  onChange={e => setDmText(e.target.value)}
+                  placeholder="Hey, I'd love to join too..."
+                  maxLength={200}
+                  className="w-full h-24 p-3 rounded-xl bg-black/20 text-sm text-[var(--foreground)] placeholder-[var(--muted)] border border-white/5 focus:border-emerald-500/50 focus:outline-none resize-none mb-4 transition-all"
+                />
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleIminConfirm}
+                    disabled={dmLoading}
+                    className="flex-1 py-3 rounded-xl text-[13px] font-bold text-white/70 hover:bg-white/5 hover:text-white transition-colors border border-transparent disabled:opacity-50"
+                  >
+                    Skip message
+                  </button>
+                  <button
+                    onClick={handleIminConfirm}
+                    disabled={dmLoading || !dmText.trim()}
+                    className="flex-[1.5] py-3 rounded-xl text-[13px] font-extrabold text-white bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:active:scale-100"
+                  >
+                    <Send size={14} className={dmText.trim() ? "animate-bounce-short" : ""} />
+                    {dmLoading ? 'Sending...' : 'Send Message'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

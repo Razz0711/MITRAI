@@ -81,6 +81,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
 // POST /api/feed/[id] { action: 'react', type: 'imin'|'reply'|'connect' }
 //                    | { action: 'comment', content: string }
+//                    | { action: 'direct_message', content: string }
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
@@ -116,6 +117,47 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         return NextResponse.json({ success: false, error: 'Failed to save comment', details: error.message }, { status: 500 });
       }
       return NextResponse.json({ success: true, data: comment });
+    }
+
+    if (action === 'direct_message') {
+      if (!content?.trim()) return NextResponse.json({ success: false, error: 'Message content required' }, { status: 400 });
+
+      // Find the post author to get the receiver ID securely
+      const { data: post } = await supabase.from('campus_posts').select('user_id').eq('id', params.id).single();
+      if (!post || !post.user_id) return NextResponse.json({ success: false, error: 'Post or author not found' }, { status: 404 });
+      
+      const receiverId = post.user_id;
+      if (receiverId === authUser.id) return NextResponse.json({ success: false, error: 'Cannot message yourself' }, { status: 400 });
+
+      // Determine chat room ID (alphabetical combination of user IDs)
+      const chatId = [authUser.id, receiverId].sort().join('_');
+
+      // Ensure chat room exists
+      await supabase.from('chat_rooms').upsert({
+        id: chatId,
+        user1_id: [authUser.id, receiverId].sort()[0],
+        user2_id: [authUser.id, receiverId].sort()[1],
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+
+      // Fetch sender name
+      const { data: student } = await supabase.from('students').select('name').eq('id', authUser.id).single();
+      const senderName = student?.name || 'Student';
+
+      // Insert message
+      const { error } = await supabase.from('chat_messages').insert({
+        chat_id: chatId,
+        sender_id: authUser.id,
+        sender_name: senderName,
+        text: content.trim(),
+        is_read: false
+      });
+
+      if (error) {
+        console.error('Failed to send direct message:', error);
+        return NextResponse.json({ success: false, error: 'Failed to send message', details: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
