@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, MoreHorizontal, Trash2, Flag, Users, MessageCircle, Zap, Send, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, MoreHorizontal, Trash2, Flag, Users, MessageCircle, Send, X, ChevronDown, ChevronUp } from 'lucide-react';
 import Avatar from './Avatar';
 import { useAuth } from '@/lib/auth';
 
@@ -102,9 +102,7 @@ export default function PostCard({
   const accentColor = getCategoryAccent(post.category, isSos);
 
   const iminCount = post.reactions?.imin ?? 0;
-  const connectCount = post.reactions?.connect ?? 0;
   const iminActive = post.myReactions?.includes('imin');
-  const connectActive = post.myReactions?.includes('connect');
 
   // "I'm in" interested viewers (post author only)
   const [showInterested, setShowInterested] = useState(false);
@@ -136,14 +134,7 @@ export default function PostCard({
     }
   }, [isOwn, iminCount, showInterested, interestedUsers.length, post.id, onReact]);
 
-  const handleConnectClick = useCallback(() => {
-    // Always record the reaction
-    onReact(post.id, 'connect');
-    // Navigate to chat if non-anonymous and has a userId
-    if (!post.isAnonymous && post.userId) {
-      router.push(`/chat?friendId=${encodeURIComponent(post.userId)}&friendName=${encodeURIComponent(post.userName || 'Student')}`);
-    }
-  }, [post.id, post.isAnonymous, post.userId, post.userName, onReact, router]);
+
 
   const handleReplyClick = useCallback(async () => {
     setShowComments(prev => !prev);
@@ -175,8 +166,9 @@ export default function PostCard({
         alert(data.error || 'Failed to post reply.');
         setCommentText(text); // Restore text on failure
       }
-    } catch (err: any) {
-      alert(err?.message || 'Failed to post reply.');
+    } catch (err) {
+      const e = err as Error;
+      alert(e?.message || 'Failed to post reply.');
       setCommentText(text); // Restore text on failure
     }
   };
