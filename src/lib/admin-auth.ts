@@ -59,9 +59,9 @@ export function verifyAdminToken(cookieValue: string): boolean {
  * Check if the current request has a valid admin session cookie.
  * Use in server components or API routes.
  */
-export function isAdminAuthenticated(): boolean {
+export async function isAdminAuthenticated(): Promise<boolean> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const session = cookieStore.get(ADMIN_COOKIE_NAME);
     if (!session?.value) return false;
     return verifyAdminToken(session.value);
@@ -74,9 +74,9 @@ export function isAdminAuthenticated(): boolean {
  * Verify admin access via EITHER cookie OR adminKey query param.
  * Supports both old admin key approach and new cookie approach.
  */
-export function verifyAdminAccess(adminKey?: string | null): boolean {
+export async function verifyAdminAccess(adminKey?: string | null): Promise<boolean> {
   // Check cookie first
-  if (isAdminAuthenticated()) return true;
+  if (await isAdminAuthenticated()) return true;
   // Fall back to admin key
   if (adminKey) {
     const expected = process.env.ADMIN_KEY || '';

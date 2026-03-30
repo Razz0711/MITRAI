@@ -17,14 +17,14 @@ import { getAuthUser, unauthorized } from '@/lib/api-auth';
 // GET /api/admin?adminKey=xxx (or cookie-based)
 export async function GET(req: NextRequest) {
   // Admin can access via cookie (no Supabase auth needed) or via Supabase auth + admin key
-  const adminCookie = isAdminAuthenticated();
+  const adminCookie = await isAdminAuthenticated();
   if (!adminCookie) {
     const authUser = await getAuthUser();
     if (!authUser) return unauthorized();
   }
 
   const adminKey = req.nextUrl.searchParams.get('adminKey');
-  if (!verifyAdminAccess(adminKey)) {
+  if (!await verifyAdminAccess(adminKey)) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
 // POST /api/admin — admin actions
 export async function POST(req: NextRequest) {
   // Admin can access via cookie (no Supabase auth needed) or via Supabase auth + admin key
-  const adminCookie = isAdminAuthenticated();
+  const adminCookie = await isAdminAuthenticated();
   let adminUserId: string | null = null;
   let adminReviewerLabel = 'admin';
   if (!adminCookie) {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { adminKey, action, targetId } = body;
 
-    if (!verifyAdminAccess(adminKey)) {
+    if (!await verifyAdminAccess(adminKey)) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 

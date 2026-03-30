@@ -5,14 +5,14 @@ import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 // GET /api/admin/users?adminKey=xxx
 export async function GET(req: NextRequest) {
-  const adminCookie = isAdminAuthenticated();
+  const adminCookie = await isAdminAuthenticated();
   if (!adminCookie) {
     const authUser = await getAuthUser();
     if (!authUser) return unauthorized();
   }
 
   const adminKey = req.nextUrl.searchParams.get('adminKey');
-  if (!verifyAdminAccess(adminKey)) {
+  if (!await verifyAdminAccess(adminKey)) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
