@@ -20,11 +20,12 @@ import {
 export const dynamic = 'force-dynamic';
 
 // GET /api/anon/[id]
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
-  const roomId = params.id;
+  const { id } = await params;
+  const roomId = id;
   const userId = authUser.id;
 
   try {
@@ -70,11 +71,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // POST /api/anon/[id] { action: 'message' | 'reveal' | 'close' | 'report' | 'block' }
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
-  const roomId = params.id;
+  const { id } = await params;
+  const roomId = id;
   const userId = authUser.id;
 
   try {
