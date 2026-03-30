@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, BookOpen, Play, MessageSquare, ChevronRight, Trophy, AlertTriangle, Zap } from 'lucide-react';
+import { ArrowLeft, BookOpen, Play, MessageSquare, ChevronRight, Trophy, AlertTriangle, Zap, Download, Share2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { TRAIT_COLORS, TRAIT_LABELS } from '@/lib/personality-test';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts';
@@ -94,8 +94,40 @@ export default function ReportPage() {
     return Math.max(0, diff);
   })();
 
+  // ── Download / Share handlers ──
+  const handleDownload = () => {
+    // Hide non-printable elements and trigger print (saves as PDF)
+    window.print();
+  };
+
+  const handleShare = async () => {
+    const shareText = `🧠 My Personality Report\n\n` +
+      `Archetype: ${r.archetype || 'Explorer'}\n` +
+      `${r.tagline || ''}\n\n` +
+      `OCEAN Scores:\n` +
+      `• Openness: ${scores.openness}%\n` +
+      `• Conscientiousness: ${scores.conscientiousness}%\n` +
+      `• Extraversion: ${scores.extraversion}%\n` +
+      `• Agreeableness: ${scores.agreeableness}%\n` +
+      `• Neuroticism: ${scores.neuroticism}%\n\n` +
+      `Powered by MitrRAI 💜`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${userName}'s Personality Report`,
+          text: shareText,
+        });
+      } catch { /* user cancelled */ }
+    } else {
+      // Fallback: copy to clipboard
+      await navigator.clipboard.writeText(shareText);
+      alert('Report summary copied to clipboard!');
+    }
+  };
+
   return (
-    <div className="min-h-screen pb-32 page-enter" style={{ background: 'var(--background)' }}>
+    <div id="personality-report" className="min-h-screen pb-32 page-enter" style={{ background: 'var(--background)' }}>
       {/* ── Header ── */}
       <div className="relative overflow-hidden rounded-b-3xl" style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #7c3aed 50%, #a78bfa 100%)' }}>
         <div className="absolute inset-0 opacity-10">
@@ -337,6 +369,24 @@ export default function ReportPage() {
           >
             <MessageSquare size={18} /> Chat with {isFemaleUser ? 'Aryan' : 'Arya'}
           </button>
+
+          {/* Download & Share buttons */}
+          <div className="flex gap-3 mt-4 no-print">
+            <button
+              onClick={handleDownload}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white/90 flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <Download size={16} /> Download PDF
+            </button>
+            <button
+              onClick={handleShare}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-white/90 flex items-center justify-center gap-2 transition-all active:scale-[0.97]"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <Share2 size={16} /> Share
+            </button>
+          </div>
           {daysTillRetake > 0 && (
             <p className="text-xs text-[var(--muted)] mt-3">Next assessment in {daysTillRetake} day{daysTillRetake !== 1 ? 's' : ''}</p>
           )}
