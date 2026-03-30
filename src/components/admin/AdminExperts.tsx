@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
 
 interface Expert {
   id: string;
@@ -32,8 +31,9 @@ export default function AdminExperts({ adminKey }: { adminKey: string }) {
   const fetchExperts = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('experts').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
+      const res = await fetch(`/api/experts?adminKey=${encodeURIComponent(adminKey)}&all=true`);
+      const { data, error, success } = await res.json();
+      if (!success) throw new Error(error);
       setExperts(data || []);
     } catch {
       setError('Failed to fetch experts');

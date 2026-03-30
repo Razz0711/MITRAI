@@ -18,12 +18,24 @@ export async function GET(req: NextRequest) {
     const filter = searchParams.get('filter') || '';
     const featured = searchParams.get('featured') === 'true';
 
+    const isAll = searchParams.get('all') === 'true';
+    const adminKey = searchParams.get('adminKey');
+
     let query = supabase
       .from('experts')
-      .select('id, name, title, gender, experience_years, qualifications, languages, expertise, specializations, about, avatar_url, rating, review_count, price_per_session, session_duration_mins, is_featured, sort_order')
-      .eq('is_active', true)
+      .select('*')
       .order('sort_order', { ascending: true })
       .order('rating', { ascending: false });
+
+    // Restrict if not admin requesting all
+    let isAdmin = false;
+    if (adminKey) {
+      isAdmin = await verifyAdminAccess(adminKey);
+    }
+    
+    if (!isAll || !isAdmin) {
+      query = query.eq('is_active', true);
+    }
 
     if (featured) {
       query = query.eq('is_featured', true);
