@@ -72,6 +72,13 @@ export async function POST(req: NextRequest) {
     // Build personality-aware prompt
     const hasTakenTest = studentRow?.has_taken_personality_test || false;
     const aryaContext = personalityReport?.arya_context || null;
+    console.log('[Arya Chat] Personality debug:', {
+      userId: user.id,
+      hasTakenTest,
+      hasPersonalityReport: !!personalityReport,
+      hasAryaContext: !!aryaContext,
+      aryaContextKeys: aryaContext ? Object.keys(aryaContext) : 'none',
+    });
     const lastTestDate = studentRow?.last_personality_test_date;
     const retakeDue = lastTestDate ? (Date.now() - new Date(lastTestDate).getTime()) >= 15 * 86400000 : false;
     // Check if user just completed the test (flag set by client)
