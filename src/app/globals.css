@@ -1122,9 +1122,18 @@ html, body {
   animation: float 4s ease-in-out infinite;
 }
 
+/* Premium background orb floating */
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(15px, -25px) scale(1.05); }
+  50% { transform: translate(-10px, 15px) scale(0.95); }
+  75% { transform: translate(20px, 10px) scale(1.03); }
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .anon-aura, .anon-aura-3, .ghost-float, .ambient-glow,
   .live-ping, .gradient-text, .stat-chip, .avatar-float,
   .slide-left, .slide-right, .page-enter { animation: none !important; }
+  [style*="float-orb"] { animation: none !important; }
 }

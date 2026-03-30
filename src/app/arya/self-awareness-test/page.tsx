@@ -229,7 +229,14 @@ export default function SelfAwarenessTestPage() {
   // ═══ INTRO SCREEN ═══
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen pb-24 page-enter" style={{ background: 'var(--background)' }}>
+      <div className="min-h-screen pb-24 page-enter relative overflow-hidden" style={{ background: 'var(--background)' }}>
+        {/* Premium background */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute w-[500px] h-[500px] rounded-full opacity-[0.07]" style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)', top: '-15%', right: '-20%', animation: 'float-orb 20s ease-in-out infinite' }} />
+          <div className="absolute w-[400px] h-[400px] rounded-full opacity-[0.05]" style={{ background: 'radial-gradient(circle, #3b82f6 0%, transparent 70%)', bottom: '-10%', left: '-15%', animation: 'float-orb 25s ease-in-out infinite reverse' }} />
+          <div className="absolute w-[300px] h-[300px] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, #22c55e 0%, transparent 70%)', top: '40%', left: '50%', transform: 'translateX(-50%)', animation: 'float-orb 18s ease-in-out infinite 3s' }} />
+          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(124,58,237,0.08) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        </div>
         {/* Resume prompt */}
         {showResume && (
           <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
@@ -325,6 +332,12 @@ export default function SelfAwarenessTestPage() {
   if (phase === 'loading') {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center px-6" style={{ background: 'var(--background)' }}>
+        {/* Premium background */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute w-[400px] h-[400px] rounded-full opacity-[0.08]" style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)', top: '20%', left: '50%', transform: 'translateX(-50%)', animation: 'float-orb 15s ease-in-out infinite' }} />
+          <div className="absolute w-[300px] h-[300px] rounded-full opacity-[0.05]" style={{ background: 'radial-gradient(circle, #a78bfa 0%, transparent 70%)', bottom: '10%', right: '-10%', animation: 'float-orb 20s ease-in-out infinite reverse' }} />
+          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(124,58,237,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        </div>
         {/* Avatar with pulsing ring */}
         <div className="relative mb-8">
           <div className="w-28 h-28 rounded-full overflow-hidden relative z-10">
@@ -385,6 +398,12 @@ export default function SelfAwarenessTestPage() {
 
   return (
     <div className="fixed inset-0 flex flex-col" style={{ background: 'var(--background)' }}>
+      {/* Premium background */}
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute w-[600px] h-[600px] rounded-full opacity-[0.06] transition-all duration-1000" style={{ background: `radial-gradient(circle, ${traitColor} 0%, transparent 70%)`, top: '-20%', right: '-25%', animation: 'float-orb 22s ease-in-out infinite' }} />
+        <div className="absolute w-[400px] h-[400px] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, #6d28d9 0%, transparent 70%)', bottom: '-10%', left: '-15%', animation: 'float-orb 18s ease-in-out infinite reverse' }} />
+        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(124,58,237,0.05) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      </div>
       {/* Top bar */}
       <div className="shrink-0 px-4 pt-3 pb-2" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
         {/* Back button + Question counter */}
