@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import AdminExperts from '@/components/admin/AdminExperts';
 
 interface AdminStats {
   totalUsers: number;
@@ -636,6 +637,9 @@ export default function AdminDashboardPage() {
           </div>
         </section>
       )}
+
+      {/* ─── Experts Management ─── */}
+      <AdminExperts adminKey={adminKey} />
     </div>
   );
 }
