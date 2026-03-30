@@ -14,25 +14,28 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
+  const { id: circleId } = await params;
   const before = req.nextUrl.searchParams.get('before') || undefined;
   const limit = Math.min(Number(req.nextUrl.searchParams.get('limit') || 30), 50);
 
-  const messages = await getCircleMessages(params.id, limit, before);
+  const messages = await getCircleMessages(circleId, limit, before);
   return NextResponse.json({ success: true, messages });
 }
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
   if (!rateLimit(`circle_msg:${authUser.id}`, 30, 60_000)) return rateLimitExceeded();
+
+  const { id: circleId } = await params;
 
   const contentType = req.headers.get('content-type') || '';
 
@@ -77,7 +80,7 @@ export async function POST(
 
       // Upload to Supabase Storage
       const ext = file.name.split('.').pop() || 'bin';
-      const filePath = `${params.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const filePath = `${circleId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       
       const arrayBuffer = await file.arrayBuffer();
       const { error: uploadError } = await supabase.storage
@@ -105,7 +108,7 @@ export async function POST(
       };
 
       const type = msgType === 'document' ? 'document' as const : 'image' as const;
-      const msg = await sendCircleMessage(params.id, authUser.id, senderName, file.name, type, metadata);
+      const msg = await sendCircleMessage(circleId, authUser.id, senderName, file.name, type, metadata);
       if (!msg) return NextResponse.json({ success: false, error: 'Failed to save message' }, { status: 500 });
 
       return NextResponse.json({ success: true, message: msg });
@@ -128,7 +131,7 @@ export async function POST(
     }
 
     const metadata = { question, options };
-    const msg = await sendCircleMessage(params.id, authUser.id, senderName, `📊 ${question}`, 'poll', metadata);
+    const msg = await sendCircleMessage(circleId, authUser.id, senderName, `📊 ${question}`, 'poll', metadata);
     if (!msg) return NextResponse.json({ success: false, error: 'Failed to create poll' }, { status: 500 });
 
     return NextResponse.json({ success: true, message: msg });
@@ -140,7 +143,7 @@ export async function POST(
     return NextResponse.json({ success: false, error: 'Invalid message' }, { status: 400 });
   }
 
-  const msg = await sendCircleMessage(params.id, authUser.id, senderName, text);
+  const msg = await sendCircleMessage(circleId, authUser.id, senderName, text);
   if (!msg) return NextResponse.json({ success: false, error: 'Failed to send' }, { status: 500 });
 
   return NextResponse.json({ success: true, message: msg });

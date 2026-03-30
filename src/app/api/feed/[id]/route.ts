@@ -32,10 +32,11 @@ function createTransporter() {
 
 // GET /api/feed/[id]?action=imin_users   → who clicked "I'm in" (post author only)
 // GET /api/feed/[id]?action=comments     → comments on the post
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
+  const { id: postId } = await params;
   const action = req.nextUrl.searchParams.get('action');
 
   if (action === 'imin_users') {
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { data: post } = await supabase
       .from('campus_posts')
       .select('user_id')
-      .eq('id', params.id)
+      .eq('id', postId)
       .single();
 
     if (!post || post.user_id !== authUser.id) {
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { data: reactions } = await supabase
       .from('post_reactions')
       .select('user_id')
-      .eq('post_id', params.id)
+      .eq('post_id', postId)
       .eq('type', 'imin');
 
     const userIds = (reactions || []).map((r: { user_id: string }) => r.user_id);
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { data: comments, error } = await supabase
       .from('post_comments')
       .select('id, user_id, user_name, content, created_at')
-      .eq('post_id', params.id)
+      .eq('post_id', postId)
       .order('created_at', { ascending: true });
 
     if (error) return NextResponse.json({ success: false, error: 'Failed to fetch comments' }, { status: 500 });
@@ -82,12 +83,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /api/feed/[id]
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
+  const { id: postId } = await params;
   try {
-    const result = await deletePost(params.id, authUser.id);
+    const result = await deletePost(postId, authUser.id);
     if (!result.success) return NextResponse.json(result, { status: 403 });
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -100,19 +102,20 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 //                    | { action: 'comment', content: string }
 //                    | { action: 'direct_message', content: string }
 //                    | { action: 'report' }
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
   if (!rateLimit(`feed-react:${authUser.id}`, 60, 60_000)) return rateLimitExceeded();
 
+  const { id: postId } = await params;
   try {
     const body = await req.json();
     const { action, type, content } = body;
 
     if (action === 'react') {
       if (!type) return NextResponse.json({ success: false, error: 'Reaction type required' }, { status: 400 });
-      const result = await toggleReaction(params.id, authUser.id, type);
+      const result = await toggleReaction(postId, authUser.id, type);
       return NextResponse.json(result);
     }
 
@@ -126,7 +129,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
       const { data: comment, error } = await supabase
         .from('post_comments')
-        .insert({ post_id: params.id, user_id: authUser.id, user_name: userName, content: content.trim() })
+        .insert({ post_id: postId, user_id: authUser.id, user_name: userName, content: content.trim() })
         .select('id, user_id, user_name, content, created_at')
         .single();
 
@@ -141,7 +144,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       if (!content?.trim()) return NextResponse.json({ success: false, error: 'Message content required' }, { status: 400 });
 
       // Find the post author to get the receiver ID securely
-      const { data: post } = await supabase.from('campus_posts').select('user_id, is_anonymous').eq('id', params.id).single();
+      const { data: post } = await supabase.from('campus_posts').select('user_id, is_anonymous').eq('id', postId).single();
       if (!post || !post.user_id) return NextResponse.json({ success: false, error: 'Post or author not found' }, { status: 404 });
       
       const receiverId = post.user_id;
@@ -187,7 +190,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     if (action === 'report') {
       // 1. Get the post author
-      const { data: post } = await supabase.from('campus_posts').select('user_id').eq('id', params.id).single();
+      const { data: post } = await supabase.from('campus_posts').select('user_id').eq('id', postId).single();
       if (!post || !post.user_id) return NextResponse.json({ success: false, error: 'Post not found' }, { status: 404 });
       
       const reportedUserId = post.user_id;
@@ -196,7 +199,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       // 2. Insert the report
       const { error: insertErr } = await supabase.from('post_reports').insert({
         reporter_id: authUser.id,
-        post_id: params.id,
+        post_id: postId,
         reported_user_id: reportedUserId,
         reason: 'Inappropriate content',
         status: 'pending'

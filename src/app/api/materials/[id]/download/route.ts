@@ -8,11 +8,12 @@ import { getAuthUser, unauthorized } from '@/lib/api-auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authUser = await getAuthUser(); if (!authUser) return unauthorized();
+  const { id: materialId } = await params;
   try {
-    const material = await getMaterialById(params.id);
+    const material = await getMaterialById(materialId);
     if (!material) {
       return NextResponse.json({ success: false, error: 'Material not found' }, { status: 404 });
     }

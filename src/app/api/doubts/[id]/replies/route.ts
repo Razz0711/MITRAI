@@ -21,24 +21,26 @@ export const dynamic = 'force-dynamic';
 // GET /api/doubts/[id]/replies
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
-  const replies = await getDoubtReplies(params.id);
+  const { id: doubtId } = await params;
+  const replies = await getDoubtReplies(doubtId);
   return NextResponse.json({ success: true, data: { replies } });
 }
 
 // POST /api/doubts/[id]/replies — add a reply
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
   if (!rateLimit(`doubt-reply:${authUser.id}`, 20, 60_000)) return rateLimitExceeded();
 
+  const { id: doubtId } = await params;
   try {
     const body = await req.json();
     const { userId, userName, reply, isAnonymous } = body;
@@ -48,7 +50,7 @@ export async function POST(
     }
 
     const ok = await addDoubtReply({
-      doubtId: params.id,
+      doubtId: doubtId,
       userId,
       userName: userName || 'Student',
       reply,

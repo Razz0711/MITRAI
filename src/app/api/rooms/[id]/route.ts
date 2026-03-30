@@ -23,19 +23,20 @@ export const dynamic = 'force-dynamic';
 // GET /api/rooms/[id]
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
-  const room = await getRoomById(params.id);
+  const { id: roomId } = await params;
+  const room = await getRoomById(roomId);
   if (!room) {
     return NextResponse.json({ success: false, error: 'Room not found' }, { status: 404 });
   }
 
   const [members, messages] = await Promise.all([
-    getRoomMembers(params.id),
-    getRoomMessages(params.id, 100),
+    getRoomMembers(roomId),
+    getRoomMessages(roomId, 100),
   ]);
 
   return NextResponse.json({
@@ -47,19 +48,20 @@ export async function GET(
 // POST /api/rooms/[id] { action: 'join' | 'leave' | 'send_message' | 'archive' }
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
   if (!rateLimit(`room:${authUser.id}`, 60, 60_000)) return rateLimitExceeded();
 
+  const { id: roomId } = await params;
   try {
     const body = await req.json();
     const { action, userId, userName, text } = body;
 
     if (action === 'join') {
       if (!userId) return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
-      const ok = await joinRoom(params.id, userId, userName || 'Student');
+      const ok = await joinRoom(roomId, userId, userName || 'Student');
       if (!ok) return NextResponse.json({ success: false, error: 'Could not join room' }, { status: 500 });
       await awardXP(userId, 5, 'Joined a study room');
       return NextResponse.json({ success: true });
@@ -67,21 +69,21 @@ export async function POST(
 
     if (action === 'leave') {
       if (!userId) return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
-      const ok = await leaveRoom(params.id, userId);
+      const ok = await leaveRoom(roomId, userId);
       if (!ok) return NextResponse.json({ success: false, error: 'Could not leave room' }, { status: 500 });
       return NextResponse.json({ success: true });
     }
 
     if (action === 'send_message') {
       if (!userId || !text) return NextResponse.json({ success: false, error: 'userId and text required' }, { status: 400 });
-      const ok = await sendRoomMessage({ roomId: params.id, senderId: userId, senderName: userName || 'Student', text, createdAt: new Date().toISOString() });
+      const ok = await sendRoomMessage({ roomId: roomId, senderId: userId, senderName: userName || 'Student', text, createdAt: new Date().toISOString() });
       if (!ok) return NextResponse.json({ success: false, error: 'Could not send message' }, { status: 500 });
       return NextResponse.json({ success: true });
     }
 
     if (action === 'archive') {
       if (!userId) return NextResponse.json({ success: false, error: 'userId required' }, { status: 400 });
-      const ok = await archiveRoom(params.id);
+      const ok = await archiveRoom(roomId);
       if (!ok) return NextResponse.json({ success: false, error: 'Could not archive room' }, { status: 500 });
       return NextResponse.json({ success: true });
     }

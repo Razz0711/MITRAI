@@ -15,12 +15,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
-  const circle = await getCircleById(params.id);
+  const { id: circleId } = await params;
+  const circle = await getCircleById(circleId);
   if (!circle) {
     return NextResponse.json(
       { success: false, error: 'Circle not found' },
@@ -30,8 +31,8 @@ export async function GET(
 
   // Fetch members + circle rooms in parallel
   const [memberships, rooms] = await Promise.all([
-    getCircleMembers(params.id),
-    getActiveRooms(params.id),
+    getCircleMembers(circleId),
+    getActiveRooms(circleId),
   ]);
 
   // memberships already includes name + department from getCircleMembers join
