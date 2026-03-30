@@ -11,6 +11,9 @@ import { getAuthUser, unauthorized } from '@/lib/api-auth';
 import { rateLimit, rateLimitExceeded } from '@/lib/rate-limit';
 import { deletePost, toggleReaction } from '@/lib/store/feed';
 import { supabase } from '@/lib/store/core';
+import { addMessage, getChatId, updateThreadUserName } from '@/lib/store';
+import { DirectMessage } from '@/lib/types';
+import { v4 as uuidv4 } from 'uuid';
 
 export const dynamic = 'force-dynamic';
 
@@ -138,39 +141,46 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       if (!content?.trim()) return NextResponse.json({ success: false, error: 'Message content required' }, { status: 400 });
 
       // Find the post author to get the receiver ID securely
-      const { data: post } = await supabase.from('campus_posts').select('user_id').eq('id', params.id).single();
+      const { data: post } = await supabase.from('campus_posts').select('user_id, is_anonymous').eq('id', params.id).single();
       if (!post || !post.user_id) return NextResponse.json({ success: false, error: 'Post or author not found' }, { status: 404 });
       
       const receiverId = post.user_id;
       if (receiverId === authUser.id) return NextResponse.json({ success: false, error: 'Cannot message yourself' }, { status: 400 });
 
-      // Determine chat room ID (alphabetical combination of user IDs)
-      const chatId = [authUser.id, receiverId].sort().join('_');
-
-      // Ensure chat room exists
-      await supabase.from('chat_rooms').upsert({
-        id: chatId,
-        user1_id: [authUser.id, receiverId].sort()[0],
-        user2_id: [authUser.id, receiverId].sort()[1],
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
+      // Determine chat room ID
+      const chatId = getChatId(authUser.id, receiverId);
 
       // Fetch sender name
       const { data: student } = await supabase.from('students').select('name').eq('id', authUser.id).single();
       const senderName = student?.name || 'Student';
 
-      // Insert message
-      const { error } = await supabase.from('chat_messages').insert({
-        chat_id: chatId,
-        sender_id: authUser.id,
-        sender_name: senderName,
-        text: content.trim(),
-        is_read: false
-      });
+      let receiverName = 'Student';
+      if (post.is_anonymous) {
+         receiverName = `Anonymous_${receiverId.substring(0, 6).toUpperCase()}`;
+      } else {
+         const { data: receiverProfile } = await supabase.from('students').select('name').eq('id', receiverId).single();
+         if (receiverProfile) receiverName = receiverProfile.name;
+      }
 
-      if (error) {
-        console.error('Failed to send direct message:', error);
-        return NextResponse.json({ success: false, error: 'Failed to send message', details: error.message }, { status: 500 });
+      // Insert message using the unified chat store
+      const message: DirectMessage = {
+         id: uuidv4(),
+         chatId,
+         senderId: authUser.id,
+         senderName,
+         receiverId,
+         text: content.trim(),
+         read: false,
+         createdAt: new Date().toISOString()
+      };
+      
+      try {
+        await addMessage(message);
+        await updateThreadUserName(chatId, receiverId, receiverName);
+        await updateThreadUserName(chatId, authUser.id, senderName);
+      } catch (err) {
+        console.error('Failed to send direct message:', err);
+        return NextResponse.json({ success: false, error: 'Failed to send message' }, { status: 500 });
       }
       return NextResponse.json({ success: true });
     }
@@ -206,10 +216,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         
       if (!countErr && reportCount !== null) {
          // Notify the reported user via direct system chat message
-         const chatId = ['system', reportedUserId].sort().join('_');
-         await supabase.from('chat_rooms').upsert({
-           id: chatId, user1_id: 'system', user2_id: reportedUserId, updated_at: new Date().toISOString()
-         }, { onConflict: 'id' });
+         const systemId = '00000000-0000-0000-0000-000000000000';
+         const chatId = getChatId(systemId, reportedUserId);
          
          const warningsLeft = Math.max(0, 5 - reportCount);
          let messageText = `⚠️ **System Alert**: Someone has reported your anonymous post for inappropriate content.\n\nYou have received ${reportCount} total reports.`;
@@ -264,13 +272,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             messageText += `\nBe careful! You will receive a block WARNING after 5 total reports. (${warningsLeft} reports remaining).`;
          }
 
-         await supabase.from('chat_messages').insert({
-           chat_id: chatId,
-           sender_id: '00000000-0000-0000-0000-000000000000', // Null UUID pattern for system
-           sender_name: 'MitrRAI Safety Team',
+         const message: DirectMessage = {
+           id: uuidv4(),
+           chatId,
+           senderId: systemId,
+           senderName: 'MitrRAI Safety Team',
+           receiverId: reportedUserId,
            text: messageText,
-           is_read: false
-         });
+           read: false,
+           createdAt: new Date().toISOString()
+         };
+         try {
+           await addMessage(message);
+           await updateThreadUserName(chatId, systemId, 'MitrRAI Safety Team');
+         } catch (e) {
+           console.error('Failed to deliver system alert to new chat DB schema:', e);
+         }
       }
 
       return NextResponse.json({ success: true });
