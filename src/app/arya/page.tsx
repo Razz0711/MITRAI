@@ -221,6 +221,24 @@ export default function AryaProfilePage() {
           <ChevronRight size={16} className="text-[var(--muted)]" />
         </Link>
 
+        {/* ── Expert Therapists Card ── */}
+        <Link
+          href="/arya/experts"
+          className="rounded-2xl p-4 flex items-center gap-3 transition-all active:scale-[0.98]"
+          style={{
+            background: 'linear-gradient(135deg, rgba(15,118,110,0.12), rgba(20,184,166,0.08))',
+            border: '1px solid rgba(20,184,166,0.25)',
+          }}
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(20,184,166,0.15)' }}>
+            <span className="text-lg">🧠</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[var(--foreground)]">Expert Therapists</p>
+            <p className="text-xs text-[var(--muted)]">Connect with verified mental health professionals</p>
+          </div>
+          <ChevronRight size={16} className="text-[var(--muted)]" />
+        </Link>
         {/* ── Social Links ── */}
         <a
           href="https://www.instagram.com/arya.mitrrai?igsh=MXczbHEyNDNtbHl0MQ=="
