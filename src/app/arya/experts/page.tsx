@@ -142,59 +142,80 @@ export default function ExpertsPage() {
 
         {/* Expert Cards */}
         {!loading && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filtered.map((expert, idx) => (
-              <button
+              <div
                 key={expert.id}
                 onClick={() => router.push(`/arya/experts/${expert.id}`)}
-                className="w-full rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
+                className="w-full rounded-[24px] p-5 text-left transition-all active:scale-[0.98] cursor-pointer"
                 style={{
                   background: 'var(--surface)',
                   border: '1px solid var(--glass-border)',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
                 }}
               >
-                <div className="flex gap-3">
-                  {/* Avatar */}
+                <div className="flex gap-4">
+                  {/* TalkToAngel Styled Avatar Box */}
                   <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-lg font-bold shrink-0"
+                    className="w-[84px] h-[84px] rounded-[20px] flex-shrink-0 relative overflow-hidden flex flex-col items-center justify-center border-2 border-pink-500/20"
                     style={{
-                      background: `linear-gradient(135deg, ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}40, ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}20)`,
-                      border: `2px solid ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}50`,
+                      background: expert.avatar_url?.startsWith('#') 
+                        ? `linear-gradient(135deg, ${expert.avatar_url}40, ${expert.avatar_url}10)`
+                        : 'linear-gradient(180deg, rgba(236,72,153,0.1) 0%, rgba(236,72,153,0.05) 100%)',
                     }}
                   >
-                    {getInitials(expert.name)}
+                    <span className="absolute top-1.5 text-[6px] font-black tracking-wider text-pink-400/80">MITRRAI+</span>
+                    {expert.avatar_url && !expert.avatar_url.startsWith('#') ? (
+                      <img src={expert.avatar_url} alt={expert.name} className="w-full h-full object-cover mt-2" />
+                    ) : (
+                      <span className="text-xl font-bold text-white mt-1">{getInitials(expert.name)}</span>
+                    )}
                   </div>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="text-sm font-bold text-[var(--foreground)] truncate">{expert.name}</h3>
-                      {expert.is_featured && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold">⭐ TOP</span>}
+                    <h3 className="text-[16px] font-bold text-[var(--foreground)] truncate leading-tight">{expert.name}</h3>
+                    <p className="text-[12px] font-semibold text-pink-400 mt-0.5 mb-1.5 truncate">{expert.title}</p>
+                    <p className="text-[13px] font-bold text-[var(--foreground)]">{expert.experience_years} Years of Exp</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[11px] opacity-80">🎓</span>
+                      <span className="text-[11px] text-[var(--muted)] truncate">{(expert.qualifications || []).slice(0, 2).join(', ')}</span>
                     </div>
-                    <p className="text-[11px] font-medium" style={{ color: '#14b8a6' }}>{expert.title}</p>
-                    <p className="text-[11px] text-[var(--muted)]">{expert.experience_years} Years of Exp</p>
-                    <p className="text-[10px] text-[var(--muted)] mt-0.5">🎓 {(expert.qualifications || []).slice(0, 2).join(', ')}</p>
-                  </div>
-
-                  <ChevronRight size={16} className="text-[var(--muted)] shrink-0 mt-3" />
-                </div>
-
-                {/* Rating + Tags */}
-                <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
-                  <div className="flex items-center gap-1.5">
-                    <Star size={12} className="text-amber-400" fill="#fbbf24" />
-                    <span className="text-xs font-bold text-white/90">{expert.rating || '—'}</span>
-                    <span className="text-[10px] text-[var(--muted)]">({expert.review_count} reviews)</span>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {(expert.expertise || []).slice(0, 2).map(tag => (
-                      <span key={tag} className="px-2 py-0.5 rounded-full text-[9px] font-medium" style={{ background: 'rgba(20,184,166,0.1)', color: '#5eead4', border: '1px solid rgba(20,184,166,0.15)' }}>
-                        {tag}
-                      </span>
-                    ))}
                   </div>
                 </div>
-              </button>
+
+                {/* Bottom Section: Ratings & Booking */}
+                <div className="flex items-end justify-between mt-5">
+                  <div className="flex flex-col gap-2">
+                    {/* Stars Row precisely like screenshot */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[14px] font-black text-[var(--foreground)]">{expert.rating?.toFixed(1) || 'NEW'}</span>
+                      <div className="flex gap-0.5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            size={12} 
+                            className="text-pink-500" 
+                            fill={i < Math.round(expert.rating || 0) ? '#ec4899' : 'transparent'} 
+                            strokeWidth={i < Math.round(expert.rating || 0) ? 0 : 1.5} 
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[12px] font-bold text-[var(--foreground)]">({expert.review_count})</span>
+                    </div>
+                    {/* Timings */}
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="text-[11px] text-pink-400">📅</span>
+                      <span className="text-[11px] font-medium text-pink-400">Availability Timings</span>
+                    </div>
+                  </div>
+                  
+                  {/* Blue Pill Book Session Button like screenshot */}
+                  <button className="bg-[#8b8df2] hover:bg-[#7b7dec] text-white font-bold text-[12px] px-4 py-2.5 rounded-xl transition-colors shadow-sm">
+                    Book Session
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
