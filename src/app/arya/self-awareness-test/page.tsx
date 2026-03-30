@@ -289,7 +289,7 @@ export default function SelfAwarenessTestPage() {
               { icon: <FileText size={20} />, title: 'Detailed Report', color: '#3b82f6' },
               { icon: <User size={20} />, title: 'Arya Personalization', color: '#22c55e' },
             ].map((item, i) => (
-              <div key={i} className="p-4 rounded-2xl text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div key={i} className="p-4 rounded-2xl text-center sat-card-enter" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center" style={{ background: `${item.color}20`, color: item.color }}>
                   {item.icon}
                 </div>
@@ -403,7 +403,16 @@ export default function SelfAwarenessTestPage() {
         <div className="absolute w-[600px] h-[600px] rounded-full opacity-[0.06] transition-all duration-1000" style={{ background: `radial-gradient(circle, ${traitColor} 0%, transparent 70%)`, top: '-20%', right: '-25%', animation: 'float-orb 22s ease-in-out infinite' }} />
         <div className="absolute w-[400px] h-[400px] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, #6d28d9 0%, transparent 70%)', bottom: '-10%', left: '-15%', animation: 'float-orb 18s ease-in-out infinite reverse' }} />
         <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(124,58,237,0.05) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+        {/* Floating particles */}
+        <div className="sat-particle" />
+        <div className="sat-particle" />
+        <div className="sat-particle" />
+        <div className="sat-particle" />
+        <div className="sat-particle" />
+        <div className="sat-particle" />
       </div>
+      {/* Full-screen shimmer overlay */}
+      <div className="sat-shimmer absolute inset-0 pointer-events-none z-[1]" />
       {/* Top bar */}
       <div className="shrink-0 px-4 pt-3 pb-2" style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}>
         {/* Back button + Question counter */}
@@ -411,44 +420,43 @@ export default function SelfAwarenessTestPage() {
           <button onClick={handleBack} className="w-9 h-9 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors" style={{ background: 'var(--surface)' }}>
             <ArrowLeft size={18} />
           </button>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full" style={{ background: traitColor }} />
+          <div className="flex items-center gap-2 sat-trait-badge">
+            <span className="w-2 h-2 rounded-full" style={{ background: traitColor, boxShadow: `0 0 8px ${traitColor}` }} />
             <span className="text-xs font-medium text-[var(--muted)]">{TRAIT_LABELS[question.trait]}</span>
           </div>
-          <span className="text-xs font-medium text-[var(--muted)]">
+          <span className="text-xs font-medium text-[var(--muted)] sat-count-pop" key={currentQ}>
             {currentQ + 1}/{QUESTIONS.length}
           </span>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--surface)' }}>
+        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface)' }}>
           <div
-            className="h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${progress}%`, background: traitColor }}
+            className="h-full rounded-full transition-all duration-500 ease-out sat-progress-glow"
+            style={{ width: `${progress}%`, background: `linear-gradient(90deg, ${traitColor}, ${traitColor}dd)` }}
           />
         </div>
       </div>
 
-      {/* Question content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-[2]">
         <div
           className={`text-center transition-all duration-300 ${isAnimating ? (slideDir === 'left' ? 'opacity-0 -translate-x-8' : 'opacity-0 translate-x-8') : 'opacity-100 translate-x-0'}`}
         >
-          <p className="text-2xl font-bold text-white leading-snug max-w-md">
+          <p className="text-2xl font-bold leading-snug max-w-md sat-aurora-text">
             &ldquo;{question.text}&rdquo;
           </p>
         </div>
       </div>
 
       {/* Answer options */}
-      <div className="shrink-0 px-6 pb-8" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
+      <div className="shrink-0 px-6 pb-8 relative z-[2]" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
         <div className="flex justify-center gap-4 mb-4">
           {ANSWER_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => handleAnswer(opt.value)}
               disabled={isAnimating}
-              className="flex flex-col items-center gap-2 group transition-all duration-200"
+              className={`flex flex-col items-center gap-2 group transition-all duration-200 sat-answer-btn ${selected === opt.value ? 'sat-answer-selected' : ''}`}
             >
               <div
                 className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold transition-all duration-200"
@@ -460,8 +468,8 @@ export default function SelfAwarenessTestPage() {
                     ? '2px solid #a78bfa'
                     : '1px solid var(--border)',
                   color: selected === opt.value ? '#fff' : 'var(--muted-strong)',
-                  transform: selected === opt.value ? 'scale(1.1)' : 'scale(1)',
-                  boxShadow: selected === opt.value ? '0 4px 16px rgba(124,58,237,0.4)' : 'none',
+                  transform: selected === opt.value ? 'scale(1.15)' : 'scale(1)',
+                  boxShadow: selected === opt.value ? '0 4px 20px rgba(124,58,237,0.5)' : 'none',
                 }}
               >
                 {opt.value}

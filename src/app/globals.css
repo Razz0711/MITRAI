@@ -1130,10 +1130,167 @@ html, body {
   75% { transform: translate(20px, 10px) scale(1.03); }
 }
 
+/* ── Shimmer line sweep ── */
+@keyframes shimmer-sweep {
+  0%   { transform: translateX(-100%) rotate(-15deg); }
+  100% { transform: translateX(300%) rotate(-15deg); }
+}
+.sat-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.sat-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 30%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(124, 58, 237, 0.06),
+    rgba(167, 139, 250, 0.1),
+    rgba(124, 58, 237, 0.06),
+    transparent
+  );
+  animation: shimmer-sweep 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── Floating particles ── */
+@keyframes particle-float {
+  0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.4; }
+  25%      { transform: translateY(-30px) translateX(10px) scale(1.2); opacity: 0.7; }
+  50%      { transform: translateY(-50px) translateX(-15px) scale(0.8); opacity: 0.3; }
+  75%      { transform: translateY(-20px) translateX(20px) scale(1.1); opacity: 0.6; }
+}
+.sat-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(167, 139, 250, 0.5);
+  pointer-events: none;
+}
+.sat-particle:nth-child(1) { left: 10%; top: 60%; animation: particle-float 8s ease-in-out infinite; }
+.sat-particle:nth-child(2) { left: 25%; top: 30%; animation: particle-float 10s ease-in-out infinite 1s; width: 2px; height: 2px; }
+.sat-particle:nth-child(3) { left: 70%; top: 20%; animation: particle-float 7s ease-in-out infinite 2s; width: 4px; height: 4px; background: rgba(99, 102, 241, 0.4); }
+.sat-particle:nth-child(4) { left: 85%; top: 70%; animation: particle-float 12s ease-in-out infinite 3s; width: 2px; height: 2px; }
+.sat-particle:nth-child(5) { left: 50%; top: 80%; animation: particle-float 9s ease-in-out infinite 0.5s; }
+.sat-particle:nth-child(6) { left: 40%; top: 15%; animation: particle-float 11s ease-in-out infinite 4s; width: 3px; height: 3px; background: rgba(59, 130, 246, 0.3); }
+
+/* ── Glowing progress bar ── */
+.sat-progress-glow {
+  position: relative;
+}
+.sat-progress-glow::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: -2px;
+  width: 20px;
+  height: calc(100% + 4px);
+  border-radius: 999px;
+  background: inherit;
+  filter: blur(6px);
+  opacity: 0.8;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Answer button glow pulse ── */
+@keyframes answer-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+  50%      { box-shadow: 0 0 20px 4px rgba(124, 58, 237, 0.25); }
+}
+.sat-answer-selected {
+  animation: answer-glow 1.5s ease-in-out infinite;
+}
+
+/* ── Answer button hover ripple ── */
+@keyframes answer-ripple {
+  from { transform: scale(0.8); opacity: 0.5; }
+  to   { transform: scale(2.5); opacity: 0; }
+}
+.sat-answer-btn {
+  position: relative;
+  overflow: hidden;
+}
+.sat-answer-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,0.2), transparent 70%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+.sat-answer-btn:active::before {
+  transform: scale(2.5);
+  opacity: 1;
+  transition: transform 0.15s ease;
+}
+
+/* ── Aurora gradient sweep (behind question text) ── */
+@keyframes aurora {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.sat-aurora-text {
+  background: linear-gradient(
+    270deg,
+    rgba(255,255,255,1),
+    rgba(167,139,250,0.9),
+    rgba(255,255,255,1),
+    rgba(129,140,248,0.9),
+    rgba(255,255,255,1)
+  );
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: aurora 8s ease infinite;
+}
+
+/* ── Trait badge glow ── */
+@keyframes trait-glow {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.3); }
+}
+.sat-trait-badge {
+  animation: trait-glow 3s ease-in-out infinite;
+}
+
+/* ── Question number counter pulse ── */
+@keyframes count-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.sat-count-pop {
+  animation: count-pop 0.3s ease-out;
+}
+
+/* ── Staggered card entrance for intro ── */
+@keyframes card-rise {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sat-card-enter { animation: card-rise 0.5s ease-out both; }
+.sat-card-enter:nth-child(1) { animation-delay: 0.1s; }
+.sat-card-enter:nth-child(2) { animation-delay: 0.2s; }
+.sat-card-enter:nth-child(3) { animation-delay: 0.3s; }
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .anon-aura, .anon-aura-3, .ghost-float, .ambient-glow,
   .live-ping, .gradient-text, .stat-chip, .avatar-float,
-  .slide-left, .slide-right, .page-enter { animation: none !important; }
+  .slide-left, .slide-right, .page-enter,
+  .sat-shimmer::after, .sat-particle, .sat-progress-glow::after,
+  .sat-answer-selected, .sat-aurora-text, .sat-trait-badge,
+  .sat-count-pop, .sat-card-enter { animation: none !important; }
   [style*="float-orb"] { animation: none !important; }
+  .sat-aurora-text { -webkit-text-fill-color: white; }
 }
