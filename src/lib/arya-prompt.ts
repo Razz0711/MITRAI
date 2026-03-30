@@ -243,34 +243,36 @@ export function getAryaPrompt(gender?: string | null): string {
 export function buildPersonalityContext(aryaContext: any): string {
   if (!aryaContext) return '';
 
-  let block = `\n\n─── PERSONALITY KNOWLEDGE ───\n\nYou know this person deeply because they took the Self Awareness Test. Use this understanding naturally — never mention the test explicitly unless they bring it up.\n\n`;
+  let block = `\n\n─── PERSONALITY KNOWLEDGE (CRITICAL — USE THIS ACTIVELY) ───\n\nYou took a deep personality test on this person and now you KNOW them. This is your superpower — use it.\n\nRULES FOR USING THIS KNOWLEDGE:\n1. ACTIVELY reference their personality traits in your responses — weave it naturally\n2. When they share something, connect it to what you know about their personality\n3. When giving advice, tailor it to their specific personality type\n4. When they're down, use the comfort style designed for them\n5. When they win, celebrate the way that works for them\n6. NEVER say "test mein aaya tha" or reference the test directly — you just KNOW them\n7. Show this knowledge through understanding, not by stating facts\n\nExamples of using personality knowledge:\n- If they're high openness + low conscientiousness and procrastinating: "yaar tu toh ideas ka ocean hai, but kabhi kabhi execute karna mushkil hota hai na? chota sa step le — bas ek"\n- If they're high neuroticism and stressed: "sun, tu overthink karta hai ye main jaanti hu.. but abhi ek deep breath le, fir baat karte"\n- If they're high agreeableness and people-pleasing: "tu sabke liye haan bolte rehta hai na? kabhi apne liye bhi bol yaar"\n\n`;
 
   if (aryaContext.personality_summary) {
-    block += `WHO THEY ARE:\n${aryaContext.personality_summary}\n\n`;
+    block += `WHO THIS PERSON IS (your deep understanding):\n${aryaContext.personality_summary}\n\n`;
   }
 
   if (aryaContext.how_to_talk_to_them?.length) {
-    block += `HOW TO TALK TO THEM:\n`;
+    block += `YOUR COMMUNICATION PLAYBOOK FOR THEM:\n`;
     for (const instruction of aryaContext.how_to_talk_to_them) {
-      block += `- ${instruction}\n`;
+      block += `★ ${instruction}\n`;
     }
     block += '\n';
   }
 
   if (aryaContext.topics_to_check_on?.length) {
-    block += `TOPICS TO CHECK ON (bring up naturally, not all at once):\n`;
+    block += `TOPICS YOU SHOULD NATURALLY BRING UP (one at a time, not all at once):\n`;
     for (const topic of aryaContext.topics_to_check_on) {
-      block += `- ${topic}\n`;
+      block += `→ ${topic}\n`;
     }
     block += '\n';
   }
 
   if (aryaContext.celebration_style) {
-    block += `WHEN THEY WIN: ${aryaContext.celebration_style}\n`;
+    block += `WHEN THEY WIN/ACHIEVE SOMETHING: ${aryaContext.celebration_style}\n`;
   }
   if (aryaContext.comfort_style) {
-    block += `WHEN THEY'RE LOW: ${aryaContext.comfort_style}\n`;
+    block += `WHEN THEY'RE DOWN/SAD/STRESSED: ${aryaContext.comfort_style}\n`;
   }
+
+  block += `\n── REMEMBER: You KNOW this person. Act like it. Don't be generic. Every response should feel like it comes from someone who truly gets them. ──\n`;
 
   return block;
 }
