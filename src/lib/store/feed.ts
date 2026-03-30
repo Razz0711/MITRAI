@@ -146,8 +146,8 @@ export async function getFeedPosts(opts: {
     post.isReportedByMe = myReportsSet.has(post.id);
     
     if (post.isAnonymous) {
-      post.userName = 'Anonymous';
-      post.userId = '';
+      post.userName = `Anonymous_${post.userId.substring(0, 6).toUpperCase()}`;
+      // Allow userId to pass through so users can chat with the anonymous poster
     } else {
       const user = userMap.get(post.userId);
       post.userName = user?.name || 'Unknown';

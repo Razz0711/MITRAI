@@ -162,14 +162,16 @@ export default function PostCard({
     } else {
       // Other user
       if (iminActive) {
-        // Already active → toggle off directly
-        onReact(post.id, 'imin');
+        // Already active → redirect to chat to continue conversing!
+        if (post.userId) {
+           router.push(`/chat?friendId=${encodeURIComponent(post.userId)}&friendName=${encodeURIComponent(post.userName || 'Student')}`);
+        }
       } else {
         // Not active → open beautiful reply popup!
         setShowIminModal(true);
       }
     }
-  }, [isOwn, iminCount, showInterested, interestedUsers.length, post.id, onReact, iminActive]);
+  }, [isOwn, iminCount, showInterested, interestedUsers.length, post.id, iminActive, post.userId, post.userName, router]);
 
   const handleIminConfirm = async () => {
     // First, register the 'imin' reaction so the UI updates
@@ -262,7 +264,7 @@ export default function PostCard({
           )}
           <div className="flex-1 min-w-0">
             <span className="text-sm font-semibold text-[var(--foreground)] truncate block">
-              {post.isAnonymous ? 'Anonymous' : (post.userName || 'Someone')}
+              {post.userName || 'Someone'}
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
               {distance !== null && (
@@ -368,8 +370,8 @@ export default function PostCard({
             {showComments ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
           </button>
 
-          {/* Message option that appears when I'm in (only for non-anon posts) */}
-          {!isOwn && iminActive && !post.isAnonymous && post.userId && (
+          {/* Message option that appears when I'm in (now supports anonymous posts too via masked ID) */}
+          {!isOwn && iminActive && post.userId && (
             <button
                onClick={() => router.push(`/chat?friendId=${encodeURIComponent(post.userId)}&friendName=${encodeURIComponent(post.userName || 'Student')}`)}
                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-all active:scale-95 btn-ripple ml-auto"
@@ -488,7 +490,7 @@ export default function PostCard({
                 
                 <h3 className="text-xl font-bold text-white mb-2">You&apos;re in! 🎉</h3>
                 <p className="text-[13px] text-[var(--muted-strong)] mb-5 leading-relaxed">
-                  Would you like to send a direct message to {post.isAnonymous ? 'the poster' : (post.userName || 'them')}? They&apos;ll get an instant notification.
+                  Would you like to send a one-time message to {post.isAnonymous ? 'the poster' : (post.userName || 'them')}? Further messages will be sent to your Chat inbox!
                 </p>
 
                 <textarea
