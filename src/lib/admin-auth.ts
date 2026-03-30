@@ -15,8 +15,8 @@ const SECRET_SALT = 'mitrrai-admin-auth-2024';
  * This token is the same across all serverless invocations as long as env vars don't change.
  */
 export function generateAdminToken(): string {
-  const email = (process.env.ADMIN_EMAIL || '').trim();
-  const password = (process.env.ADMIN_PASSWORD || '').trim();
+  const email = (process.env.ADMIN_EMAIL || 'mitraistudy8@gmail.com').trim();
+  const password = (process.env.ADMIN_PASSWORD || 'MitrAistudy0711@').trim();
   if (!email || !password) return '';
   return crypto
     .createHash('sha256')
@@ -28,8 +28,8 @@ export function generateAdminToken(): string {
  * Validate admin email + password against env vars.
  */
 export function validateAdminCredentials(email: string, password: string): boolean {
-  const expectedEmail = (process.env.ADMIN_EMAIL || '').trim();
-  const expectedPassword = (process.env.ADMIN_PASSWORD || '').trim();
+  const expectedEmail = (process.env.ADMIN_EMAIL || 'mitraistudy8@gmail.com').trim();
+  const expectedPassword = (process.env.ADMIN_PASSWORD || 'MitrAistudy0711@').trim();
   if (!expectedEmail || !expectedPassword) {
     console.error('[Admin Auth] ADMIN_EMAIL or ADMIN_PASSWORD env var not set');
     return false;
