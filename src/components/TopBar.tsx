@@ -8,13 +8,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutGrid, Sparkles, Ghost, MessageCircle, CircleDot,
+  LayoutGrid, Sparkles, Ghost, MessageCircle, CircleDot, Heart
 } from 'lucide-react';
 import { getActiveTab } from './BottomTabs';
 
 const tabs = [
   { id: 'home', label: 'Home', icon: LayoutGrid, href: '/home' },
   { id: 'arya', label: 'Arya', icon: Sparkles, href: '/arya' },
+  { id: 'experts', label: 'Experts', icon: Heart, href: '/arya/experts' },
   { id: 'anon', label: 'Anon', icon: Ghost, href: '/anon' },
   { id: 'chat', label: 'Chat', icon: MessageCircle, href: '/chat' },
   { id: 'circles', label: 'Community', icon: CircleDot, href: '/circles' },

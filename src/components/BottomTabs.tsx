@@ -5,6 +5,7 @@
 
 export const TAB_ROUTES: Record<string, string[]> = {
   home: ['/home', '/campus-feed', '/notifications'],
+  experts: ['/arya/experts'],
   arya: ['/arya'],
   anon: ['/anon'],
   chat: ['/chat', '/rooms', '/doubts'],
