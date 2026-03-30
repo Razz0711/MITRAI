@@ -121,6 +121,7 @@ export default function PostCard({
   const [showIminModal, setShowIminModal] = useState(false);
   const [dmText, setDmText] = useState('');
   const [dmLoading, setDmLoading] = useState(false);
+  const [sendConnection, setSendConnection] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -177,17 +178,32 @@ export default function PostCard({
     // First, register the 'imin' reaction so the UI updates
     onReact(post.id, 'imin');
     
-    // Then optionally send the DM if they typed something
-    if (dmText.trim()) {
+    // Then optionally send the DM and/or connection if chosen
+    if (dmText.trim() || sendConnection) {
       setDmLoading(true);
       try {
-        await fetch(`/api/feed/${post.id}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'direct_message', content: dmText.trim() }),
-        });
+        if (dmText.trim()) {
+          await fetch(`/api/feed/${post.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'direct_message', content: dmText.trim() }),
+          });
+        }
+        if (sendConnection && user && post.userId) {
+          await fetch('/api/friends', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'send_request',
+              fromUserId: user.id,
+              fromUserName: user.name,
+              toUserId: post.userId,
+              toUserName: post.isAnonymous ? `Anonymous_${post.userId.substring(0,6).toUpperCase()}` : (post.userName || 'Student')
+            })
+          });
+        }
       } catch (err) {
-        console.error('Failed to send DM:', err);
+        console.error('Failed to send DM/connection:', err);
       } finally {
         setDmLoading(false);
       }
@@ -195,6 +211,7 @@ export default function PostCard({
     
     setShowIminModal(false);
     setDmText('');
+    setSendConnection(false);
   };
 
 
@@ -498,8 +515,16 @@ export default function PostCard({
                   onChange={e => setDmText(e.target.value)}
                   placeholder="Hey, I'd love to join too..."
                   maxLength={200}
-                  className="w-full h-24 p-3 rounded-xl bg-black/20 text-sm text-[var(--foreground)] placeholder-[var(--muted)] border border-white/5 focus:border-emerald-500/50 focus:outline-none resize-none mb-4 transition-all"
+                  className="w-full h-24 p-3 rounded-xl bg-black/20 text-sm text-[var(--foreground)] placeholder-[var(--muted)] border border-white/5 focus:border-emerald-500/50 focus:outline-none resize-none mb-3 transition-all"
                 />
+
+                <label className="flex items-center gap-2.5 mb-5 px-1 cursor-pointer group">
+                  <div className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-all ${sendConnection ? 'bg-emerald-500 border-emerald-500' : 'bg-black/20 border-white/20 group-hover:border-white/40'}`}>
+                    {sendConnection && <Sparkles size={10} className="text-white fill-white" />}
+                  </div>
+                  <input type="checkbox" className="hidden" checked={sendConnection} onChange={e => setSendConnection(e.target.checked)} />
+                  <span className="text-[12px] font-medium text-white/80 group-hover:text-white transition-colors">Also establish connection / friend request</span>
+                </label>
 
                 <div className="flex gap-2">
                   <button
@@ -507,15 +532,15 @@ export default function PostCard({
                     disabled={dmLoading}
                     className="flex-1 py-3 rounded-xl text-[13px] font-bold text-white/70 hover:bg-white/5 hover:text-white transition-colors border border-transparent disabled:opacity-50"
                   >
-                    Skip message
+                    Skip completely
                   </button>
                   <button
                     onClick={handleIminConfirm}
-                    disabled={dmLoading || !dmText.trim()}
+                    disabled={dmLoading || (!dmText.trim() && !sendConnection)}
                     className="flex-[1.5] py-3 rounded-xl text-[13px] font-extrabold text-white bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:active:scale-100"
                   >
-                    <Send size={14} className={dmText.trim() ? "animate-bounce-short" : ""} />
-                    {dmLoading ? 'Sending...' : 'Send Message'}
+                    <Send size={14} className={dmText.trim() || sendConnection ? "animate-bounce-short" : ""} />
+                    {dmLoading ? 'Sending...' : (dmText.trim() && sendConnection ? 'Send & Connect' : sendConnection ? 'Connect Only' : 'Send Message')}
                   </button>
                 </div>
               </div>
