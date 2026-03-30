@@ -96,8 +96,161 @@ export default function ReportPage() {
 
   // ── Download / Share handlers ──
   const handleDownload = () => {
-    // Hide non-printable elements and trigger print (saves as PDF)
-    window.print();
+    // Build a clean standalone HTML page with all report data
+    const traitEntries = r.traits ? Object.entries(r.traits) : [];
+    const allPillars = r.pillars ? PILLAR_TABS.filter(p => r.pillars[p]?.length) : [];
+
+    const traitsHTML = traitEntries.map(([trait, data]: [string, any]) => `
+      <div style="border-left:3px solid ${TRAIT_COLORS[trait] || '#7c3aed'};padding:16px;margin-bottom:12px;background:rgba(255,255,255,0.03);border-radius:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <h3 style="margin:0;font-size:15px;color:#fff;">${TRAIT_LABELS[trait] || trait}</h3>
+          <span style="background:${TRAIT_COLORS[trait] || '#7c3aed'}22;color:${TRAIT_COLORS[trait] || '#7c3aed'};padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;">${data.score ?? scores[trait as keyof typeof scores]}/100</span>
+        </div>
+        ${data.subtitle ? `<p style="color:#aaa;font-style:italic;font-size:12px;margin:0 0 8px;">${data.subtitle}</p>` : ''}
+        ${data.what_it_means ? `<p style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:0 0 4px;">What it means</p><p style="color:#ccc;font-size:12px;line-height:1.6;margin:0 0 8px;">${data.what_it_means}</p>` : ''}
+        ${data.pitfall ? `<p style="font-size:10px;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:0 0 4px;">⚠️ Your Pitfall</p><p style="color:#ccc;font-size:12px;line-height:1.6;margin:0 0 8px;">${data.pitfall}</p>` : ''}
+        ${data.power_move ? `<p style="font-size:10px;color:#22c55e;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin:0 0 4px;">⚡ Power Move</p><p style="color:#ccc;font-size:12px;line-height:1.6;margin:0;">${data.power_move}</p>` : ''}
+      </div>
+    `).join('');
+
+    const archetypeHTML = r.archetype ? `
+      <div style="text-align:center;padding:24px;background:linear-gradient(135deg,#1e1432,#140f23);border:1px solid rgba(124,58,237,0.25);border-radius:16px;margin-bottom:16px;">
+        <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#9f7aea;margin:0 0 8px;">Your Psychological Archetype</p>
+        <h2 style="font-size:22px;color:#fff;margin:0 0 12px;">${r.archetype.name}</h2>
+        <p style="color:#bbb;font-size:13px;line-height:1.6;margin:0 0 16px;">${r.archetype.description}</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px;">
+            <p style="color:#22c55e;font-size:12px;font-weight:700;margin:0 0 4px;">⚡ ${r.archetype.superpower_title || 'Superpower'}</p>
+            <p style="color:#aaa;font-size:11px;line-height:1.5;margin:0;">${r.archetype.superpower_desc || ''}</p>
+          </div>
+          <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px;">
+            <p style="color:#ef4444;font-size:12px;font-weight:700;margin:0 0 4px;">⚠️ ${r.archetype.kryptonite_title || 'Kryptonite'}</p>
+            <p style="color:#aaa;font-size:11px;line-height:1.5;margin:0;">${r.archetype.kryptonite_desc || ''}</p>
+          </div>
+        </div>
+      </div>
+    ` : '';
+
+    const dynamicsHTML = r.internal_dynamics ? `
+      <div style="margin-bottom:16px;">
+        <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#888;font-weight:700;margin:0 0 12px;">Internal Dynamics</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <p style="color:#22c55e;font-size:12px;font-weight:600;margin:0 0 8px;">🏆 Strengths</p>
+            ${(r.internal_dynamics.strengths || []).map((s: any) => `
+              <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:10px;padding:10px;margin-bottom:8px;">
+                <p style="color:#22c55e;font-size:11px;font-weight:700;margin:0 0 2px;">${s.title}</p>
+                <p style="color:#aaa;font-size:10px;line-height:1.5;margin:0;">${s.description}</p>
+              </div>
+            `).join('')}
+          </div>
+          <div>
+            <p style="color:#ef4444;font-size:12px;font-weight:600;margin:0 0 8px;">⚠️ Sabotages</p>
+            ${(r.internal_dynamics.sabotages || []).map((s: any) => `
+              <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:10px;margin-bottom:8px;">
+                <p style="color:#ef4444;font-size:11px;font-weight:700;margin:0 0 2px;">${s.title}</p>
+                <p style="color:#aaa;font-size:10px;line-height:1.5;margin:0;">${s.description}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    ` : '';
+
+    const pillarsHTML = allPillars.map(pillar => `
+      <div style="margin-bottom:12px;">
+        <p style="font-size:13px;font-weight:700;color:#fff;margin:0 0 8px;">${PILLAR_EMOJIS[pillar]} ${pillar.charAt(0).toUpperCase() + pillar.slice(1)}</p>
+        ${(r.pillars[pillar] || []).map((tip: any) => `
+          <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px;margin-bottom:8px;">
+            <p style="color:#fff;font-size:12px;font-weight:700;margin:0 0 4px;">${tip.tip_title}</p>
+            <p style="color:#aaa;font-size:11px;line-height:1.5;margin:0;">${tip.tip_desc}</p>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+
+    const recsHTML = r.recommendations ? `
+      ${r.recommendations.books?.length ? `
+        <div style="margin-bottom:16px;">
+          <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#888;font-weight:700;margin:0 0 12px;">📚 Recommended Books</p>
+          ${r.recommendations.books.map((b: any) => `<div style="margin-bottom:8px;"><p style="color:#fff;font-size:12px;font-weight:700;margin:0;">${b.title}</p>${b.author ? `<p style="color:#888;font-size:11px;margin:2px 0 0;">by ${b.author}</p>` : ''}${b.why ? `<p style="color:#aaa;font-size:11px;margin:4px 0 0;">${b.why}</p>` : ''}</div>`).join('')}
+        </div>
+      ` : ''}
+      ${r.recommendations.videos?.length ? `
+        <div style="margin-bottom:16px;">
+          <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#888;font-weight:700;margin:0 0 12px;">🎬 Recommended Videos</p>
+          ${r.recommendations.videos.map((v: any) => `<div style="margin-bottom:8px;"><p style="color:#fff;font-size:12px;font-weight:700;margin:0;">${v.title}</p>${v.creator ? `<p style="color:#888;font-size:11px;margin:2px 0 0;">by ${v.creator}</p>` : ''}</div>`).join('')}
+        </div>
+      ` : ''}
+    ` : '';
+
+    const htmlContent = `<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>${userName}'s Personality Report - MitrRAI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0a1e; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 0; }
+  @page { margin: 0.5cm; size: A4; }
+  @media print { body { background: #0f0a1e !important; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+</style>
+</head><body>
+  <div style="background:linear-gradient(135deg,#4c1d95,#7c3aed,#a78bfa);padding:32px 24px;text-align:center;border-radius:0 0 24px 24px;">
+    <p style="color:rgba(255,255,255,0.7);font-size:12px;margin:0 0 4px;">${dateStr}</p>
+    <h1 style="font-size:24px;margin:0 0 12px;">${userName}'s Personality Report</h1>
+    ${r.tagline ? `<div style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:12px;max-width:350px;margin:0 auto;"><p style="font-size:13px;font-style:italic;color:rgba(255,255,255,0.9);margin:0;">"${r.tagline}"</p></div>` : ''}
+  </div>
+
+  <div style="padding:20px;">
+    <!-- OCEAN Scores -->
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:16px;">
+      <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#888;font-weight:700;margin:0 0 16px;">OCEAN Profile</p>
+      ${Object.entries(scores).map(([k, v]) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${TRAIT_COLORS[k]};flex-shrink:0;"></span>
+          <span style="color:#bbb;font-size:12px;width:130px;">${TRAIT_LABELS[k]}</span>
+          <div style="flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+            <div style="width:${v}%;height:100%;background:${TRAIT_COLORS[k]};border-radius:4px;"></div>
+          </div>
+          <span style="color:#fff;font-size:13px;font-weight:700;width:32px;text-align:right;">${v}</span>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- Traits -->
+    ${traitsHTML}
+
+    <!-- Archetype -->
+    ${archetypeHTML}
+
+    <!-- Internal Dynamics -->
+    ${dynamicsHTML}
+
+    <!-- Pillars -->
+    ${allPillars.length ? `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:16px;">
+      <p style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#888;font-weight:700;margin:0 0 16px;">6 Life Pillars</p>
+      ${pillarsHTML}
+    </div>` : ''}
+
+    <!-- Recommendations -->
+    ${recsHTML}
+
+    <!-- Footer -->
+    <div style="text-align:center;border-top:1px solid #333;padding:16px 0 8px;margin-top:16px;">
+      <p style="color:#666;font-size:10px;">Generated by MitrRAI • mitrrai.vercel.app</p>
+    </div>
+  </div>
+</body></html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      // Wait for content to render, then trigger print
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
   };
 
   const handleShare = async () => {
