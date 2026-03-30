@@ -30,7 +30,10 @@ export async function GET(req: NextRequest) {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase raw error in API:', error);
+      return NextResponse.json({ success: false, error: error.message || JSON.stringify(error) }, { status: 500 });
+    }
 
     // Client-side filtering for search/expertise (Supabase jsonb filtering is limited)
     let results = data || [];

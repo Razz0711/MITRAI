@@ -50,6 +50,9 @@ export default function ExpertsPage() {
       const data = await res.json();
       if (data.success) {
         setExperts(data.data || []);
+      } else {
+        console.error('API Error:', data.error);
+        alert('Supabase DB Error: ' + data.error);
       }
     } catch (err) {
       console.error('Failed to fetch experts:', err);
