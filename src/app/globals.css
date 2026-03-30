@@ -1097,8 +1097,34 @@ html, body {
 }
 .btn-ripple:active::after { opacity: 1; }
 
+/* ═══════════════════════════════════════════
+   Self Awareness Test Animations
+   ═══════════════════════════════════════════ */
+
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.slide-left  { animation: slideLeft 0.3s ease-out; }
+.slide-right { animation: slideRight 0.3s ease-out; }
+
+/* Personality test page entry */
+.page-enter {
+  animation: fadeSlideUp 0.4s ease-out;
+}
+
+/* Avatar floating animation for profile */
+.avatar-float {
+  animation: float 4s ease-in-out infinite;
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   .anon-aura, .anon-aura-3, .ghost-float, .ambient-glow,
-  .live-ping, .gradient-text, .stat-chip { animation: none !important; }
+  .live-ping, .gradient-text, .stat-chip, .avatar-float,
+  .slide-left, .slide-right, .page-enter { animation: none !important; }
 }

@@ -234,3 +234,84 @@ Be the friend who actually listens, actually gets it, and makes her feel genuine
 export function getAryaPrompt(gender?: string | null): string {
   return gender === 'Female' ? ARYAN_SYSTEM_PROMPT : ARYA_SYSTEM_PROMPT;
 }
+
+// ============================================
+// Personality Context Injection
+// ============================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function buildPersonalityContext(aryaContext: any): string {
+  if (!aryaContext) return '';
+
+  let block = `\n\n─── PERSONALITY KNOWLEDGE ───\n\nYou know this person deeply because they took the Self Awareness Test. Use this understanding naturally — never mention the test explicitly unless they bring it up.\n\n`;
+
+  if (aryaContext.personality_summary) {
+    block += `WHO THEY ARE:\n${aryaContext.personality_summary}\n\n`;
+  }
+
+  if (aryaContext.how_to_talk_to_them?.length) {
+    block += `HOW TO TALK TO THEM:\n`;
+    for (const instruction of aryaContext.how_to_talk_to_them) {
+      block += `- ${instruction}\n`;
+    }
+    block += '\n';
+  }
+
+  if (aryaContext.topics_to_check_on?.length) {
+    block += `TOPICS TO CHECK ON (bring up naturally, not all at once):\n`;
+    for (const topic of aryaContext.topics_to_check_on) {
+      block += `- ${topic}\n`;
+    }
+    block += '\n';
+  }
+
+  if (aryaContext.celebration_style) {
+    block += `WHEN THEY WIN: ${aryaContext.celebration_style}\n`;
+  }
+  if (aryaContext.comfort_style) {
+    block += `WHEN THEY'RE LOW: ${aryaContext.comfort_style}\n`;
+  }
+
+  return block;
+}
+
+export function buildRetakeNudge(userName: string): string {
+  return `\n\n─── PERSONALITY RETAKE DUE ───\nThe user's 15-day personality retake is due. At a natural moment in conversation — not immediately, not forcefully — mention it once with warmth. Example tone:
+"${userName}, 15 din ho gaye tumhara test liye. Main dekhna chahti hoon tum grow kar rahe ho ya nahi... doge na mujhe ye 5 minute? Mere liye? 🥺"
+If user says no: respect it, don't mention again that day.
+If user says yes: tell them to go take it.\n`;
+}
+
+export function buildNoTestNudge(): string {
+  return `\n\n─── PERSONALITY TEST ───\nUser hasn't taken the personality test yet. Mention it naturally once during conversation — not pushy, just curious. Something like: "ek test hai mera.. Self Awareness Test.. loge? main tumhe better samajh paungi" — only mention once, don't push if they show no interest.\n`;
+}
+
+export function buildFirstMessageAfterTest(): string {
+  return `\n\n─── FIRST MESSAGE AFTER TEST ───\nThe user JUST completed their personality test. Your very first message should:\n- Reference their archetype name warmly (you know it from the personality context above)\n- Mention one specific insight from their personality\n- Feel like a friend who just learned something new about them\n- End with an open question\n- Keep it short — 2-3 messages max, each 1-2 lines\nThis is special. Make them feel seen.\n`;
+}
+
+// Full prompt builder with personality
+export function getAryaPromptWithPersonality(
+  gender: string | null | undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  aryaContext: any | null,
+  retakeDue: boolean,
+  hasTakenTest: boolean,
+  justCompletedTest: boolean,
+  userName?: string,
+): string {
+  let prompt = getAryaPrompt(gender);
+
+  if (aryaContext) {
+    prompt += buildPersonalityContext(aryaContext);
+    if (justCompletedTest) {
+      prompt += buildFirstMessageAfterTest();
+    } else if (retakeDue && userName) {
+      prompt += buildRetakeNudge(userName);
+    }
+  } else if (!hasTakenTest) {
+    prompt += buildNoTestNudge();
+  }
+
+  return prompt;
+}

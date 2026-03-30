@@ -8,8 +8,9 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, MessageSquare, Phone, X, Instagram, Pencil, Camera } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Phone, X, Instagram, Pencil, Camera, Sparkles, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { LS_HAS_TAKEN_TEST } from '@/lib/personality-test';
 
 export default function AryaProfilePage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function AryaProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPicSheet, setShowPicSheet] = useState(false);
   const [customAvatar, setCustomAvatar] = useState<string | null>(null);
+  const [hasTakenTest, setHasTakenTest] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const picInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,6 +45,8 @@ export default function AryaProfilePage() {
       if (saved) setDisplayName(saved);
       const savedPic = localStorage.getItem('arya_custom_avatar');
       if (savedPic) setCustomAvatar(savedPic);
+      const taken = localStorage.getItem(LS_HAS_TAKEN_TEST) === 'true';
+      setHasTakenTest(taken);
     } catch { /* localStorage unavailable */ }
   }, []);
 
@@ -189,6 +193,33 @@ export default function AryaProfilePage() {
             }
           </p>
         </div>
+
+        {/* ── Self Awareness Test Card ── */}
+        <Link
+          href={hasTakenTest ? '/arya/self-awareness-test/report' : '/arya/self-awareness-test'}
+          className="rounded-2xl p-4 flex items-center gap-3 transition-all active:scale-[0.98]"
+          style={{
+            background: hasTakenTest
+              ? 'var(--surface)'
+              : 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(139,92,246,0.08))',
+            border: hasTakenTest
+              ? '1px solid var(--glass-border)'
+              : '1px solid rgba(124,58,237,0.25)',
+          }}
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(124,58,237,0.15)' }}>
+            <Sparkles size={18} className="text-purple-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[var(--foreground)]">
+              {hasTakenTest ? 'Your Personality Report' : `${companionName} wants to know you better`}
+            </p>
+            <p className="text-xs text-[var(--muted)]">
+              {hasTakenTest ? 'View your Big Five analysis' : 'Take the Self Awareness Test'}
+            </p>
+          </div>
+          <ChevronRight size={16} className="text-[var(--muted)]" />
+        </Link>
 
         {/* ── Social Links ── */}
         <a
