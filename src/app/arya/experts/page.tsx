@@ -30,6 +30,8 @@ export default function ExpertsPage() {
   const [filter, setFilter] = useState('all');
   const [experts, setExperts] = useState<Expert[]>([]);
   const [loading, setLoading] = useState(true);
+  const brandHeroGradient = 'linear-gradient(135deg, rgba(124,58,237,0.96) 0%, rgba(236,72,153,0.88) 55%, rgba(109,40,217,0.96) 100%)';
+  const brandActionGradient = 'linear-gradient(135deg, var(--primary), #6d28d9)';
 
   const FILTERS = [
     { key: 'all', label: 'All' },
@@ -78,12 +80,10 @@ export default function ExpertsPage() {
 
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').slice(0, 2);
 
-  const AVATAR_COLORS = ['#e879a0', '#6366f1', '#ec4899', '#3b82f6', '#8b5cf6', '#14b8a6', '#f59e0b'];
-
   return (
     <div className="min-h-screen pb-32 page-enter" style={{ background: 'var(--background)' }}>
       {/* Header */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #5eead4 100%)' }}>
+      <div className="relative overflow-hidden" style={{ background: brandHeroGradient }}>
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-2 h-2 rounded-full bg-white animate-pulse" />
           <div className="absolute top-24 right-16 w-1.5 h-1.5 rounded-full bg-white animate-pulse" style={{ animationDelay: '0.5s' }} />
@@ -126,7 +126,7 @@ export default function ExpertsPage() {
               onClick={() => setFilter(f.key)}
               className="px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all shrink-0"
               style={{
-                background: filter === f.key ? 'linear-gradient(135deg, #0f766e, #14b8a6)' : 'var(--surface)',
+                background: filter === f.key ? brandActionGradient : 'var(--surface)',
                 color: filter === f.key ? '#fff' : 'var(--muted)',
                 border: filter === f.key ? 'none' : '1px solid var(--border)',
               }}
@@ -139,7 +139,7 @@ export default function ExpertsPage() {
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <Loader2 size={24} className="text-teal-400 animate-spin" />
+            <Loader2 size={24} className="text-[var(--primary-light)] animate-spin" />
           </div>
         )}
 
@@ -214,7 +214,10 @@ export default function ExpertsPage() {
                   </div>
                   
                   {/* Blue Pill Book Session Button like screenshot */}
-                  <button className="bg-[#8b8df2] hover:bg-[#7b7dec] text-white font-bold text-[12px] px-4 py-2.5 rounded-xl transition-colors shadow-sm">
+                  <button
+                    className="text-white font-bold text-[12px] px-4 py-2.5 rounded-xl transition-colors shadow-sm"
+                    style={{ background: brandActionGradient }}
+                  >
                     Book Session
                   </button>
                 </div>
@@ -230,12 +233,12 @@ export default function ExpertsPage() {
         )}
 
         {/* Trust Badge */}
-        <div className="rounded-2xl p-4 flex items-center gap-3 mt-2" style={{ background: 'var(--surface)', border: '1px solid rgba(20,184,166,0.15)' }}>
-          <div className="w-10 h-10 rounded-xl bg-teal-500/15 flex items-center justify-center text-lg shrink-0">
-            <Shield size={18} className="text-teal-400" />
+        <div className="rounded-2xl p-4 flex items-center gap-3 mt-2" style={{ background: 'var(--surface)', border: '1px solid rgba(124,58,237,0.18)' }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ background: 'rgba(124,58,237,0.14)' }}>
+            <Shield size={18} className="text-[var(--accent-light)]" />
           </div>
           <p className="text-[11px] text-[var(--muted)] leading-relaxed flex-1">
-            <strong className="text-teal-400 font-semibold">All experts are verified.</strong> Licensed professionals with verified credentials and experience.
+            <strong className="text-[var(--accent-light)] font-semibold">All experts are verified.</strong> Licensed professionals with verified credentials and experience.
           </p>
         </div>
       </div>

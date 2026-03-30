@@ -147,7 +147,7 @@ export default function ExpertDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
-        <Loader2 size={24} className="text-teal-400 animate-spin" />
+        <Loader2 size={24} className="text-[var(--primary-light)] animate-spin" />
       </div>
     );
   }
@@ -156,13 +156,15 @@ export default function ExpertDetailPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: 'var(--background)' }}>
         <p className="text-[var(--muted)] text-sm mb-4">Expert not found</p>
-        <button onClick={() => router.push('/arya/experts')} className="text-teal-400 text-sm font-semibold">← Back to Experts</button>
+        <button onClick={() => router.push('/arya/experts')} className="text-[var(--accent-light)] text-sm font-semibold">← Back to Experts</button>
       </div>
     );
   }
 
   const AVATAR_COLORS = ['#e879a0', '#6366f1', '#ec4899', '#3b82f6', '#8b5cf6'];
   const avatarColor = AVATAR_COLORS[expert.name.length % AVATAR_COLORS.length];
+  const brandGlow = 'linear-gradient(180deg, rgba(124,58,237,0.22) 0%, rgba(236,72,153,0.08) 55%, rgba(124,58,237,0) 100%)';
+  const brandActionGradient = 'linear-gradient(135deg, var(--primary), #6d28d9)';
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'about', label: 'About' },
@@ -189,7 +191,7 @@ export default function ExpertDetailPage() {
   return (
     <div className="min-h-screen pb-32 page-enter" style={{ background: 'var(--background)' }}>
       {/* ── Header Area ── */}
-      <div className="relative overflow-visible" style={{ background: 'linear-gradient(180deg, rgba(139,141,242,0.2) 0%, rgba(139,141,242,0) 100%)', paddingBottom: '20px' }}>
+      <div className="relative overflow-visible" style={{ background: brandGlow, paddingBottom: '20px' }}>
         
         {/* Back Button */}
         <div className="px-4 pt-4 relative z-10" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
@@ -223,8 +225,8 @@ export default function ExpertDetailPage() {
 
           <button
             onClick={handleBookSession}
-            className="mt-5 px-8 py-3 rounded-2xl text-[15px] font-bold text-white transition-all active:scale-[0.97] shadow-lg shadow-indigo-500/20"
-            style={{ background: '#8b8df2' }}
+            className="mt-5 px-8 py-3 rounded-2xl text-[15px] font-bold text-white transition-all active:scale-[0.97] shadow-lg"
+            style={{ background: brandActionGradient, boxShadow: '0 10px 28px rgba(124,58,237,0.28)' }}
           >
             Book Session
           </button>
@@ -396,7 +398,7 @@ export default function ExpertDetailPage() {
 
             {/* Review Form */}
             {showReviewForm && (
-              <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid rgba(20,184,166,0.25)' }}>
+              <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid rgba(124,58,237,0.24)' }}>
                 <p className="text-xs font-bold text-white mb-3">Your Rating</p>
                 <div className="flex gap-2 mb-4">
                   {[1, 2, 3, 4, 5].map(n => (
@@ -419,7 +421,7 @@ export default function ExpertDetailPage() {
                     onClick={handleSubmitReview}
                     disabled={reviewSubmitting}
                     className="flex-1 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1"
-                    style={{ background: 'linear-gradient(135deg, #0f766e, #14b8a6)' }}
+                    style={{ background: brandActionGradient }}
                   >
                     {reviewSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                     Submit
@@ -431,7 +433,7 @@ export default function ExpertDetailPage() {
             {/* Reviews List */}
             {reviewsLoading && (
               <div className="flex items-center justify-center py-8">
-                <Loader2 size={20} className="text-teal-400 animate-spin" />
+                <Loader2 size={20} className="text-[var(--primary-light)] animate-spin" />
               </div>
             )}
 
@@ -445,7 +447,7 @@ export default function ExpertDetailPage() {
               <div key={review.id} className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--glass-border)' }}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-teal-500/20 flex items-center justify-center text-[11px] font-bold text-teal-400">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-[var(--accent-light)]" style={{ background: 'rgba(124,58,237,0.16)' }}>
                       {review.userName[0]}
                     </div>
                     <div>
@@ -470,7 +472,7 @@ export default function ExpertDetailPage() {
           <button
             onClick={handleBookSession}
             className="w-full py-[18px] rounded-[24px] text-[16px] font-extrabold text-white transition-all active:scale-[0.97]"
-            style={{ background: '#8b8df2', boxShadow: '0 8px 24px rgba(139,141,242,0.25)' }}
+            style={{ background: brandActionGradient, boxShadow: '0 8px 24px rgba(124,58,237,0.25)' }}
           >
             Book Session
           </button>
@@ -491,19 +493,19 @@ export default function ExpertDetailPage() {
 
             {bookingStatus === 'success' ? (
               <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-teal-500/20 flex items-center justify-center mx-auto mb-4">
-                  <Check size={32} className="text-teal-400" />
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(124,58,237,0.18)' }}>
+                  <Check size={32} className="text-[var(--accent-light)]" />
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2">Session Booked! 🎉</h3>
                 <p className="text-sm text-[var(--muted)] mb-1">
                   {bookingDate} · {selectedSlot?.startTime} - {selectedSlot?.endTime}
                 </p>
                 <p className="text-xs text-[var(--muted)] mb-1">with {expert.name}</p>
-                <p className="text-xs text-teal-400 mb-6 capitalize">📹 {sessionMode} session</p>
+                <p className="text-xs text-[var(--accent-light)] mb-6 capitalize">📹 {sessionMode} session</p>
                 <button
                   onClick={() => { setShowBooking(false); setBookingStatus('idle'); }}
                   className="w-full py-3 rounded-xl text-sm font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg, #0f766e, #14b8a6)' }}
+                  style={{ background: brandActionGradient }}
                 >
                   Done
                 </button>
